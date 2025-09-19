@@ -15,6 +15,7 @@ const std::vector<const char*> ValidationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
+// Used to check Physical Devices (GPUS) for specific traits
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
 
@@ -130,6 +131,49 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance Instance) {
 	return VkDevice;
 }
 
+VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice) {
+
+	VkDevice device;
+
+	QueueFamilyIndices indices = findQueueFamilies(PhyDevice);
+
+	float queuePriority = 1.0f;
+
+	// Initalize the graphics family with 1 queue
+	VkDeviceQueueCreateInfo queueCreateInfo{};
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+	queueCreateInfo.queueCount = 1;
+	queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	// List of all features we want to use
+	VkPhysicalDeviceFeatures deviceFeatures{};
+
+	// Create Logical Device
+	VkDeviceCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pQueueCreateInfos = &queueCreateInfo;
+	createInfo.queueCreateInfoCount = 1;
+	createInfo.pEnabledFeatures = &deviceFeatures;
+	createInfo.enabledExtensionCount = 0;
+
+	// Support device specific validation layers
+	// New versions of vulkan instance validation layers also handle device validations
+	if (enableValidationLayers) {
+		createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
+		createInfo.ppEnabledLayerNames = ValidationLayers.data();
+	}
+	else {
+		createInfo.enabledLayerCount = 0;
+	}
+
+	if (vkCreateDevice(PhyDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create logical device!");
+	}
+
+	return device;
+}
+
 int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
 	std::cout << "start instance " << std::endl;
 	
@@ -207,8 +251,15 @@ int main() {
 	}
 
 	/// Physical device selection -> GPU selection
-	VkPhysicalDevice VkDevice = PickPhysicalDevice(VkInstance);
+	VkPhysicalDevice VkPhyDevice = PickPhysicalDevice(VkInstance);
 
+	// Logical device selection -> Specify which features and queue families
+	VkDevice VkLogicDevice = CreateLogicalDevice(VkInstance, VkPhyDevice);
+	
+	// Get graphics queue reference.
+	VkQueue graphicsQueue;
+	QueueFamilyIndices indices = findQueueFamilies(VkPhyDevice);
+	vkGetDeviceQueue(VkLogicDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
 
 	// Main Application Loop
 	bool appRunning = true;
@@ -233,6 +284,7 @@ int main() {
 	}
 
 	// Clean up
+	vkDestroyDevice(VkLogicDevice, nullptr);
 	vkDestroyInstance(VkInstance, nullptr); // Cleanup instance LAST
 	SDL_DestroyWindow(window);
 	SDL_Quit();
