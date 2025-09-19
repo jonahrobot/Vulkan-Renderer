@@ -5,6 +5,7 @@
 #include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.hpp>
 #include <string.h>
+#include <optional>
 #include <iostream>
 
 #define WIDTH 500
@@ -14,17 +15,19 @@ const std::vector<const char*> ValidationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
+struct QueueFamilyIndices {
+	std::optional<uint32_t> graphicsFamily;
+
+	bool isComplete() {
+		return graphicsFamily.has_value();
+	}
+};
+
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
 #else
 	const bool enableValidationLayers = true;
 #endif
-
-int ThrowError(std::string errorMessage) {
-	std::cout << errorMessage << std::endl;
-	SDL_Delay(2000);
-	return 1;
-}
 
 // Check if all layers in ValidationLayers are avaliable on our PC
 bool CheckValidationLayerSupport() {
@@ -55,6 +58,78 @@ bool CheckValidationLayerSupport() {
 	return true;
 }
 
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+	QueueFamilyIndices indices;
+
+	// Find how many queues we have in our GPU
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	// Fetch list of all Queue Families. (What type of queues and how many there are)
+	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+	// Look for a queue family that supports graphics --
+
+	int i = 0; // Uses seperate tracker to prevent std::optional from being set.
+	for (const VkQueueFamilyProperties& queueFamily : queueFamilies) {
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			indices.graphicsFamily = i;
+		}
+
+		if (indices.isComplete()) {
+			break;
+		}
+	}
+
+	i++;
+
+	// Found all requirements.
+	return indices;
+}
+
+bool isDeviceSuitable(VkPhysicalDevice device) {
+
+	// Get device information
+	//VkPhysicalDeviceProperties deviceProperties;
+	//VkPhysicalDeviceFeatures deviceFeatures;
+	//vkGetPhysicalDeviceProperties(device, &deviceProperties);
+	//vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+	QueueFamilyIndices indices = findQueueFamilies(device);
+
+	return indices.isComplete();
+}
+
+VkPhysicalDevice PickPhysicalDevice(VkInstance Instance) {
+
+	VkPhysicalDevice VkDevice = VK_NULL_HANDLE;
+
+	uint32_t deviceCount = 0;
+	vkEnumeratePhysicalDevices(Instance, &deviceCount, nullptr);
+
+	if (deviceCount == 0) {
+		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+	}
+
+	std::vector<VkPhysicalDevice> devices(deviceCount);
+	vkEnumeratePhysicalDevices(Instance, &deviceCount, devices.data());
+
+	// Check for best device
+	for (const VkPhysicalDevice& device : devices) {
+		if (isDeviceSuitable(device)) {
+			VkDevice = device;
+			break;
+		}
+	}
+
+	if(VkDevice == VK_NULL_HANDLE){
+		throw std::runtime_error("Failed to find a suitable GPU.");
+	}
+
+	return VkDevice;
+}
+
 int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
 	std::cout << "start instance " << std::endl;
 	
@@ -70,7 +145,7 @@ int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
 	unsigned int SDLNumberOfExtentions;
 	SDL_bool resultsGetNumber = SDL_Vulkan_GetInstanceExtensions(window, &SDLNumberOfExtentions, nullptr);
 	if (resultsGetNumber == SDL_FALSE) {
-		return ThrowError("SDL did not fetch Number of Extentions correctly.");
+		throw std::runtime_error("SDL did not fetch Number of Extentions correctly.");
 	}
 
 	// Allocate space for names of extentions
@@ -78,12 +153,12 @@ int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
 
 	SDL_bool resultsGetInstances = SDL_Vulkan_GetInstanceExtensions(window, &SDLNumberOfExtentions, SDLExtentions.data());
 	if (resultsGetInstances == SDL_FALSE) {
-		return ThrowError("SDL did not fetch Instance Extentions correctly.");
+		throw std::runtime_error("SDL did not fetch Instance Extentions correctly.");
 	}
 	#pragma endregion
 
 	if (enableValidationLayers && !CheckValidationLayerSupport()) {
-		return ThrowError("Current device does not support all Validation Layers.");
+		throw std::runtime_error("Current device does not support all Validation Layers.");
 	}
 
 	VkInstanceCreateInfo InstanceCreateInfo = {};
@@ -104,7 +179,7 @@ int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
 	// Create our instance!
 	VkResult out = vkCreateInstance(&InstanceCreateInfo, nullptr, VulkanInstance);
 	if (out != VK_SUCCESS) {
-		return ThrowError("Vulkan failed to create instance.");
+		throw std::runtime_error("Vulkan failed to create instance.");
 	}
 
 	return 0;
@@ -115,24 +190,24 @@ int main() {
 	// Init SDL
 	int SDLErrorCode = SDL_Init(SDL_INIT_VIDEO);
 	if (SDLErrorCode != 0) {
-		return ThrowError("SDL did not initialize correctly.");
+		throw std::runtime_error("SDL did not initialize correctly.");
 	}
 
 	// Create Window
 	SDL_Window* window = SDL_CreateWindow("Vulkan Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_VULKAN);
 	if (window == NULL) {
-		return ThrowError("SDL Window did not create correctly.");
+		throw std::runtime_error("SDL Window did not create correctly.");
 	}
 
 	/// Instance selection -> A way to describe your application and any extentions you need
-
 	VkInstance VkInstance;
 	int ErrorCode = CreateVulkanInstance(&VkInstance,window);
 	if (ErrorCode != 0) {
-		return ThrowError("Instance did not create correctly.");
+		throw std::runtime_error("Instance did not create correctly.");
 	}
 
 	/// Physical device selection -> GPU selection
+	VkPhysicalDevice VkDevice = PickPhysicalDevice(VkInstance);
 
 
 	// Main Application Loop
