@@ -1,15 +1,19 @@
 #define SDL_MAIN_HANDLED
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 #include <glm/glm.hpp>
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_vulkan.h>
 #include <vulkan/vulkan.hpp>
 #include <string.h>
 #include <optional>
 #include <iostream>
 
+
 #define WIDTH 500
 #define HEIGHT 500
+
+//https://vulkan-tutorial.com/Drawing_a_triangle/Setup/Logical_device_and_queues
 
 const std::vector<const char*> ValidationLayers = {
 	"VK_LAYER_KHRONOS_validation"
@@ -174,7 +178,7 @@ VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice) {
 	return device;
 }
 
-int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
+int CreateVulkanInstance(VkInstance* VulkanInstance, GLFWwindow* window){
 	std::cout << "start instance " << std::endl;
 	
 	/// Instance selection -> A way to describe your application and any extentions you need
@@ -183,22 +187,13 @@ int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
 	AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	AppInfo.pApplicationName = "Vulkan Render Test";
 	AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	AppInfo.apiVersion = VK_API_VERSION_1_0;
+	AppInfo.apiVersion = VK_API_VERSION_1_0; 
 
-	#pragma region SDL EXTENTIONS
-	unsigned int SDLNumberOfExtentions;
-	SDL_bool resultsGetNumber = SDL_Vulkan_GetInstanceExtensions(window, &SDLNumberOfExtentions, nullptr);
-	if (resultsGetNumber == SDL_FALSE) {
-		throw std::runtime_error("SDL did not fetch Number of Extentions correctly.");
-	}
+	#pragma region GLFW EXTENTIONS
+	uint32_t GLFWNumberOfExtentions = 0;
+	const char** glfwExtensions;
 
-	// Allocate space for names of extentions
-	std::vector<const char*> SDLExtentions(SDLNumberOfExtentions);
-
-	SDL_bool resultsGetInstances = SDL_Vulkan_GetInstanceExtensions(window, &SDLNumberOfExtentions, SDLExtentions.data());
-	if (resultsGetInstances == SDL_FALSE) {
-		throw std::runtime_error("SDL did not fetch Instance Extentions correctly.");
-	}
+	glfwExtensions = glfwGetRequiredInstanceExtensions(&GLFWNumberOfExtentions);
 	#pragma endregion
 
 	if (enableValidationLayers && !CheckValidationLayerSupport()) {
@@ -208,8 +203,8 @@ int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
 	VkInstanceCreateInfo InstanceCreateInfo = {};
 	InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	InstanceCreateInfo.pApplicationInfo = &AppInfo;
-	InstanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(SDLNumberOfExtentions);
-	InstanceCreateInfo.ppEnabledExtensionNames = SDLExtentions.data();
+	InstanceCreateInfo.enabledExtensionCount = GLFWNumberOfExtentions;
+	InstanceCreateInfo.ppEnabledExtensionNames = glfwExtensions;
 
 	// Add all ValidationLayers if enabled
 	if (enableValidationLayers) {
@@ -231,16 +226,19 @@ int CreateVulkanInstance(VkInstance* VulkanInstance, SDL_Window* window){
 
 int main() {
 
-	// Init SDL
-	int SDLErrorCode = SDL_Init(SDL_INIT_VIDEO);
-	if (SDLErrorCode != 0) {
-		throw std::runtime_error("SDL did not initialize correctly.");
+	// Init GLFW
+	int GLFWErrorCode = glfwInit();
+	if (GLFWErrorCode == GLFW_FALSE) {
+		throw std::runtime_error("GLFW did not initialize correctly.");
 	}
+	
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-	// Create Window
-	SDL_Window* window = SDL_CreateWindow("Vulkan Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, SDL_WINDOW_VULKAN);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+
 	if (window == NULL) {
-		throw std::runtime_error("SDL Window did not create correctly.");
+		throw std::runtime_error("GLFW Window did not create correctly.");
 	}
 
 	/// Instance selection -> A way to describe your application and any extentions you need
@@ -250,6 +248,8 @@ int main() {
 		throw std::runtime_error("Instance did not create correctly.");
 	}
 
+	//VkSurfaceKHR surface;
+	
 	/// Physical device selection -> GPU selection
 	VkPhysicalDevice VkPhyDevice = PickPhysicalDevice(VkInstance);
 
@@ -262,32 +262,16 @@ int main() {
 	vkGetDeviceQueue(VkLogicDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
 
 	// Main Application Loop
-	bool appRunning = true;
-	while (appRunning) {
-
-		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-
-			switch (event.type) {
-
-			case SDL_QUIT:
-				appRunning = false;
-				break;
-
-			default:
-				// Do nothing.
-				break;
-			}
-		}
-
-		SDL_Delay(10);
+	while (!glfwWindowShouldClose(window)) {
+		glfwPollEvents();
+		
 	}
 
 	// Clean up
 	vkDestroyDevice(VkLogicDevice, nullptr);
 	vkDestroyInstance(VkInstance, nullptr); // Cleanup instance LAST
-	SDL_DestroyWindow(window);
-	SDL_Quit();
+	glfwDestroyWindow(window);
+	glfwTerminate();
 
 	return 0;
 }
