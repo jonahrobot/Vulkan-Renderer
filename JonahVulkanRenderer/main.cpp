@@ -1,7 +1,10 @@
 #define SDL_MAIN_HANDLED
 
+#define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
@@ -22,9 +25,10 @@ const std::vector<const char*> ValidationLayers = {
 // Used to check Physical Devices (GPUS) for specific traits
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
+	std::optional<uint32_t> presentFamily;
 
 	bool isComplete() {
-		return graphicsFamily.has_value();
+		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 };
 
@@ -63,7 +67,7 @@ bool CheckValidationLayerSupport() {
 	return true;
 }
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	QueueFamilyIndices indices;
 
 	// Find how many queues we have in our GPU
@@ -74,14 +78,25 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
-	// Look for a queue family that supports graphics --
+	// Look for a queue family that supports graphics and presentation --
 
 	int i = 0; // Uses seperate tracker to prevent std::optional from being set.
 	for (const VkQueueFamilyProperties& queueFamily : queueFamilies) {
+		
+		// Check for graphics
 		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 			indices.graphicsFamily = i;
 		}
 
+		// Check for present
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+		if (presentSupport) {
+			indices.presentFamily = i;
+		}
+
+		// Check for all found
 		if (indices.isComplete()) {
 			break;
 		}
@@ -93,7 +108,7 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
 	return indices;
 }
 
-bool isDeviceSuitable(VkPhysicalDevice device) {
+bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
 	// Get device information
 	//VkPhysicalDeviceProperties deviceProperties;
@@ -101,12 +116,12 @@ bool isDeviceSuitable(VkPhysicalDevice device) {
 	//vkGetPhysicalDeviceProperties(device, &deviceProperties);
 	//vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-	QueueFamilyIndices indices = findQueueFamilies(device);
+	QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
 	return indices.isComplete();
 }
 
-VkPhysicalDevice PickPhysicalDevice(VkInstance Instance) {
+VkPhysicalDevice PickPhysicalDevice(VkInstance Instance, VkSurfaceKHR surface) {
 
 	VkPhysicalDevice VkDevice = VK_NULL_HANDLE;
 
@@ -122,7 +137,7 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance Instance) {
 
 	// Check for best device
 	for (const VkPhysicalDevice& device : devices) {
-		if (isDeviceSuitable(device)) {
+		if (isDeviceSuitable(device, surface)) {
 			VkDevice = device;
 			break;
 		}
@@ -135,11 +150,11 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance Instance) {
 	return VkDevice;
 }
 
-VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice) {
+VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice, VkSurfaceKHR surface) {
 
 	VkDevice device;
 
-	QueueFamilyIndices indices = findQueueFamilies(PhyDevice);
+	QueueFamilyIndices indices = findQueueFamilies(PhyDevice, surface);
 
 	float queuePriority = 1.0f;
 
@@ -231,7 +246,7 @@ int main() {
 	if (GLFWErrorCode == GLFW_FALSE) {
 		throw std::runtime_error("GLFW did not initialize correctly.");
 	}
-	
+
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
@@ -243,22 +258,26 @@ int main() {
 
 	/// Instance selection -> A way to describe your application and any extentions you need
 	VkInstance VkInstance;
-	int ErrorCode = CreateVulkanInstance(&VkInstance,window);
+	int ErrorCode = CreateVulkanInstance(&VkInstance, window);
 	if (ErrorCode != 0) {
 		throw std::runtime_error("Instance did not create correctly.");
 	}
 
-	//VkSurfaceKHR surface;
-	
+	// Create Surface
+	VkSurfaceKHR VkSurface;
+	if (glfwCreateWindowSurface(VkInstance, window, nullptr, &VkSurface) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to create window surface!");
+	}
+
 	/// Physical device selection -> GPU selection
-	VkPhysicalDevice VkPhyDevice = PickPhysicalDevice(VkInstance);
+	VkPhysicalDevice VkPhyDevice = PickPhysicalDevice(VkInstance, VkSurface);
 
 	// Logical device selection -> Specify which features and queue families
-	VkDevice VkLogicDevice = CreateLogicalDevice(VkInstance, VkPhyDevice);
+	VkDevice VkLogicDevice = CreateLogicalDevice(VkInstance, VkPhyDevice, VkSurface);
 	
 	// Get graphics queue reference.
 	VkQueue graphicsQueue;
-	QueueFamilyIndices indices = findQueueFamilies(VkPhyDevice);
+	QueueFamilyIndices indices = findQueueFamilies(VkPhyDevice, VkSurface);
 	vkGetDeviceQueue(VkLogicDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
 
 	// Main Application Loop
@@ -269,7 +288,9 @@ int main() {
 
 	// Clean up
 	vkDestroyDevice(VkLogicDevice, nullptr);
-	vkDestroyInstance(VkInstance, nullptr); // Cleanup instance LAST
+	vkDestroySurfaceKHR(VkInstance, VkSurface, nullptr);
+	vkDestroyInstance(VkInstance, nullptr); // Cleanup instance LAST in Vulkan Cleanup
+
 	glfwDestroyWindow(window);
 	glfwTerminate();
 
