@@ -23,6 +23,10 @@ const std::vector<const char*> ValidationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
+const std::vector<const char*> deviceExtensions = {
+	VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
 // Used to check Physical Devices (GPUS) for specific traits
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
@@ -109,6 +113,24 @@ QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surfa
 	return indices;
 }
 
+bool checkDeviceExtentionSupport(VkPhysicalDevice device) {
+
+	// Get devices list of supported extentions
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+	for (const VkExtensionProperties& extension : availableExtensions) {
+		requiredExtensions.erase(extension.extensionName);
+	}
+
+	return requiredExtensions.empty();
+}
+
 bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
 	// Get device information
@@ -119,7 +141,9 @@ bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
 	QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
-	return indices.isComplete();
+	bool extensionsSupported = checkDeviceExtentionSupport(device);
+
+	return indices.isComplete() && extensionsSupported;
 }
 
 VkPhysicalDevice PickPhysicalDevice(VkInstance Instance, VkSurfaceKHR surface) {
@@ -279,6 +303,10 @@ int main() {
 
 	/// Physical device selection -> GPU selection
 	VkPhysicalDevice VkPhyDevice = PickPhysicalDevice(VkInstance, VkSurface);
+
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(VkPhyDevice, &deviceProperties);
+	std::cout << "GPU chosen: " << deviceProperties.deviceName << "." << std::endl;
 
 	// Logical device selection -> Specify which features and queue families
 	VkDevice VkLogicDevice = CreateLogicalDevice(VkInstance, VkPhyDevice, VkSurface);
