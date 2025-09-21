@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 #include <string.h>
+#include <set>
 #include <optional>
 #include <iostream>
 
@@ -156,14 +157,21 @@ VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice, Vk
 
 	QueueFamilyIndices indices = findQueueFamilies(PhyDevice, surface);
 
-	float queuePriority = 1.0f;
+	// Prep for queue creation 
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
-	// Initalize the graphics family with 1 queue
-	VkDeviceQueueCreateInfo queueCreateInfo{};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-	queueCreateInfo.queueCount = 1;
-	queueCreateInfo.pQueuePriorities = &queuePriority;
+	// Initalize each queue
+	float queuePriority = 1.0f;
+	for (uint32_t queueFamily : uniqueQueueFamilies) {
+		VkDeviceQueueCreateInfo queueCreateInfo{};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
 
 	// List of all features we want to use
 	VkPhysicalDeviceFeatures deviceFeatures{};
@@ -171,8 +179,8 @@ VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice, Vk
 	// Create Logical Device
 	VkDeviceCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pQueueCreateInfos = &queueCreateInfo;
-	createInfo.queueCreateInfoCount = 1;
+	createInfo.pQueueCreateInfos = queueCreateInfos.data();
+	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pEnabledFeatures = &deviceFeatures;
 	createInfo.enabledExtensionCount = 0;
 
@@ -275,10 +283,14 @@ int main() {
 	// Logical device selection -> Specify which features and queue families
 	VkDevice VkLogicDevice = CreateLogicalDevice(VkInstance, VkPhyDevice, VkSurface);
 	
-	// Get graphics queue reference.
-	VkQueue graphicsQueue;
+	// Get queue references
 	QueueFamilyIndices indices = findQueueFamilies(VkPhyDevice, VkSurface);
+
+	VkQueue graphicsQueue;
 	vkGetDeviceQueue(VkLogicDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);
+
+	VkQueue presentQueue;
+	vkGetDeviceQueue(VkLogicDevice, indices.presentFamily.value(), 0, &presentQueue);
 
 	// Main Application Loop
 	while (!glfwWindowShouldClose(window)) {
