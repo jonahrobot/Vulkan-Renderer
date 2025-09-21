@@ -37,6 +37,13 @@ struct QueueFamilyIndices {
 	}
 };
 
+// Used to check GPU SwapChain support hits our target traits
+struct SwapChainSupportDetails {
+	VkSurfaceCapabilitiesKHR capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR> presentModes;
+};
+
 #ifdef NDEBUG
 	const bool enableValidationLayers = false;
 #else
@@ -70,6 +77,32 @@ bool CheckValidationLayerSupport() {
 	}
 
 	return true;
+}
+
+SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
+	SwapChainSupportDetails details;
+
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+	// Get supported image formats and color spaces
+	uint32_t formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+
+	if (formatCount != 0) {
+		details.formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+	}
+
+	// Get presentation formats (FIFO, MAILBOX, IMMEDIATE)
+	uint32_t presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+
+	if (presentModeCount != 0) {
+		details.presentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+	}
+
+	return details;
 }
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
@@ -143,7 +176,14 @@ bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
 	bool extensionsSupported = checkDeviceExtentionSupport(device);
 
-	return indices.isComplete() && extensionsSupported;
+	// Ensure we have a format and presentMode available.
+	bool swapChainAdequate = false;
+	if (extensionsSupported) {
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
+		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+	}
+
+	return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
 VkPhysicalDevice PickPhysicalDevice(VkInstance Instance, VkSurfaceKHR surface) {
@@ -206,7 +246,8 @@ VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice, Vk
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pEnabledFeatures = &deviceFeatures;
-	createInfo.enabledExtensionCount = 0;
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());;
+	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 	// Support device specific validation layers
 	// New versions of vulkan instance validation layers also handle device validations
