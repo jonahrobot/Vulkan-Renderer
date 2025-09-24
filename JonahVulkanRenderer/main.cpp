@@ -50,35 +50,6 @@ struct SwapChainSupportDetails {
 	const bool enableValidationLayers = true;
 #endif
 
-// Check if all layers in ValidationLayers are avaliable on our PC
-bool CheckValidationLayerSupport() {
-
-	// Get all Supported Layers
-	uint32_t layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> supportedLayers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, supportedLayers.data());
-
-	// Check if each layer in ValidationLayers is in our supported list!
-	for (const char* currentLayerName : ValidationLayers) {
-		bool layerFound = false;
-		
-		for (const VkLayerProperties& layerProperty : supportedLayers) {
-			if (strcmp(currentLayerName, layerProperty.layerName) == 0) {
-				layerFound = true;
-				break;
-			}
-		}
-
-		if (!layerFound) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
 SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	SwapChainSupportDetails details;
 
@@ -266,54 +237,8 @@ VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice, Vk
 	return device;
 }
 
-int CreateVulkanInstance(VkInstance* VulkanInstance, GLFWwindow* window){
-	std::cout << "start instance " << std::endl;
-	
-	/// Instance selection -> A way to describe your application and any extentions you need
-
-	VkApplicationInfo AppInfo = {};
-	AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	AppInfo.pApplicationName = "Vulkan Render Test";
-	AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-	AppInfo.apiVersion = VK_API_VERSION_1_0; 
-
-	#pragma region GLFW EXTENTIONS
-	uint32_t GLFWNumberOfExtentions = 0;
-	const char** glfwExtensions;
-
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&GLFWNumberOfExtentions);
-	#pragma endregion
-
-	if (enableValidationLayers && !CheckValidationLayerSupport()) {
-		throw std::runtime_error("Current device does not support all Validation Layers.");
-	}
-
-	VkInstanceCreateInfo InstanceCreateInfo = {};
-	InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	InstanceCreateInfo.pApplicationInfo = &AppInfo;
-	InstanceCreateInfo.enabledExtensionCount = GLFWNumberOfExtentions;
-	InstanceCreateInfo.ppEnabledExtensionNames = glfwExtensions;
-
-	// Add all ValidationLayers if enabled
-	if (enableValidationLayers) {
-		InstanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-		InstanceCreateInfo.ppEnabledLayerNames = ValidationLayers.data();
-	}
-	else {
-		InstanceCreateInfo.enabledLayerCount = 0;
-	}
-
-	// Create our instance!
-	VkResult out = vkCreateInstance(&InstanceCreateInfo, nullptr, VulkanInstance);
-	if (out != VK_SUCCESS) {
-		throw std::runtime_error("Vulkan failed to create instance.");
-	}
-
-	return 0;
-}
-
 // Preferred: SRGB 8 bit
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats){
 	
 	for (const auto& availableFormat : availableFormats) {
 		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR){
