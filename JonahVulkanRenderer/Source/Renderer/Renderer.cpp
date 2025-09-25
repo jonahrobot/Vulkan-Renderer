@@ -1,6 +1,11 @@
 #include "Renderer.h"
 #include "Instance.h"
 
+
+namespace renderer::detail {
+	VkInstance CreateInstance(const GLFWwindow* window, const std::vector<const char*>& ValidationLayers);
+};
+
 namespace renderer {
 
 	// Unnamed namespace to show functions below are pure Utility with no internal state. 
@@ -35,7 +40,7 @@ namespace renderer {
 	Renderer::Renderer() {
 
 		window = CreateGLFWWindow();
-		vulkan_instance = Instance::CreateInstance(window, ValidationLayers);
+		vulkan_instance = renderer::detail::CreateInstance(window, ValidationLayers);
 
 	}
 

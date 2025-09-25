@@ -1,9 +1,53 @@
-#include "Instance.h"
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
+#include <vector>
 #include <iostream>
 
-namespace renderer {
+#ifdef NDEBUG
+const bool enableValidationLayers = false;
+#else
+const bool enableValidationLayers = true;
+#endif
 
-VkInstance Instance::CreateInstance(const GLFWwindow* window, const std::vector<const char*>& ValidationLayers){
+namespace { 
+
+bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayers) {
+
+	// Get all Supported Layers
+	uint32_t layerCount;
+	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+	std::vector<VkLayerProperties> supportedLayers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, supportedLayers.data());
+
+	// Check if each layer in ValidationLayers is in our supported list!
+	for (const char* currentLayerName : ValidationLayers) {
+		bool layerFound = false;
+
+		for (const VkLayerProperties& layerProperty : supportedLayers) {
+			if (strcmp(currentLayerName, layerProperty.layerName) == 0) {
+				layerFound = true;
+				break;
+			}
+		}
+
+		if (!layerFound) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+}
+
+namespace renderer::detail {
+
+VkInstance CreateInstance(const GLFWwindow* window, const std::vector<const char*>& ValidationLayers) {
 
 	VkApplicationInfo AppInfo = {};
 	AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -45,32 +89,4 @@ VkInstance Instance::CreateInstance(const GLFWwindow* window, const std::vector<
 	return outInstance;
 }
 
-bool Instance::CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayers) {
-
-	// Get all Supported Layers
-	uint32_t layerCount;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> supportedLayers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, supportedLayers.data());
-
-	// Check if each layer in ValidationLayers is in our supported list!
-	for (const char* currentLayerName : ValidationLayers) {
-		bool layerFound = false;
-
-		for (const VkLayerProperties& layerProperty : supportedLayers) {
-			if (strcmp(currentLayerName, layerProperty.layerName) == 0) {
-				layerFound = true;
-				break;
-			}
-		}
-
-		if (!layerFound) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-} // namespace renderer
+} // namespace renderer::detail
