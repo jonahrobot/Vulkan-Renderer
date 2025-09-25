@@ -7,29 +7,21 @@
 #include <vector>
 #include <iostream>
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
 namespace { 
 
-bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayers) {
+bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayersToSupport) {
 
-	// Get all Supported Layers
 	uint32_t layerCount;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
 	std::vector<VkLayerProperties> supportedLayers(layerCount);
 	vkEnumerateInstanceLayerProperties(&layerCount, supportedLayers.data());
 
-	// Check if each layer in ValidationLayers is in our supported list!
-	for (const char* currentLayerName : ValidationLayers) {
+	for (const auto& ValidationLayerName : ValidationLayersToSupport) {
 		bool layerFound = false;
 
-		for (const VkLayerProperties& layerProperty : supportedLayers) {
-			if (strcmp(currentLayerName, layerProperty.layerName) == 0) {
+		for (const auto& layerProperty : supportedLayers) {
+			if (strcmp(ValidationLayerName, layerProperty.layerName) == 0) {
 				layerFound = true;
 				break;
 			}
@@ -47,7 +39,14 @@ bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayer
 
 namespace renderer::detail {
 
-VkInstance CreateInstance(const GLFWwindow* window, const std::vector<const char*>& ValidationLayers) {
+VkInstance CreateVulkanInstance(bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport) {
+
+	if (UseValidationLayers && CheckValidationLayerSupport(ValidationLayersToSupport) == false) {
+		throw std::runtime_error("Current device does not support all Validation Layers.");	
+	}
+
+	uint32_t GLFWNumberOfExtentions = 0;
+	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&GLFWNumberOfExtentions);
 
 	VkApplicationInfo AppInfo = {};
 	AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -55,38 +54,27 @@ VkInstance CreateInstance(const GLFWwindow* window, const std::vector<const char
 	AppInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	AppInfo.apiVersion = VK_API_VERSION_1_0;
 
-	uint32_t GLFWNumberOfExtentions = 0;
-	const char** glfwExtensions;
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&GLFWNumberOfExtentions);
+	VkInstanceCreateInfo CreateInfo = {};
+	CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	CreateInfo.pApplicationInfo = &AppInfo;
+	CreateInfo.enabledExtensionCount = GLFWNumberOfExtentions;
+	CreateInfo.ppEnabledExtensionNames = glfwExtensions;
 
-	VkInstanceCreateInfo InstanceCreateInfo = {};
-	InstanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	InstanceCreateInfo.pApplicationInfo = &AppInfo;
-	InstanceCreateInfo.enabledExtensionCount = GLFWNumberOfExtentions;
-	InstanceCreateInfo.ppEnabledExtensionNames = glfwExtensions;
-
-	// Add all ValidationLayers if enabled
-	if (enableValidationLayers) {
-
-		if (CheckValidationLayerSupport(ValidationLayers) == false) {
-			throw std::runtime_error("Current device does not support all Validation Layers.");
-		}
-
-		InstanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
-		InstanceCreateInfo.ppEnabledLayerNames = ValidationLayers.data();
+	if (UseValidationLayers) {
+		CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayersToSupport.size());
+		CreateInfo.ppEnabledLayerNames = ValidationLayersToSupport.data();
 	}
 	else {
-		InstanceCreateInfo.enabledLayerCount = 0;
+		CreateInfo.enabledLayerCount = 0;
 	}
 
-	// Create our instance!
-	VkInstance outInstance;
-	VkResult out = vkCreateInstance(&InstanceCreateInfo, nullptr, &outInstance);
-	if (out != VK_SUCCESS) {
+	VkInstance VulkanInstance;
+
+	if (vkCreateInstance(&CreateInfo, nullptr, &VulkanInstance) != VK_SUCCESS) {
 		throw std::runtime_error("Vulkan failed to create instance.");
 	}
 
-	return outInstance;
+	return VulkanInstance;
 }
 
 } // namespace renderer::detail

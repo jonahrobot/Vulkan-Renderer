@@ -3,7 +3,7 @@
 
 
 namespace renderer::detail {
-	VkInstance CreateInstance(const GLFWwindow* window, const std::vector<const char*>& ValidationLayers);
+	VkInstance CreateVulkanInstance(bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport);
 };
 
 namespace renderer {
@@ -40,7 +40,7 @@ namespace renderer {
 	Renderer::Renderer() {
 
 		window = CreateGLFWWindow();
-		vulkan_instance = renderer::detail::CreateInstance(window, ValidationLayers);
+		vulkan_instance = renderer::detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
 
 	}
 

@@ -10,6 +10,12 @@
 #include <vector>
 #include <iostream>
 
+#ifdef NDEBUG
+const bool UseValidationLayers = false;
+#else
+const bool UseValidationLayers = true;
+#endif
+
 namespace renderer {
 
 #define WIDTH 500
@@ -25,7 +31,7 @@ public:
 
 private:
 
-	const std::vector<const char*> ValidationLayers = {
+	const std::vector<const char*> ValidationLayersToSupport = {
 		"VK_LAYER_KHRONOS_validation"
 	};
 
