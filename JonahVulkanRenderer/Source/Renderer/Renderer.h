@@ -36,6 +36,7 @@ private:
 	};
 
 	VkInstance vulkan_instance;
+	VkSurfaceKHR vulkan_surface;
 	VkSwapchainKHR swap_chain;
 	VkPhysicalDevice physical_device;
 	VkDevice logical_device;

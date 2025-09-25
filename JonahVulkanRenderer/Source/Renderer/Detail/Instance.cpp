@@ -7,6 +7,7 @@
 #include <vector>
 #include <iostream>
 
+// Unnamed namespace to show functions below are pure Utility with no internal state. 
 namespace { 
 
 bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayersToSupport) {
