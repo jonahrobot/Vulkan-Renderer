@@ -372,6 +372,10 @@ int main() {
 		throw std::runtime_error("Failed to create window surface!");
 	}
 
+
+	/// --- ABOVE HAS BEEN MOVED, BELOW HAS NOT ---
+
+
 	/// Physical device selection -> GPU selection
 	VkPhysicalDevice VkPhyDevice = PickPhysicalDevice(VkInstance, VkSurface);
 

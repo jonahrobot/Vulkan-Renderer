@@ -1,13 +1,7 @@
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-
-#include <vector>
 #include <iostream>
+#include "RendererDetail.h"
 
-// Unnamed namespace to show functions below are pure Utility with no internal state. 
+// Unnamed namespace to show functions below are pure Utility strictly for this .cpp file.
 namespace { 
 
 bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayersToSupport) {
@@ -38,6 +32,7 @@ bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayer
 
 }
 
+// Implements all Vulkan Instance creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
 VkInstance CreateVulkanInstance(bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport) {

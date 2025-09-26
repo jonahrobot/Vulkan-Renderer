@@ -1,35 +1,5 @@
 #include "Renderer.h"
-#include "Instance.h"
-
-namespace renderer::detail {
-
-	// Detail namespace seperates implementation logic of utility functions into their own classes.
-	// Renderer::detail naming convention tells us these are specific implementations for our renderer class.
-
-	VkInstance CreateVulkanInstance(bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport);
-
-	struct SwapChainContext{
-		VkSurfaceKHR vulkan_surface;
-		VkPhysicalDevice physical_device;
-		VkDevice logical_device;
-		GLFWwindow* window;
-	};
-	VkSwapchainKHR CreateSwapChain(SwapChainContext context);
-
-	struct PhysicalDeviceContext{
-		VkInstance vulkan_instance;
-		VkSurfaceKHR vulkan_surface;
-	};
-	VkPhysicalDevice PickPhysicalDevice(PhysicalDeviceContext context);
-
-	struct LogicalDeviceContext {
-		VkInstance vulkan_instance;
-		VkSurfaceKHR vulkan_surface;
-		VkPhysicalDevice physical_device;
-	};
-	VkDevice CreateLogicalDevice(LogicalDeviceContext context);
-
-};
+#include "Detail/RendererDetail.h"
 
 namespace renderer {
 
