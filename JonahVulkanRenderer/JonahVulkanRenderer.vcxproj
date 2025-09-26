@@ -166,11 +166,15 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Source\Game\Application.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\SwapChain.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Application.h" />
+    <ClInclude Include="Source\Renderer\Detail\RendererDetail.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

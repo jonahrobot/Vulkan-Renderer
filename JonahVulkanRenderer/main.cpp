@@ -50,147 +50,11 @@ struct SwapChainSupportDetails {
 	const bool enableValidationLayers = true;
 #endif
 
-SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
-	SwapChainSupportDetails details;
-
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-	// Get supported image formats and color spaces
-	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-
-	if (formatCount != 0) {
-		details.formats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-	}
-
-	// Get presentation formats (FIFO, MAILBOX, IMMEDIATE)
-	uint32_t presentModeCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
-
-	if (presentModeCount != 0) {
-		details.presentModes.resize(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
-	}
-
-	return details;
-}
-
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
-	QueueFamilyIndices indices;
-
-	// Find how many queues we have in our GPU
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-	// Fetch list of all Queue Families. (What type of queues and how many there are)
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-	// Look for a queue family that supports graphics and presentation --
-
-	int i = 0; // Uses seperate tracker to prevent std::optional from being set.
-	for (const VkQueueFamilyProperties& queueFamily : queueFamilies) {
-		
-		// Check for graphics
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			indices.graphicsFamily = i;
-		}
-
-		// Check for present
-		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-
-		if (presentSupport) {
-			indices.presentFamily = i;
-		}
-
-		// Check for all found
-		if (indices.isComplete()) {
-			break;
-		}
-	}
-
-	i++;
-
-	// Found all requirements.
-	return indices;
-}
-
-bool checkDeviceExtentionSupport(VkPhysicalDevice device) {
-
-	// Get devices list of supported extentions
-	uint32_t extensionCount;
-	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-
-	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-	for (const VkExtensionProperties& extension : availableExtensions) {
-		requiredExtensions.erase(extension.extensionName);
-	}
-
-	return requiredExtensions.empty();
-}
-
-bool isDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
-
-	// Get device information
-	//VkPhysicalDeviceProperties deviceProperties;
-	//VkPhysicalDeviceFeatures deviceFeatures;
-	//vkGetPhysicalDeviceProperties(device, &deviceProperties);
-	//vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-	QueueFamilyIndices indices = findQueueFamilies(device, surface);
-
-	bool extensionsSupported = checkDeviceExtentionSupport(device);
-
-	// Ensure we have a format and presentMode available.
-	bool swapChainAdequate = false;
-	if (extensionsSupported) {
-		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
-		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-	}
-
-	return indices.isComplete() && extensionsSupported && swapChainAdequate;
-}
-
-VkPhysicalDevice PickPhysicalDevice(VkInstance Instance, VkSurfaceKHR surface) {
-
-	VkPhysicalDevice VkDevice = VK_NULL_HANDLE;
-
-	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(Instance, &deviceCount, nullptr);
-
-	if (deviceCount == 0) {
-		throw std::runtime_error("Failed to find GPUs with Vulkan support!");
-	}
-
-	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(Instance, &deviceCount, devices.data());
-
-	// Check for best device
-	for (const VkPhysicalDevice& device : devices) {
-		if (isDeviceSuitable(device, surface)) {
-			VkDevice = device;
-			break;
-		}
-	}
-
-	if(VkDevice == VK_NULL_HANDLE){
-		throw std::runtime_error("Failed to find a suitable GPU.");
-	}
-
-	return VkDevice;
-}
-
 VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice, VkSurfaceKHR surface) {
 
 	VkDevice device;
 
-	QueueFamilyIndices indices = findQueueFamilies(PhyDevice, surface);
+	QueueFamilyIndices indices = FindSupportedQueues(PhyDevice, surface);
 
 	// Prep for queue creation 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -288,7 +152,7 @@ VkExtent2D extent;
 
 VkSwapchainKHR createSwapChain(VkPhysicalDevice device, VkSurfaceKHR surface, GLFWwindow* window, VkDevice logicDevice) {
 
-	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, surface);
+	SwapChainSupportDetails swapChainSupport = GetSwapChainDetails(device, surface);
 
 	surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -311,7 +175,7 @@ VkSwapchainKHR createSwapChain(VkPhysicalDevice device, VkSurfaceKHR surface, GL
 	createInfo.imageArrayLayers = 1; // Always 1 unless stereoscopic 3D.
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = findQueueFamilies(device, surface);
+	QueueFamilyIndices indices = FindSupportedQueues(device, surface);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 	if (indices.graphicsFamily != indices.presentFamily) {
@@ -376,9 +240,7 @@ int main() {
 	VkPhysicalDevice VkPhyDevice = PickPhysicalDevice(VkInstance, VkSurface);
 
 
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(VkPhyDevice, &deviceProperties);
-	std::cout << "GPU chosen: " << deviceProperties.deviceName << "." << std::endl;
+
 
 
 	// Logical device selection -> Specify which features and queue families
@@ -397,7 +259,7 @@ int main() {
 	vkGetSwapchainImagesKHR(VkLogicDevice, VkSwapChain, &imageCount, swapChainImages.data());
 
 	// Get queue references
-	QueueFamilyIndices indices = findQueueFamilies(VkPhyDevice, VkSurface);
+	QueueFamilyIndices indices = FindSupportedQueues(VkPhyDevice, VkSurface);
 
 	VkQueue graphicsQueue;
 	vkGetDeviceQueue(VkLogicDevice, indices.graphicsFamily.value(), 0, &graphicsQueue);

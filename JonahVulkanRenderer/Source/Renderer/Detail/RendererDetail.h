@@ -18,7 +18,7 @@ namespace renderer::detail {
 		VkInstance vulkan_instance;
 		VkSurfaceKHR vulkan_surface;
 	};
-	VkPhysicalDevice PickPhysicalDevice(PhysicalDeviceContext context);
+	VkPhysicalDevice PickPhysicalDevice(const PhysicalDeviceContext& context, const std::vector<const char*>& DeviceExtensionToSupport);
 
 	// Implemented in "LogicalDevice.cpp"
 	struct LogicalDeviceContext {
@@ -26,7 +26,7 @@ namespace renderer::detail {
 		VkSurfaceKHR vulkan_surface;
 		VkPhysicalDevice physical_device;
 	};
-	VkDevice CreateLogicalDevice(LogicalDeviceContext context);
+	VkDevice CreateLogicalDevice(const LogicalDeviceContext& context);
 
 	// Implemented in "SwapChain.cpp"
 	struct SwapChainContext {
@@ -35,5 +35,5 @@ namespace renderer::detail {
 		VkDevice logical_device;
 		GLFWwindow* window;
 	};
-	VkSwapchainKHR CreateSwapChain(SwapChainContext context);
+	VkSwapchainKHR CreateSwapChain(const SwapChainContext& context);
 };
