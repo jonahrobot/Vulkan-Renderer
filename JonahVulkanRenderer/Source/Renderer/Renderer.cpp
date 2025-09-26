@@ -35,9 +35,26 @@ namespace renderer {
 	Renderer::Renderer() {
 
 		window = CreateGLFWWindow();
-		vulkan_instance = renderer::detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
+		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
 		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
+		
+		detail::PhysicalDeviceContext context_physical = {};
+		context_physical.vulkan_instance = vulkan_instance;
+		context_physical.vulkan_surface = vulkan_surface;
+		physical_device = detail::PickPhysicalDevice(context_physical);
 
+		detail::LogicalDeviceContext context_logical = {};
+		context_logical.vulkan_instance = vulkan_instance;
+		context_logical.vulkan_surface = vulkan_surface;
+		context_logical.physical_device = physical_device;
+		logical_device = detail::CreateLogicalDevice(context_logical);
+
+		detail::SwapChainContext context_swapchain = {};
+		context_swapchain.physical_device = physical_device;
+		context_swapchain.vulkan_surface = vulkan_surface;
+		context_swapchain.logical_device = logical_device;
+		context_swapchain.window = window;
+		swap_chain = detail::CreateSwapChain(context_swapchain);
 	}
 
 	Renderer::~Renderer() {

@@ -372,22 +372,22 @@ int main() {
 		throw std::runtime_error("Failed to create window surface!");
 	}
 
-
-	/// --- ABOVE HAS BEEN MOVED, BELOW HAS NOT ---
-
-
 	/// Physical device selection -> GPU selection
 	VkPhysicalDevice VkPhyDevice = PickPhysicalDevice(VkInstance, VkSurface);
+
 
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(VkPhyDevice, &deviceProperties);
 	std::cout << "GPU chosen: " << deviceProperties.deviceName << "." << std::endl;
+
 
 	// Logical device selection -> Specify which features and queue families
 	VkDevice VkLogicDevice = CreateLogicalDevice(VkInstance, VkPhyDevice, VkSurface);
 	
 	// Create SwapChain
 	VkSwapchainKHR VkSwapChain = createSwapChain(VkPhyDevice, VkSurface, window, VkLogicDevice);
+
+	/// --- ABOVE HAS BEEN MOVED, BELOW HAS NOT ---
 
 	// Get Images
 	std::vector<VkImage> swapChainImages;
