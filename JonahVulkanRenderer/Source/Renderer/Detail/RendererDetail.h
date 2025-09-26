@@ -4,6 +4,7 @@
 
 #include <vector>
 
+// Helper functions for renderer.cpp
 namespace renderer::detail {
 
 	// Detail namespace seperates implementation logic of utility functions into their own classes.
