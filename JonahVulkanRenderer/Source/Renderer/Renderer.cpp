@@ -38,18 +38,18 @@ namespace renderer {
 		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
 		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
 		
-		renderer::detail::QueueFamilyIndices out_queues_supported;
+		renderer::detail::OutParams out_params = {};
 
 		detail::PhysicalDeviceContext context_physical = {};
 		context_physical.vulkan_instance = vulkan_instance;
 		context_physical.vulkan_surface = vulkan_surface;
-		physical_device = detail::PickPhysicalDevice(out_queues_supported, context_physical, DeviceExtensionsToSupport);
+		physical_device = detail::PickPhysicalDevice(out_params, context_physical, DeviceExtensionsToSupport);
 
 		detail::LogicalDeviceContext context_logical = {};
 		context_logical.vulkan_instance = vulkan_instance;
 		context_logical.vulkan_surface = vulkan_surface;
 		context_logical.physical_device = physical_device;
-		context_logical.supported_queues = out_queues_supported;
+		context_logical.supported_queues = out_params.out_queues_supported;
 		context_logical.UseValidationLayers = UseValidationLayers;
 		logical_device = detail::CreateLogicalDevice(context_logical, DeviceExtensionsToSupport, ValidationLayersToSupport);
 
@@ -58,6 +58,9 @@ namespace renderer {
 		context_swapchain.vulkan_surface = vulkan_surface;
 		context_swapchain.logical_device = logical_device;
 		context_swapchain.window = window;
+		context_swapchain.supported_queues = out_params.out_queues_supported;
+		context_swapchain.swapchain_support_details = out_params.out_swapchain_support_details;
+
 		swap_chain = detail::CreateSwapChain(context_swapchain);
 	}
 

@@ -32,7 +32,11 @@ namespace renderer::detail {
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
-	VkPhysicalDevice PickPhysicalDevice(QueueFamilyIndices& out_queues, const PhysicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport);
+	struct OutParams {
+		QueueFamilyIndices out_queues_supported;
+		SwapChainSupportDetails out_swapchain_support_details
+	};
+	VkPhysicalDevice PickPhysicalDevice(OutParams& out_params, const PhysicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport);
 
 	// Implemented in "LogicalDevice.cpp"
 	struct LogicalDeviceContext {
@@ -42,7 +46,7 @@ namespace renderer::detail {
 		QueueFamilyIndices supported_queues;
 		bool UseValidationLayers;
 	};
-	VkDevice CreateLogicalDevice(const LogicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport, const std::vector<const char*>& ValidationLayersToSupport);
+	VkDevice CreateLogicalDevice(const LogicalDeviceContext& context, const std::vector<const char*>& DeviceExtensionsToSupport, const std::vector<const char*>& ValidationLayersToSupport);
 
 	// Implemented in "SwapChain.cpp"
 	struct SwapChainContext {
@@ -50,6 +54,8 @@ namespace renderer::detail {
 		VkPhysicalDevice physical_device;
 		VkDevice logical_device;
 		GLFWwindow* window;
+		QueueFamilyIndices supported_queues;
+		SwapChainSupportDetails swapchain_support_details;
 	};
 	VkSwapchainKHR CreateSwapChain(const SwapChainContext& context);
 };
