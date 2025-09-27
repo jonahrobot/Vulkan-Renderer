@@ -5,18 +5,19 @@
 // Implements all Vulkan Logical Device Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkDevice CreateLogicalDevice(const LogicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport, const std::vector<const char*>& ValidationLayersToSupport) {
+	VkDevice CreateLogicalDevice(const LogicalDeviceContext& context, const std::vector<const char*>& DeviceExtensionsToSupport, const std::vector<const char*>& ValidationLayersToSupport) {
 		
 		VkDevice logical_device;
 
-		// We convert supported queues to a set for easier iteration
 		std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
+
+		// We convert supported queues to a set for easier iteration
 		uint32_t graphics_index = context.supported_queues.graphicsFamily.value();
 		uint32_t present_index = context.supported_queues.presentFamily.value();
-		std::set<uint32_t> supported_queues_set = { graphics_index, present_index };
+		std::set<uint32_t> supported_queues = { graphics_index, present_index };
 
 		float queue_priority = 1.0f;
-		for (uint32_t queue : supported_queues_set) {
+		for (uint32_t queue : supported_queues) {
 
 			VkDeviceQueueCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -29,31 +30,30 @@ namespace renderer::detail {
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
 
-		// Create Logical Device
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		createInfo.pQueueCreateInfos = queue_create_infos.data();
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
 		createInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensionsToSupport.size());;
-		createInfo.ppEnabledExtensionNames = deviceExtensionsToSupport.data();
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensionsToSupport.size());;
+		createInfo.ppEnabledExtensionNames = DeviceExtensionsToSupport.data();
 
-		// Support device specific validation layers
-		// New versions of vulkan instance validation layers also handle device validations
+		// New versions of vulkan merge device extension validation with validation layers.
 		if (context.UseValidationLayers) {
 			createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayersToSupport.size());
-			createInfo.ppEnabledLayerNames = ValidationLayers.data();
+			createInfo.ppEnabledLayerNames = ValidationLayersToSupport.data();
 		}
 		else {
 			createInfo.enabledLayerCount = 0;
 		}
 
-		if (vkCreateDevice(context.physical_device, &createInfo, nullptr, &logical_device) != VK_SUCCESS) {
+		VkResult create_device_successful = vkCreateDevice(context.physical_device, &createInfo, nullptr, &logical_device);
+
+		if (create_device_successful != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create logical device!");
 		}
 
 		return logical_device;
 	}
-
 
 } // namespace renderer::detail

@@ -23,7 +23,7 @@ const std::vector<const char*> ValidationLayers = {
 	"VK_LAYER_KHRONOS_validation"
 };
 
-const std::vector<const char*> deviceExtensions = {
+const std::vector<const char*> DeviceExtensionsToSupport = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
@@ -81,8 +81,8 @@ VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice, Vk
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pEnabledFeatures = &deviceFeatures;
-	createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());;
-	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensionsToSupport.size());;
+	createInfo.ppEnabledExtensionNames = DeviceExtensionsToSupport.data();
 
 	// Support device specific validation layers
 	// New versions of vulkan instance validation layers also handle device validations

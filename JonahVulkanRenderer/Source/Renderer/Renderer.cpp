@@ -51,7 +51,7 @@ namespace renderer {
 		context_logical.physical_device = physical_device;
 		context_logical.supported_queues = out_queues_supported;
 		context_logical.UseValidationLayers = UseValidationLayers;
-		logical_device = detail::CreateLogicalDevice(context_logical,DeviceExtensionsToSupport, ValidationLayersToSupport);
+		logical_device = detail::CreateLogicalDevice(context_logical, DeviceExtensionsToSupport, ValidationLayersToSupport);
 
 		detail::SwapChainContext context_swapchain = {};
 		context_swapchain.physical_device = physical_device;
