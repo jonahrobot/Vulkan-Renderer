@@ -38,16 +38,20 @@ namespace renderer {
 		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
 		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
 		
+		renderer::detail::QueueFamilyIndices out_queues_supported;
+
 		detail::PhysicalDeviceContext context_physical = {};
 		context_physical.vulkan_instance = vulkan_instance;
 		context_physical.vulkan_surface = vulkan_surface;
-		physical_device = detail::PickPhysicalDevice(context_physical);
+		physical_device = detail::PickPhysicalDevice(out_queues_supported, context_physical, DeviceExtensionsToSupport);
 
 		detail::LogicalDeviceContext context_logical = {};
 		context_logical.vulkan_instance = vulkan_instance;
 		context_logical.vulkan_surface = vulkan_surface;
 		context_logical.physical_device = physical_device;
-		logical_device = detail::CreateLogicalDevice(context_logical);
+		context_logical.supported_queues = out_queues_supported;
+		context_logical.UseValidationLayers = UseValidationLayers;
+		logical_device = detail::CreateLogicalDevice(context_logical,DeviceExtensionsToSupport, ValidationLayersToSupport);
 
 		detail::SwapChainContext context_swapchain = {};
 		context_swapchain.physical_device = physical_device;

@@ -7,30 +7,11 @@
 // Unnamed namespace to show functions below are pure Utility strictly for this .cpp file.
 namespace {
 
-#pragma region STRUCTS
-
-	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphicsFamily;
-		std::optional<uint32_t> presentFamily;
-
-		bool isComplete() {
-			return graphicsFamily.has_value() && presentFamily.has_value();
-		}
-	};
-
-	struct SwapChainSupportDetails {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	};
-
-#pragma endregion
-
 #pragma region IsDeviceSuitable HELPERS
 
-	QueueFamilyIndices FindSupportedQueues(const VkPhysicalDevice physical_device, const VkSurfaceKHR current_surface) {
+	renderer::detail::QueueFamilyIndices FindSupportedQueues(const VkPhysicalDevice physical_device, const VkSurfaceKHR current_surface) {
 		
-		QueueFamilyIndices queues_found;
+		renderer::detail::QueueFamilyIndices queues_found;
 
 		uint32_t supported_queues_count = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &supported_queues_count, nullptr);
@@ -61,14 +42,14 @@ namespace {
 		return queues_found;
 	}
 	
-	bool CheckDeviceExtensionSupport(const VkPhysicalDevice physical_device, const std::vector<const char*>& DeviceExtensionToSupport) {
+	bool CheckDeviceExtensionSupport(const VkPhysicalDevice physical_device, const std::vector<const char*>& deviceExtensionsToSupport) {
 
 		uint32_t available_extension_count;
 		vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &available_extension_count, nullptr);
 		std::vector<VkExtensionProperties> available_extensions(available_extension_count);
 		vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &available_extension_count, available_extensions.data());
 
-		std::set<std::string> required_extensions(DeviceExtensionToSupport.begin(), DeviceExtensionToSupport.end());
+		std::set<std::string> required_extensions(deviceExtensionsToSupport.begin(), deviceExtensionsToSupport.end());
 
 		for (const VkExtensionProperties& extension : available_extensions) {
 			required_extensions.erase(extension.extensionName);
@@ -77,9 +58,9 @@ namespace {
 		return required_extensions.empty();
 	}
 
-	SwapChainSupportDetails GetSwapChainDetails(const VkPhysicalDevice physical_device,const VkSurfaceKHR current_surface) {
+	renderer::detail::SwapChainSupportDetails GetSwapChainDetails(const VkPhysicalDevice physical_device,const VkSurfaceKHR current_surface) {
 		
-		SwapChainSupportDetails details;
+		renderer::detail::SwapChainSupportDetails details;
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, current_surface, &details.capabilities);
 
@@ -102,17 +83,17 @@ namespace {
 
 #pragma endregion
 
-	bool IsDeviceSuitable(const VkPhysicalDevice physical_device,const VkSurfaceKHR current_surface, const std::vector<const char*>& DeviceExtensionToSupport) {
+	bool IsDeviceSuitable(const VkPhysicalDevice physical_device,const VkSurfaceKHR current_surface, const std::vector<const char*>& deviceExtensionsToSupport) {
 
-		QueueFamilyIndices queues_found = FindSupportedQueues(physical_device, current_surface);
+		renderer::detail::QueueFamilyIndices queues_found = FindSupportedQueues(physical_device, current_surface);
 
-		bool all_extensions_supported = CheckDeviceExtensionSupport(physical_device, DeviceExtensionToSupport);
+		bool all_extensions_supported = CheckDeviceExtensionSupport(physical_device, deviceExtensionsToSupport);
 
 		bool swap_chain_capable = false;
 
 		// Only check swapchain capabilities if GPU supports swapchains.
 		if (all_extensions_supported) { 
-			SwapChainSupportDetails swap_chain_details = GetSwapChainDetails(physical_device, current_surface);
+			renderer::detail::SwapChainSupportDetails swap_chain_details = GetSwapChainDetails(physical_device, current_surface);
 			swap_chain_capable = !swap_chain_details.formats.empty() && !swap_chain_details.presentModes.empty();
 		}
 
@@ -125,7 +106,7 @@ namespace {
 // Implements all Vulkan Physical Device Picking functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkPhysicalDevice PickPhysicalDevice(const PhysicalDeviceContext& context, const std::vector<const char*>& DeviceExtensionToSupport) {
+	VkPhysicalDevice PickPhysicalDevice(QueueFamilyIndices& out_queues, const PhysicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport) {
 
 		VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 
@@ -138,7 +119,7 @@ namespace renderer::detail {
 		vkEnumeratePhysicalDevices(context.vulkan_instance, &device_count, devices.data());
 
 		for (const VkPhysicalDevice& device : devices) {
-			if (IsDeviceSuitable(device, context.vulkan_surface, DeviceExtensionToSupport)) {
+			if (IsDeviceSuitable(device, context.vulkan_surface, deviceExtensionsToSupport)) {
 				physical_device = device;
 				break;
 			}
@@ -147,6 +128,8 @@ namespace renderer::detail {
 		if (physical_device == VK_NULL_HANDLE) {
 			throw std::runtime_error("Failed to find a suitable GPU.");
 		}
+
+		out_queues = FindSupportedQueues(physical_device, context.vulkan_surface);
 
 		return physical_device;
 	}

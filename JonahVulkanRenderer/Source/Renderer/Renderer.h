@@ -34,7 +34,7 @@ private:
 		"VK_LAYER_KHRONOS_validation"
 	};
 
-	const std::vector<const char*> deviceExtensions = {
+	const std::vector<const char*> DeviceExtensionsToSupport = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
 
