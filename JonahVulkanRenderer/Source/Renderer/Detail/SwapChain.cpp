@@ -6,7 +6,7 @@
 namespace {
 
 	// Preferred: SRGB 8 bit
-	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	VkSurfaceFormatKHR SelectSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
 
 		for (const auto& availableFormat : availableFormats) {
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -18,7 +18,7 @@ namespace {
 	}
 
 	// Preferred: Mailbox present mode
-	VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+	VkPresentModeKHR SelectPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
 		for (const auto& availablePresentMode : availablePresentModes) {
 			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 				return availablePresentMode;
@@ -29,7 +29,7 @@ namespace {
 	}
 
 	// Sets swapchain size to window size
-	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
+	VkExtent2D SelectExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			// Usual case: Swapchain size == window resolution
 			return capabilities.currentExtent;
@@ -57,55 +57,57 @@ namespace renderer::detail {
 
 	VkSwapchainKHR CreateSwapChain(const SwapChainContext& context) {
 
-		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(context.swapchain_support_details.formats);
-		VkPresentModeKHR presentMode = chooseSwapPresentMode(context.swapchain_support_details.presentModes);
-		VkExtent2D extent = chooseSwapExtent(context.swapchain_support_details.capabilities, context.window);
-		uint32_t imageCount = context.swapchain_support_details.capabilities.minImageCount + 1;
+		const SwapChainSupportDetails* creation_options = &context.swapchain_support_details;
 
-		// maxImageCount of 0 means no max image count.
-		if (context.swapchain_support_details.capabilities.maxImageCount > 0 && imageCount > context.swapchain_support_details.capabilities.maxImageCount) {
-			imageCount = context.swapchain_support_details.capabilities.maxImageCount;
+		uint32_t image_count = creation_options->capabilities.minImageCount + 1;
+		bool max_images = creation_options->capabilities.maxImageCount;
+		bool has_max_image_count = max_images > 0;
+		bool over_max_images = has_max_image_count && image_count > max_images;
+
+		if (over_max_images) {
+			image_count = max_images;
 		}
 
-		// Define Swap Chain Creation Struct
-		VkSwapchainCreateInfoKHR createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = context.vulkan_surface;
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = surfaceFormat.format;
-		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = extent;
-		createInfo.imageArrayLayers = 1; // Always 1 unless stereoscopic 3D.
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		VkSurfaceFormatKHR surface_format = SelectSurfaceFormat(creation_options->formats);
+		VkPresentModeKHR present_mode = SelectPresentMode(creation_options->presentModes);
+		VkExtent2D extent = SelectExtent(creation_options->capabilities, context.window);
 
-		uint32_t queueFamilyIndices[] = { context.supported_queues.graphicsFamily.value(), context.supported_queues.presentFamily.value() };
+		VkSwapchainCreateInfoKHR create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		create_info.surface = context.vulkan_surface;
+		create_info.minImageCount = image_count;
+		create_info.imageFormat = surface_format.format;
+		create_info.imageColorSpace = surface_format.colorSpace;
+		create_info.imageExtent = extent;
+		create_info.imageArrayLayers = 1; // Always 1 unless stereoscopic 3D.
+		create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
+		uint32_t queue_family_indices[] = { context.supported_queues.graphicsFamily.value(), context.supported_queues.presentFamily.value() };
+
+		// Must check if graphics and present queues are different.
+		// If they are, we must handle interactions concurrently.
 		if (context.supported_queues.graphicsFamily != context.supported_queues.presentFamily) {
-			// Concurrent handling of queues when graphics and present logic
-			// on different queues.
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+			create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			create_info.queueFamilyIndexCount = 2;
+			create_info.pQueueFamilyIndices = queue_family_indices;
 		}
 		else {
-			// Most common mode, graphic and present on same queue family.
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		}
 
-		// Modify if we want to apply transformations to images on swapchain
-		createInfo.preTransform = context.swapchain_support_details.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentMode;
-		createInfo.clipped = VK_TRUE; // Don't render pixels obsured by another window.
-		createInfo.oldSwapchain = VK_NULL_HANDLE; // Must use when swapchain becomes invalid (window resize)
+		create_info.preTransform = context.swapchain_support_details.capabilities.currentTransform;
+		create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		create_info.presentMode = present_mode;
+		create_info.clipped = VK_TRUE; 
+		create_info.oldSwapchain = VK_NULL_HANDLE;
 
-		VkSwapchainKHR swapChain;
+		VkSwapchainKHR swap_chain;
 
-		if (vkCreateSwapchainKHR(context.logical_device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+		if (vkCreateSwapchainKHR(context.logical_device, &create_info, nullptr, &swap_chain) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create swap chain!");
 		}
 
-		return swapChain;
+		return swap_chain;
 	}
 
 } // namespace renderer::detail
