@@ -60,7 +60,7 @@ namespace renderer::detail {
 		const SwapChainSupportDetails* creation_options = &context.swapchain_support_details;
 
 		uint32_t image_count = creation_options->capabilities.minImageCount + 1;
-		bool max_images = creation_options->capabilities.maxImageCount;
+		uint32_t max_images = creation_options->capabilities.maxImageCount;
 		bool has_max_image_count = max_images > 0;
 		bool over_max_images = has_max_image_count && image_count > max_images;
 
