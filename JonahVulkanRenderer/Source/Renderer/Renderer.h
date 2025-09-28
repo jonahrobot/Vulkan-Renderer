@@ -28,6 +28,8 @@ public:
 
 	void Draw();
 
+	GLFWwindow* Get_Window();
+
 private:
 
 	const std::vector<const char*> ValidationLayersToSupport = {

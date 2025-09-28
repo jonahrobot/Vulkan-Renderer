@@ -94,4 +94,8 @@ namespace renderer {
 
 	}
 
+	GLFWwindow* Renderer::Get_Window() {
+		return window;
+	}
+
 }// namespace renderer
