@@ -102,7 +102,7 @@ VkDevice CreateLogicalDevice(VkInstance Instance, VkPhysicalDevice PhyDevice, Vk
 }
 
 // Preferred: SRGB 8 bit
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats){
+VkSurfaceFormatKHR SelectSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats){
 	
 	for (const auto& availableFormat : availableFormats) {
 		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR){
@@ -114,7 +114,7 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>
 }
 
 // Preferred: Mailbox present mode
-VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+VkPresentModeKHR SelectPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
 	for (const auto& availablePresentMode : availablePresentModes) {
 		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 			return availablePresentMode;
@@ -125,7 +125,7 @@ VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& avai
 }
 
 // Sets swapchain size to window size
-VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
+VkExtent2D SelectExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		// Usual case: Swapchain size == window resolution
 		return capabilities.currentExtent;
@@ -154,9 +154,9 @@ VkSwapchainKHR createSwapChain(VkPhysicalDevice device, VkSurfaceKHR surface, GL
 
 	SwapChainSupportDetails swapChainSupport = GetSwapChainDetails(device, surface);
 
-	surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-	extent = chooseSwapExtent(swapChainSupport.capabilities, window);
+	surfaceFormat = SelectSurfaceFormat(swapChainSupport.formats);
+	VkPresentModeKHR presentMode = SelectPresentMode(swapChainSupport.presentModes);
+	extent = SelectExtent(swapChainSupport.capabilities, window);
 	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 
 	// maxImageCount of 0 means no max image count.
@@ -249,7 +249,6 @@ int main() {
 	// Create SwapChain
 	VkSwapchainKHR VkSwapChain = createSwapChain(VkPhyDevice, VkSurface, window, VkLogicDevice);
 
-	/// --- ABOVE HAS BEEN MOVED, BELOW HAS NOT ---
 
 	// Get Images
 	std::vector<VkImage> swapChainImages;
@@ -257,6 +256,8 @@ int main() {
 	vkGetSwapchainImagesKHR(VkLogicDevice, VkSwapChain, &imageCount, nullptr);
 	swapChainImages.resize(imageCount);
 	vkGetSwapchainImagesKHR(VkLogicDevice, VkSwapChain, &imageCount, swapChainImages.data());
+
+	/// --- ABOVE HAS BEEN MOVED, BELOW HAS NOT ---
 
 	// Get queue references
 	QueueFamilyIndices indices = FindSupportedQueues(VkPhyDevice, VkSurface);

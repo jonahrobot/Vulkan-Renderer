@@ -40,9 +40,12 @@ private:
 
 	VkInstance vulkan_instance;
 	VkSurfaceKHR vulkan_surface;
-	VkSwapchainKHR swap_chain;
+	VkSwapchainKHR swapchain;
 	VkPhysicalDevice physical_device;
 	VkDevice logical_device;
 	GLFWwindow* window;
+	std::vector<VkImage> swapchain_images;
+	VkQueue graphics_queue;
+	VkQueue present_queue;
 };
 } // namespace renderer

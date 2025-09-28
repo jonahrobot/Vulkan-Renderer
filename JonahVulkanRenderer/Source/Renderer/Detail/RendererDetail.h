@@ -34,7 +34,7 @@ namespace renderer::detail {
 	};
 	struct OutParams {
 		QueueFamilyIndices out_queues_supported;
-		SwapChainSupportDetails out_swapchain_support_details
+		SwapChainSupportDetails out_swapchain_support_details;
 	};
 	VkPhysicalDevice PickPhysicalDevice(OutParams& out_params, const PhysicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport);
 

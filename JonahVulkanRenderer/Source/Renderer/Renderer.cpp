@@ -20,7 +20,7 @@ namespace renderer {
 			return glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
 		}
 
-		VkSurfaceKHR CreateVulkanSurface(VkInstance VulkanInstance, GLFWwindow* Window) {
+		VkSurfaceKHR CreateVulkanSurface(const VkInstance VulkanInstance, GLFWwindow* Window) {
 
 			VkSurfaceKHR vulkanSurface;
 
@@ -29,6 +29,14 @@ namespace renderer {
 			}
 
 			return vulkanSurface;
+		}
+
+		void GetSwapchainImages(std::vector<VkImage>& out_Images, const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice) {
+
+			uint32_t image_count = 0;
+			vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, nullptr);
+			out_Images.resize(image_count);
+			vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, out_Images.data());
 		}
 	}
 
@@ -43,6 +51,7 @@ namespace renderer {
 		detail::PhysicalDeviceContext context_physical = {};
 		context_physical.vulkan_instance = vulkan_instance;
 		context_physical.vulkan_surface = vulkan_surface;
+
 		physical_device = detail::PickPhysicalDevice(out_params, context_physical, DeviceExtensionsToSupport);
 
 		detail::LogicalDeviceContext context_logical = {};
@@ -51,6 +60,7 @@ namespace renderer {
 		context_logical.physical_device = physical_device;
 		context_logical.supported_queues = out_params.out_queues_supported;
 		context_logical.UseValidationLayers = UseValidationLayers;
+
 		logical_device = detail::CreateLogicalDevice(context_logical, DeviceExtensionsToSupport, ValidationLayersToSupport);
 
 		detail::SwapChainContext context_swapchain = {};
@@ -61,11 +71,23 @@ namespace renderer {
 		context_swapchain.supported_queues = out_params.out_queues_supported;
 		context_swapchain.swapchain_support_details = out_params.out_swapchain_support_details;
 
-		swap_chain = detail::CreateSwapChain(context_swapchain);
+		swapchain = detail::CreateSwapChain(context_swapchain);
+
+		GetSwapchainImages(swapchain_images, swapchain, logical_device);
+
+		vkGetDeviceQueue(logical_device, out_params.out_queues_supported.graphicsFamily.value(), 0, &graphics_queue);
+		vkGetDeviceQueue(logical_device, out_params.out_queues_supported.presentFamily.value(), 0, &present_queue);
 	}
 
 	Renderer::~Renderer() {
 
+		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
+		vkDestroyDevice(logical_device, nullptr);
+		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
+		vkDestroyInstance(vulkan_instance, nullptr); // Cleanup instance LAST in Vulkan Cleanup
+
+		glfwDestroyWindow(window);
+		glfwTerminate();
 	}
 
 	void Renderer::Draw() {
