@@ -32,11 +32,11 @@ namespace renderer::detail {
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
-	struct OutParams {
+	struct OutParams_PhysicalDevice {
 		QueueFamilyIndices out_queues_supported;
 		SwapChainSupportDetails out_swapchain_support_details;
 	};
-	VkPhysicalDevice PickPhysicalDevice(OutParams& out_params, const PhysicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport);
+	VkPhysicalDevice PickPhysicalDevice(OutParams_PhysicalDevice& out_params, const PhysicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport);
 
 	// Implemented in "LogicalDevice.cpp"
 	struct LogicalDeviceContext {
@@ -49,7 +49,7 @@ namespace renderer::detail {
 	VkDevice CreateLogicalDevice(const LogicalDeviceContext& context, const std::vector<const char*>& DeviceExtensionsToSupport, const std::vector<const char*>& ValidationLayersToSupport);
 
 	// Implemented in "SwapChain.cpp"
-	struct SwapChainContext {
+	struct SwapchainContext {
 		VkSurfaceKHR vulkan_surface;
 		VkPhysicalDevice physical_device;
 		VkDevice logical_device;
@@ -57,5 +57,15 @@ namespace renderer::detail {
 		QueueFamilyIndices supported_queues;
 		SwapChainSupportDetails swapchain_support_details;
 	};
-	VkSwapchainKHR CreateSwapChain(const SwapChainContext& context);
+	struct OutParams_Swapchain {
+		VkFormat swapchain_image_format;
+		VkExtent2D swapchain_extent;
+	};
+	VkSwapchainKHR CreateSwapchain(OutParams_Swapchain& out_params, const SwapchainContext& context);
+
+	// Implemented in "SwapChain.cpp"
+	void GetSwapchainImages(std::vector<VkImage>& out_Images, const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
+
+	// Implemented in "SwapChain.cpp"
+	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkFormat ImageFormat, const VkExtent2D Extent);
 };

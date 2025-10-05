@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
+#include <string>
 
 #ifdef NDEBUG
 const bool UseValidationLayers = false;
@@ -47,6 +48,7 @@ private:
 	VkDevice logical_device;
 	GLFWwindow* window;
 	std::vector<VkImage> swapchain_images;
+	std::vector<VkImageView> swapchain_image_views;
 	VkQueue graphics_queue;
 	VkQueue present_queue;
 };

@@ -30,14 +30,6 @@ namespace renderer {
 
 			return vulkanSurface;
 		}
-
-		void GetSwapchainImages(std::vector<VkImage>& out_Images, const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice) {
-
-			uint32_t image_count = 0;
-			vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, nullptr);
-			out_Images.resize(image_count);
-			vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, out_Images.data());
-		}
 	}
 
 	Renderer::Renderer() {
@@ -46,37 +38,40 @@ namespace renderer {
 		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
 		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
 		
-		renderer::detail::OutParams out_params = {};
+		renderer::detail::OutParams_PhysicalDevice device_support_data = {};
 
 		detail::PhysicalDeviceContext context_physical = {};
 		context_physical.vulkan_instance = vulkan_instance;
 		context_physical.vulkan_surface = vulkan_surface;
 
-		physical_device = detail::PickPhysicalDevice(out_params, context_physical, DeviceExtensionsToSupport);
+		physical_device = detail::PickPhysicalDevice(device_support_data, context_physical, DeviceExtensionsToSupport);
 
 		detail::LogicalDeviceContext context_logical = {};
 		context_logical.vulkan_instance = vulkan_instance;
 		context_logical.vulkan_surface = vulkan_surface;
 		context_logical.physical_device = physical_device;
-		context_logical.supported_queues = out_params.out_queues_supported;
+		context_logical.supported_queues = device_support_data.out_queues_supported;
 		context_logical.UseValidationLayers = UseValidationLayers;
 
 		logical_device = detail::CreateLogicalDevice(context_logical, DeviceExtensionsToSupport, ValidationLayersToSupport);
 
-		detail::SwapChainContext context_swapchain = {};
+		renderer::detail::OutParams_Swapchain swapchain_info = {};
+
+		detail::SwapchainContext context_swapchain = {};
 		context_swapchain.physical_device = physical_device;
 		context_swapchain.vulkan_surface = vulkan_surface;
 		context_swapchain.logical_device = logical_device;
 		context_swapchain.window = window;
-		context_swapchain.supported_queues = out_params.out_queues_supported;
-		context_swapchain.swapchain_support_details = out_params.out_swapchain_support_details;
+		context_swapchain.supported_queues = device_support_data.out_queues_supported;
+		context_swapchain.swapchain_support_details = device_support_data.out_swapchain_support_details;
 
-		swapchain = detail::CreateSwapChain(context_swapchain);
+		swapchain = detail::CreateSwapchain(swapchain_info, context_swapchain);
 
-		GetSwapchainImages(swapchain_images, swapchain, logical_device);
+		detail::GetSwapchainImages(swapchain_images, swapchain, logical_device);
+		detail::CreateSwapchainViews(swapchain_image_views, swapchain_images, swapchain_info.swapchain_image_format, swapchain_info.swapchain_extent);
 
-		vkGetDeviceQueue(logical_device, out_params.out_queues_supported.graphicsFamily.value(), 0, &graphics_queue);
-		vkGetDeviceQueue(logical_device, out_params.out_queues_supported.presentFamily.value(), 0, &present_queue);
+		vkGetDeviceQueue(logical_device, device_support_data.out_queues_supported.graphicsFamily.value(), 0, &graphics_queue);
+		vkGetDeviceQueue(logical_device, device_support_data.out_queues_supported.presentFamily.value(), 0, &present_queue);
 	}
 
 	Renderer::~Renderer() {
