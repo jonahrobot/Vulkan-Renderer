@@ -68,13 +68,17 @@ namespace renderer {
 		swapchain = detail::CreateSwapchain(swapchain_info, context_swapchain);
 
 		detail::GetSwapchainImages(swapchain_images, swapchain, logical_device);
-		detail::CreateSwapchainViews(swapchain_image_views, swapchain_images, swapchain_info.swapchain_image_format, swapchain_info.swapchain_extent);
+		detail::CreateSwapchainViews(swapchain_image_views, swapchain_images, logical_device, swapchain_info.swapchain_image_format, swapchain_info.swapchain_extent);
 
 		vkGetDeviceQueue(logical_device, device_support_data.out_queues_supported.graphicsFamily.value(), 0, &graphics_queue);
 		vkGetDeviceQueue(logical_device, device_support_data.out_queues_supported.presentFamily.value(), 0, &present_queue);
 	}
 
 	Renderer::~Renderer() {
+
+		for (auto view : swapchain_image_views) {
+			vkDestroyImageView(logical_device, view, nullptr);
+		}
 
 		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
 		vkDestroyDevice(logical_device, nullptr);

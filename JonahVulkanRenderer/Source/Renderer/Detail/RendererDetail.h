@@ -67,5 +67,5 @@ namespace renderer::detail {
 	void GetSwapchainImages(std::vector<VkImage>& out_Images, const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
 
 	// Implemented in "SwapChain.cpp"
-	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkFormat ImageFormat, const VkExtent2D Extent);
+	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat ImageFormat, const VkExtent2D Extent);
 };

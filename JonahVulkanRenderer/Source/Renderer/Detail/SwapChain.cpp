@@ -123,7 +123,7 @@ namespace renderer::detail {
 		return;
 	}
 
-	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkFormat ImageFormat, const VkExtent2D Extent){
+	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat ImageFormat, const VkExtent2D Extent){
 
 		out_ImageViews.resize(Images.size());
 
@@ -132,8 +132,24 @@ namespace renderer::detail {
 			VkImageViewCreateInfo create_info{};
 			create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			create_info.image = Images[i];
-			//create_info.format = 
+			create_info.format = ImageFormat;
+			
+			// Set all to identity to avoid color alteration
+			create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
 
+			create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			create_info.subresourceRange.baseMipLevel = 0;
+			create_info.subresourceRange.levelCount = 1;
+			create_info.subresourceRange.baseArrayLayer = 0;
+			create_info.subresourceRange.layerCount = 1;
+
+			VkResult created = vkCreateImageView(LogicalDevice, &create_info, nullptr, &out_ImageViews[i]);
+			if (created == false) {
+				throw std::runtime_error("Failed to create Image View.");
+			}
 		}
 
 		return;
