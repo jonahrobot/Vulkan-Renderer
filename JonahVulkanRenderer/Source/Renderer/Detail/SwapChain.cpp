@@ -132,6 +132,8 @@ namespace renderer::detail {
 			VkImageViewCreateInfo create_info{};
 			create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 			create_info.image = Images[i];
+
+			create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 			create_info.format = ImageFormat;
 			
 			// Set all to identity to avoid color alteration
@@ -147,7 +149,7 @@ namespace renderer::detail {
 			create_info.subresourceRange.layerCount = 1;
 
 			VkResult created = vkCreateImageView(LogicalDevice, &create_info, nullptr, &out_ImageViews[i]);
-			if (created == false) {
+			if (created != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create Image View.");
 			}
 		}

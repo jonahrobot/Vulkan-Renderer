@@ -106,7 +106,7 @@ namespace {
 // Implements all Vulkan Physical Device Picking functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkPhysicalDevice PickPhysicalDevice(OutParams& out_params, const PhysicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport) {
+	VkPhysicalDevice PickPhysicalDevice(OutParams_PhysicalDevice& out_params, const PhysicalDeviceContext& context, const std::vector<const char*>& deviceExtensionsToSupport) {
 
 		VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 
