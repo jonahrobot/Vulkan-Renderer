@@ -166,6 +166,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="Source\Game\Application.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\GraphicsPipeline.cpp" />
     <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\SwapChain.cpp" />
@@ -176,6 +177,10 @@
     <ClInclude Include="Source\Game\Application.h" />
     <ClInclude Include="Source\Renderer\Detail\RendererDetail.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\shader.frag" />
+    <None Include="Shaders\shader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

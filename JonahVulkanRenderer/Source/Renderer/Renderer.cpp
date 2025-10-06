@@ -72,6 +72,8 @@ namespace renderer {
 
 		vkGetDeviceQueue(logical_device, device_support_data.out_queues_supported.graphicsFamily.value(), 0, &graphics_queue);
 		vkGetDeviceQueue(logical_device, device_support_data.out_queues_supported.presentFamily.value(), 0, &present_queue);
+	
+		detail::CreateGraphicsPipeline();
 	}
 
 	Renderer::~Renderer() {

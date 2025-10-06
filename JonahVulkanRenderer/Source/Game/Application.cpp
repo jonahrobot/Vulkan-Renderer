@@ -16,7 +16,7 @@ GLFWwindow* Application::Get_Window() {
 }
 
 void Application::Update() {
-	std::cout << "Test Frame" << std::endl;
+	//std::cout << "Test Frame" << std::endl;
 }
 
 } // namespace game
