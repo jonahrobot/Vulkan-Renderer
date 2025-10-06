@@ -24,18 +24,65 @@ namespace {
 		return buffer;
 	}
 
+	VkShaderModule CreateShaderModule(const std::vector<char>& Code, const VkDevice PhysicalDevice) {
+
+		VkShaderModuleCreateInfo create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		create_info.codeSize = Code.size();
+		create_info.pCode = reinterpret_cast<const uint32_t*>(Code.data());
+
+		VkShaderModule shader_module;
+		VkResult created = vkCreateShaderModule(PhysicalDevice, &create_info, nullptr, &shader_module);
+
+		if (created != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create shader module.");
+		}
+
+		return shader_module;
+	}
+
 }
 
 // Implements all Vulkan Graphics Pipeline Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	void CreateGraphicsPipeline() {
+	void CreateGraphicsPipeline(const VkDevice PhysicalDevice) {
 
-		auto vertShaderCode = ReadFile("shaders/vert.spv");
-		auto fragShaderCode = ReadFile("shaders/frag.spv");
+		// Vertex and Fragment shaders
+		auto vert_shader_code = ReadFile("shaders/vert.spv");
+		auto frag_shader_code = ReadFile("shaders/frag.spv");
 
-		std::cout << "Vert shader size: " << vertShaderCode.size() << std::endl;
-		std::cout << "Frag shader size: " << fragShaderCode.size() << std::endl;
+		VkShaderModule vert_shader_module = CreateShaderModule(vert_shader_code, PhysicalDevice);
+		VkShaderModule frag_shader_module = CreateShaderModule(frag_shader_code, PhysicalDevice);
+
+		VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
+		vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vert_shader_stage_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vert_shader_stage_info.module = vert_shader_module;
+		vert_shader_stage_info.pName = "main";
+
+		VkPipelineShaderStageCreateInfo frag_shader_stage_info{};
+		frag_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		frag_shader_stage_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		frag_shader_stage_info.module = frag_shader_module;
+		frag_shader_stage_info.pName = "main";
+
+		VkPipelineShaderStageCreateInfo shader_stages[] = {vert_shader_stage_info, frag_shader_stage_info};
+
+		// Dynamic state creation
+		std::vector<VkDynamicState> dynamic_states = {
+			VK_DYNAMIC_STATE_VIEWPORT,
+			VK_DYNAMIC_STATE_SCISSOR
+		};
+
+		VkPipelineDynamicStateCreateInfo dynamic_state{};
+		dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
+		dynamic_state.pDynamicStates = dynamic_states.data();
+
+		// Cleanup
+		vkDestroyShaderModule(PhysicalDevice, frag_shader_module, nullptr);
+		vkDestroyShaderModule(PhysicalDevice, vert_shader_module, nullptr);
 	}
 
 }
