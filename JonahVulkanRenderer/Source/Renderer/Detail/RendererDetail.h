@@ -67,8 +67,8 @@ namespace renderer::detail {
 	void GetSwapchainImages(std::vector<VkImage>& out_Images, const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
 
 	// Implemented in "SwapChain.cpp"
-	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat ImageFormat);
+	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
 
 	// Implemented in "GraphicsPipeline.cpp"
-	void CreateGraphicsPipeline(const VkDevice PhysicalDevice);
+	void CreateGraphicsPipeline(VkPipelineLayout& out_layout, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent);
 };

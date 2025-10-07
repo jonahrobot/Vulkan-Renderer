@@ -123,7 +123,7 @@ namespace renderer::detail {
 		return;
 	}
 
-	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat ImageFormat){
+	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat){
 
 		out_ImageViews.resize(Images.size());
 

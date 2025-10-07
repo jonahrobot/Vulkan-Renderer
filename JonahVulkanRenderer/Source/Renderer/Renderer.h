@@ -51,5 +51,6 @@ private:
 	std::vector<VkImageView> swapchain_image_views;
 	VkQueue graphics_queue;
 	VkQueue present_queue;
+	VkPipelineLayout graphics_pipeline_layout;
 };
 } // namespace renderer

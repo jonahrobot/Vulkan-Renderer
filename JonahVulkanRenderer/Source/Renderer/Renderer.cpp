@@ -73,10 +73,12 @@ namespace renderer {
 		vkGetDeviceQueue(logical_device, device_support_data.out_queues_supported.graphicsFamily.value(), 0, &graphics_queue);
 		vkGetDeviceQueue(logical_device, device_support_data.out_queues_supported.presentFamily.value(), 0, &present_queue);
 	
-		detail::CreateGraphicsPipeline();
+		detail::CreateGraphicsPipeline(graphics_pipeline_layout, logical_device, swapchain_info.swapchain_extent);
 	}
 
 	Renderer::~Renderer() {
+
+		vkDestroyPipelineLayout(logical_device, graphics_pipeline_layout, nullptr);
 
 		for (auto view : swapchain_image_views) {
 			vkDestroyImageView(logical_device, view, nullptr);
