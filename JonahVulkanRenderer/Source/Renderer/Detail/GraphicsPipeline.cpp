@@ -69,7 +69,6 @@ namespace renderer::detail {
 
 		VkPipelineShaderStageCreateInfo shader_stages[] = { vert_shader_stage_info, frag_shader_stage_info };
 
-		// Define how Vertex data will be inputted
 		VkPipelineVertexInputStateCreateInfo vertex_input_info{};
 		vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertex_input_info.vertexBindingDescriptionCount = 0;
@@ -77,16 +76,11 @@ namespace renderer::detail {
 		vertex_input_info.vertexAttributeDescriptionCount = 0;
 		vertex_input_info.pVertexAttributeDescriptions = nullptr;
 
-		// Define how vertices will be drawn
 		VkPipelineInputAssemblyStateCreateInfo input_assembly{};
 		input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		input_assembly.primitiveRestartEnable = VK_FALSE;
 
-		/// Viewport and scissor could be dynamic or static.
-		/// In this case they are static
-
-		// Define viewport
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -95,7 +89,6 @@ namespace renderer::detail {
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
-		// Define crop / scissor
 		VkRect2D scissor{};
 		scissor.offset = { 0,0 };
 		scissor.extent = SwapChainExtent;
@@ -107,7 +100,6 @@ namespace renderer::detail {
 		viewport_state.scissorCount = 1;
 		viewport_state.pScissors = &scissor;
 
-		// Define how vertices will be pixelized
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizer.depthClampEnable = VK_FALSE;
@@ -121,7 +113,6 @@ namespace renderer::detail {
 		rasterizer.depthBiasClamp = 0.0f;
 		rasterizer.depthBiasSlopeFactor = 0.0f;
 
-		// Disable anti-aliasing
 		VkPipelineMultisampleStateCreateInfo multisampling{};
 		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		multisampling.sampleShadingEnable = VK_FALSE;
@@ -131,7 +122,6 @@ namespace renderer::detail {
 		multisampling.alphaToCoverageEnable = VK_FALSE;
 		multisampling.alphaToOneEnable = VK_FALSE;
 
-		// Enable alpha blending
 		VkPipelineColorBlendAttachmentState color_blend_attachment{};
 		color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		color_blend_attachment.blendEnable = VK_TRUE;
@@ -142,7 +132,6 @@ namespace renderer::detail {
 		color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 		color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
-		// Link blend settings to framebuffers and disable bitwise combination blending
 		VkPipelineColorBlendStateCreateInfo color_blending{};
 		color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 		color_blending.logicOpEnable = VK_FALSE;
