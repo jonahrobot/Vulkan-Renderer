@@ -70,5 +70,5 @@ namespace renderer::detail {
 	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
 
 	// Implemented in "GraphicsPipeline.cpp"
-	void CreateGraphicsPipeline(VkPipelineLayout& out_layout, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent);
+	void CreateGraphicsPipeline(VkPipelineLayout& out_layout, const VkRenderPass RenderPass, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent);
 };
