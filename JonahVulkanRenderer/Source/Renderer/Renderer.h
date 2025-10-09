@@ -54,5 +54,6 @@ private:
 	VkRenderPass render_pass;
 	VkPipeline graphics_pipeline;
 	VkPipelineLayout graphics_pipeline_layout;
+	std::vector<VkFramebuffer> framebuffers;
 };
 } // namespace renderer

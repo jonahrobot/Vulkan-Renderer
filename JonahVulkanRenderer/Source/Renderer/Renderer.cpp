@@ -67,6 +67,15 @@ namespace renderer {
 
 			return render_pass;
 		}
+
+		struct FrameBufferContext {
+			const std::vector<VkImageView>& ImageViews;
+			const VkRenderPass& RenderPass;
+			const VkExtent2D& SwapChainExtent;
+		};
+		std::vector<VkFramebuffer> CreateFramebuffers(const FrameBufferContext& context) {
+
+		}
 	}
 
 	Renderer::Renderer() {
