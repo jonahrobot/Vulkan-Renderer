@@ -112,11 +112,12 @@ namespace renderer {
 	
 		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format);
 
-		detail::CreateGraphicsPipeline(graphics_pipeline_layout, render_pass, logical_device, swapchain_info.swapchain_extent);
+		graphics_pipeline = detail::CreateGraphicsPipeline(graphics_pipeline_layout, render_pass, logical_device, swapchain_info.swapchain_extent);
 	}
 
 	Renderer::~Renderer() {
 
+		vkDestroyPipeline(logical_device, graphics_pipeline, nullptr);
 		vkDestroyPipelineLayout(logical_device, graphics_pipeline_layout, nullptr);
 		vkDestroyRenderPass(logical_device, render_pass, nullptr);
 

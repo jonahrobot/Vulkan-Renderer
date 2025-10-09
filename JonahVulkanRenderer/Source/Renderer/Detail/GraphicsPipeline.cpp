@@ -46,7 +46,7 @@ namespace {
 // Implements all Vulkan Graphics Pipeline Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	void CreateGraphicsPipeline(VkPipelineLayout& out_layout, const VkRenderPass RenderPass, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent) {
+	VkPipeline CreateGraphicsPipeline(VkPipelineLayout& out_layout, const VkRenderPass RenderPass, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent) {
 
 		// Vertex and Fragment shaders
 		auto vert_shader_code = ReadFile("shaders/vert.spv");
@@ -146,16 +146,41 @@ namespace renderer::detail {
 		pipeline_layout_info.pPushConstantRanges = 0;
 
 		VkPipelineLayout pipeline_layout;
-		VkResult created_pipeline = vkCreatePipelineLayout(LogicalDevice, &pipeline_layout_info, nullptr, &pipeline_layout);
-		if (created_pipeline != VK_SUCCESS) {
+		if (vkCreatePipelineLayout(LogicalDevice, &pipeline_layout_info, nullptr, &pipeline_layout) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create pipeline layout.");
 		}
 
 		out_layout = pipeline_layout;
 
+		VkGraphicsPipelineCreateInfo pipeline_info{};
+		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipeline_info.stageCount = 2;
+
+		pipeline_info.pStages = shader_stages;
+		pipeline_info.pVertexInputState = &vertex_input_info;
+		pipeline_info.pInputAssemblyState = &input_assembly;
+		pipeline_info.pViewportState = &viewport_state;
+		pipeline_info.pRasterizationState = &rasterizer;
+		pipeline_info.pMultisampleState = &multisampling;
+		pipeline_info.pDepthStencilState = nullptr;
+		pipeline_info.pColorBlendState = &color_blending;
+
+		pipeline_info.layout = pipeline_layout;
+		pipeline_info.renderPass = RenderPass;
+		pipeline_info.subpass = 0;
+		
+		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+		pipeline_info.basePipelineIndex = -1;
+
+		VkPipeline graphics_pipeline;
+		if (vkCreateGraphicsPipelines(LogicalDevice, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create graphics pipeline.");
+		}
+
 		// Cleanup
 		vkDestroyShaderModule(LogicalDevice, frag_shader_module, nullptr);
 		vkDestroyShaderModule(LogicalDevice, vert_shader_module, nullptr);
-	}
 
+		return graphics_pipeline;
+	}
 }
