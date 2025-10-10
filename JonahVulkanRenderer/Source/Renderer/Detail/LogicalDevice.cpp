@@ -5,7 +5,7 @@
 // Implements all Vulkan Logical Device Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context, const std::vector<const char*>& DeviceExtensionsToSupport, const std::vector<const char*>& ValidationLayersToSupport) {
+	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context) {
 		
 		VkDevice logical_device;
 
@@ -35,13 +35,13 @@ namespace renderer::detail {
 		createInfo.pQueueCreateInfos = queue_create_infos.data();
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
 		createInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensionsToSupport.size());;
-		createInfo.ppEnabledExtensionNames = DeviceExtensionsToSupport.data();
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(Context.DeviceExtensionsToSupport.size());;
+		createInfo.ppEnabledExtensionNames = Context.DeviceExtensionsToSupport.data();
 
 		// New versions of vulkan merge device extension validation with validation layers.
 		if (Context.UseValidationLayers) {
-			createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayersToSupport.size());
-			createInfo.ppEnabledLayerNames = ValidationLayersToSupport.data();
+			createInfo.enabledLayerCount = static_cast<uint32_t>(Context.ValidationLayersToSupport.size());
+			createInfo.ppEnabledLayerNames = Context.ValidationLayersToSupport.data();
 		}
 		else {
 			createInfo.enabledLayerCount = 0;

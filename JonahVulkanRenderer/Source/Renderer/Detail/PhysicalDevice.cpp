@@ -106,7 +106,7 @@ namespace {
 // Implements all Vulkan Physical Device Picking functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkPhysicalDevice PickPhysicalDevice(DeviceSupportData& out_DeviceSupportData, const PhysicalDeviceContext& Context, const std::vector<const char*>& DeviceExtensionsToSupport) {
+	PhysicalDeviceData PickPhysicalDevice(const PhysicalDeviceContext& Context) {
 
 		VkPhysicalDevice physical_device = VK_NULL_HANDLE;
 
@@ -119,7 +119,7 @@ namespace renderer::detail {
 		vkEnumeratePhysicalDevices(Context.vulkan_instance, &device_count, devices.data());
 
 		for (const VkPhysicalDevice& device : devices) {
-			if (IsDeviceSuitable(device, Context.vulkan_surface, DeviceExtensionsToSupport)) {
+			if (IsDeviceSuitable(device, Context.vulkan_surface, Context.DeviceExtensionsToSupport)) {
 				physical_device = device;
 				break;
 			}
@@ -129,10 +129,13 @@ namespace renderer::detail {
 			throw std::runtime_error("Failed to find a suitable GPU.");
 		}
 
-		out_DeviceSupportData.out_queues_supported = FindSupportedQueues(physical_device, Context.vulkan_surface);
-		out_DeviceSupportData.out_swapchain_support_details = GetSwapChainDetails(physical_device, Context.vulkan_surface);
+		PhysicalDeviceData return_data{};
 
-		return physical_device;
+		return_data.physical_device = physical_device;
+		return_data.queues_supported = FindSupportedQueues(physical_device, Context.vulkan_surface);
+		return_data.swapchain_support_details = GetSwapChainDetails(physical_device, Context.vulkan_surface);
+
+		return return_data;
 	}
 
 

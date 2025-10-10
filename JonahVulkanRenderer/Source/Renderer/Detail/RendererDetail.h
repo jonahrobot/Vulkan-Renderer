@@ -18,6 +18,7 @@ namespace renderer::detail {
 	struct PhysicalDeviceContext {
 		VkInstance vulkan_instance;
 		VkSurfaceKHR vulkan_surface;
+		std::vector<const char*> DeviceExtensionsToSupport;
 	};
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
@@ -32,11 +33,12 @@ namespace renderer::detail {
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
-	struct DeviceSupportData {
+	struct PhysicalDeviceData {
+		VkPhysicalDevice physical_device;
 		QueueFamilyIndices queues_supported;
 		SwapChainSupportDetails swapchain_support_details;
 	};
-	VkPhysicalDevice PickPhysicalDevice(DeviceSupportData& out_DeviceSupportData, const PhysicalDeviceContext& Context, const std::vector<const char*>& DeviceExtensionsToSupport);
+	PhysicalDeviceData PickPhysicalDevice(const PhysicalDeviceContext& Context);
 
 	// Implemented in "LogicalDevice.cpp"
 	struct LogicalDeviceContext {
@@ -45,8 +47,10 @@ namespace renderer::detail {
 		VkPhysicalDevice physical_device;
 		QueueFamilyIndices supported_queues;
 		bool UseValidationLayers;
+		std::vector<const char*> DeviceExtensionsToSupport;
+		std::vector<const char*> ValidationLayersToSupport;
 	};
-	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context, const std::vector<const char*>& DeviceExtensionsToSupport, const std::vector<const char*>& ValidationLayersToSupport);
+	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context);
 
 	// Implemented in "SwapChain.cpp"
 	struct SwapchainContext {
@@ -58,17 +62,27 @@ namespace renderer::detail {
 		SwapChainSupportDetails swapchain_support_details;
 	};
 	struct SwapchainData {
+		VkSwapchainKHR swapchain;
 		VkFormat swapchain_image_format;
 		VkExtent2D swapchain_extent;
 	};
-	VkSwapchainKHR CreateSwapchain(SwapchainData& out_SwapchainData, const SwapchainContext& Context);
+	SwapchainData CreateSwapchain(const SwapchainContext& Context);
 
 	// Implemented in "SwapChain.cpp"
-	void GetSwapchainImages(std::vector<VkImage>& out_Images, const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
+	std::vector<VkImage> GetSwapchainImages(const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
 
 	// Implemented in "SwapChain.cpp"
-	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
+	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
 
 	// Implemented in "GraphicsPipeline.cpp"
-	VkPipeline CreateGraphicsPipeline(VkPipelineLayout& out_Layout, const VkRenderPass RenderPass, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent);
+	struct GraphicsPipelineContext {
+		VkRenderPass render_pass;
+		VkDevice logical_device;
+		VkExtent2D swapchain_extent;
+	};
+	struct GraphicsPipelineData {
+		VkPipeline pipeline;
+		VkPipelineLayout layout;
+	};
+	GraphicsPipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
 };

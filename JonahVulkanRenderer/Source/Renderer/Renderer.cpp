@@ -83,45 +83,64 @@ namespace renderer {
 		window = CreateGLFWWindow();
 		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
 		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
-		
-		renderer::detail::DeviceSupportData device_support_data = {};
 
+		// Create Physical Device
 		detail::PhysicalDeviceContext context_physical = {};
 		context_physical.vulkan_instance = vulkan_instance;
 		context_physical.vulkan_surface = vulkan_surface;
+		context_physical.DeviceExtensionsToSupport = DeviceExtensionsToSupport;
 
-		physical_device = detail::PickPhysicalDevice(device_support_data, context_physical, DeviceExtensionsToSupport);
+		renderer::detail::PhysicalDeviceData physical_device_data = {};
+		physical_device_data = detail::PickPhysicalDevice(context_physical);
+		physical_device = physical_device_data.physical_device;
 
+		// Create Logical Device
 		detail::LogicalDeviceContext context_logical = {};
 		context_logical.vulkan_instance = vulkan_instance;
 		context_logical.vulkan_surface = vulkan_surface;
 		context_logical.physical_device = physical_device;
-		context_logical.supported_queues = device_support_data.queues_supported;
+		context_logical.supported_queues = physical_device_data.queues_supported;
 		context_logical.UseValidationLayers = UseValidationLayers;
+		context_logical.DeviceExtensionsToSupport = DeviceExtensionsToSupport;
+		context_logical.ValidationLayersToSupport = ValidationLayersToSupport;
 
-		logical_device = detail::CreateLogicalDevice(context_logical, DeviceExtensionsToSupport, ValidationLayersToSupport);
+		logical_device = detail::CreateLogicalDevice(context_logical);
 
-		renderer::detail::SwapchainData swapchain_info = {};
-
+		// Create Swapchain
 		detail::SwapchainContext context_swapchain = {};
 		context_swapchain.physical_device = physical_device;
 		context_swapchain.vulkan_surface = vulkan_surface;
 		context_swapchain.logical_device = logical_device;
 		context_swapchain.window = window;
-		context_swapchain.supported_queues = device_support_data.queues_supported;
-		context_swapchain.swapchain_support_details = device_support_data.swapchain_support_details;
+		context_swapchain.supported_queues = physical_device_data.queues_supported;
+		context_swapchain.swapchain_support_details = physical_device_data.swapchain_support_details;
 
-		swapchain = detail::CreateSwapchain(swapchain_info, context_swapchain);
+		renderer::detail::SwapchainData swapchain_info = {};
+		swapchain_info = detail::CreateSwapchain(context_swapchain);
+		swapchain = swapchain_info.swapchain;
 
-		detail::GetSwapchainImages(swapchain_images, swapchain, logical_device);
-		detail::CreateSwapchainViews(swapchain_image_views, swapchain_images, logical_device, swapchain_info.swapchain_image_format);
+		// Create images
+		swapchain_images = detail::GetSwapchainImages(swapchain, logical_device);
+		swapchain_image_views = detail::CreateSwapchainViews(swapchain_images, logical_device, swapchain_info.swapchain_image_format);
 
-		vkGetDeviceQueue(logical_device, device_support_data.queues_supported.graphicsFamily.value(), 0, &graphics_queue);
-		vkGetDeviceQueue(logical_device, device_support_data.queues_supported.presentFamily.value(), 0, &present_queue);
+		// Create queues
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphicsFamily.value(), 0, &graphics_queue);
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.presentFamily.value(), 0, &present_queue);
 	
+		// Create render pass
 		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format);
 
-		graphics_pipeline = detail::CreateGraphicsPipeline(graphics_pipeline_layout, render_pass, logical_device, swapchain_info.swapchain_extent);
+		// Create graphics pipeline
+		detail::GraphicsPipelineContext context_graphics_pipeline = {};
+		context_graphics_pipeline.logical_device = logical_device;
+		context_graphics_pipeline.render_pass = render_pass;
+		context_graphics_pipeline.swapchain_extent = swapchain_info.swapchain_extent;
+
+		renderer::detail::GraphicsPipelineData pipeline_info = {};
+		pipeline_info = detail::CreateGraphicsPipeline(context_graphics_pipeline);
+		graphics_pipeline = pipeline_info.pipeline;
+		graphics_pipeline_layout = pipeline_info.layout;
+
 	}
 
 	Renderer::~Renderer() {

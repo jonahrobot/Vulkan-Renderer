@@ -46,14 +46,14 @@ namespace {
 // Implements all Vulkan Graphics Pipeline Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkPipeline CreateGraphicsPipeline(VkPipelineLayout& out_Layout, const VkRenderPass RenderPass, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent) {
+	GraphicsPipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context) {
 
 		// Vertex and Fragment shaders
 		auto vert_shader_code = ReadFile("shaders/vert.spv");
 		auto frag_shader_code = ReadFile("shaders/frag.spv");
 
-		VkShaderModule vert_shader_module = CreateShaderModule(vert_shader_code, LogicalDevice);
-		VkShaderModule frag_shader_module = CreateShaderModule(frag_shader_code, LogicalDevice);
+		VkShaderModule vert_shader_module = CreateShaderModule(vert_shader_code, Context.logical_device);
+		VkShaderModule frag_shader_module = CreateShaderModule(frag_shader_code, Context.logical_device);
 
 		VkPipelineShaderStageCreateInfo vert_shader_stage_info{};
 		vert_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -84,14 +84,14 @@ namespace renderer::detail {
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = (float)SwapChainExtent.width;
-		viewport.height = (float)SwapChainExtent.height;
+		viewport.width = (float)Context.swapchain_extent.width;
+		viewport.height = (float)Context.swapchain_extent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor{};
 		scissor.offset = { 0,0 };
-		scissor.extent = SwapChainExtent;
+		scissor.extent = Context.swapchain_extent;
 
 		VkPipelineViewportStateCreateInfo viewport_state{};
 		viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -145,12 +145,10 @@ namespace renderer::detail {
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = 0;
 
-		VkPipelineLayout pipeline_layout;
-		if (vkCreatePipelineLayout(LogicalDevice, &pipeline_layout_info, nullptr, &pipeline_layout) != VK_SUCCESS) {
+		VkPipelineLayout layout;
+		if (vkCreatePipelineLayout(Context.logical_device, &pipeline_layout_info, nullptr, &layout) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create pipeline layout.");
 		}
-
-		out_Layout = pipeline_layout;
 
 		VkGraphicsPipelineCreateInfo pipeline_info{};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -165,22 +163,26 @@ namespace renderer::detail {
 		pipeline_info.pDepthStencilState = nullptr;
 		pipeline_info.pColorBlendState = &color_blending;
 
-		pipeline_info.layout = pipeline_layout;
-		pipeline_info.renderPass = RenderPass;
+		pipeline_info.layout = layout;
+		pipeline_info.renderPass = Context.render_pass;
 		pipeline_info.subpass = 0;
-		
+
 		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 		pipeline_info.basePipelineIndex = -1;
 
 		VkPipeline graphics_pipeline;
-		if (vkCreateGraphicsPipelines(LogicalDevice, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline) != VK_SUCCESS) {
+		if (vkCreateGraphicsPipelines(Context.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &graphics_pipeline) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create graphics pipeline.");
 		}
 
 		// Cleanup
-		vkDestroyShaderModule(LogicalDevice, frag_shader_module, nullptr);
-		vkDestroyShaderModule(LogicalDevice, vert_shader_module, nullptr);
+		vkDestroyShaderModule(Context.logical_device, frag_shader_module, nullptr);
+		vkDestroyShaderModule(Context.logical_device, vert_shader_module, nullptr);
 
-		return graphics_pipeline;
+		GraphicsPipelineData return_data{};
+		return_data.pipeline = graphics_pipeline;
+		return_data.layout = layout;
+
+		return return_data;
 	}
 }

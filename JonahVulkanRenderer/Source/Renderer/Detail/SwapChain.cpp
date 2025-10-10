@@ -55,7 +55,7 @@ namespace {
 // Implements all Vulkan SwapChain Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkSwapchainKHR CreateSwapchain(SwapchainData& out_SwapchainData, const SwapchainContext& Context) {
+	SwapchainData CreateSwapchain(const SwapchainContext& Context) {
 
 		const SwapChainSupportDetails* creation_options = &Context.swapchain_support_details;
 
@@ -71,9 +71,6 @@ namespace renderer::detail {
 		VkSurfaceFormatKHR surface_format = SelectSurfaceFormat(creation_options->formats);
 		VkPresentModeKHR present_mode = SelectPresentMode(creation_options->presentModes);
 		VkExtent2D extent = SelectExtent(creation_options->capabilities, Context.window);
-
-		out_SwapchainData.swapchain_image_format = surface_format.format;
-		out_SwapchainData.swapchain_extent = extent;
 
 		VkSwapchainCreateInfoKHR create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -104,28 +101,38 @@ namespace renderer::detail {
 		create_info.clipped = VK_TRUE; 
 		create_info.oldSwapchain = VK_NULL_HANDLE;
 
-		VkSwapchainKHR swap_chain;
+		VkSwapchainKHR swapchain;
 
-		if (vkCreateSwapchainKHR(Context.logical_device, &create_info, nullptr, &swap_chain) != VK_SUCCESS) {
+		if (vkCreateSwapchainKHR(Context.logical_device, &create_info, nullptr, &swapchain) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create swap chain!");
 		}
 
-		return swap_chain;
+		SwapchainData return_data{};
+
+		return_data.swapchain_image_format = surface_format.format;
+		return_data.swapchain_extent = extent;
+		return_data.swapchain = swapchain;
+
+		return return_data;
 	}
 
-	void GetSwapchainImages(std::vector<VkImage>& out_Images, const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice) {
+	std::vector<VkImage> GetSwapchainImages(const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice) {
+
+		std::vector<VkImage> images{};
 
 		uint32_t image_count = 0;
 		vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, nullptr);
-		out_Images.resize(image_count);
-		vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, out_Images.data());
+		images.resize(image_count);
+		vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, images.data());
 		
-		return;
+		return images;
 	}
 
-	void CreateSwapchainViews(std::vector<VkImageView>& out_ImageViews, const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat){
+	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat){
 
-		out_ImageViews.resize(Images.size());
+		std::vector<VkImageView> image_views{};
+
+		image_views.resize(Images.size());
 
 		for (size_t i = 0; i < Images.size(); i++) {
 
@@ -148,13 +155,13 @@ namespace renderer::detail {
 			create_info.subresourceRange.baseArrayLayer = 0;
 			create_info.subresourceRange.layerCount = 1;
 
-			VkResult created = vkCreateImageView(LogicalDevice, &create_info, nullptr, &out_ImageViews[i]);
+			VkResult created = vkCreateImageView(LogicalDevice, &create_info, nullptr, &image_views[i]);
 			if (created != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create Image View.");
 			}
 		}
 
-		return;
+		return image_views;
 	}
 
 } // namespace renderer::detail
