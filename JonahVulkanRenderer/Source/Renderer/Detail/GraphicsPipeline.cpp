@@ -46,7 +46,7 @@ namespace {
 // Implements all Vulkan Graphics Pipeline Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkPipeline CreateGraphicsPipeline(VkPipelineLayout& out_layout, const VkRenderPass RenderPass, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent) {
+	VkPipeline CreateGraphicsPipeline(VkPipelineLayout& out_Layout, const VkRenderPass RenderPass, const VkDevice LogicalDevice, const VkExtent2D& SwapChainExtent) {
 
 		// Vertex and Fragment shaders
 		auto vert_shader_code = ReadFile("shaders/vert.spv");
@@ -150,7 +150,7 @@ namespace renderer::detail {
 			throw std::runtime_error("Failed to create pipeline layout.");
 		}
 
-		out_layout = pipeline_layout;
+		out_Layout = pipeline_layout;
 
 		VkGraphicsPipelineCreateInfo pipeline_info{};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;

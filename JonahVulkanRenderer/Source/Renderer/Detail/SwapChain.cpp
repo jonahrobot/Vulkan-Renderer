@@ -55,9 +55,9 @@ namespace {
 // Implements all Vulkan SwapChain Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VkSwapchainKHR CreateSwapchain(OutParams_Swapchain& out_params, const SwapchainContext& context) {
+	VkSwapchainKHR CreateSwapchain(SwapchainData& out_SwapchainData, const SwapchainContext& Context) {
 
-		const SwapChainSupportDetails* creation_options = &context.swapchain_support_details;
+		const SwapChainSupportDetails* creation_options = &Context.swapchain_support_details;
 
 		uint32_t image_count = creation_options->capabilities.minImageCount + 1;
 		uint32_t max_images = creation_options->capabilities.maxImageCount;
@@ -70,14 +70,14 @@ namespace renderer::detail {
 
 		VkSurfaceFormatKHR surface_format = SelectSurfaceFormat(creation_options->formats);
 		VkPresentModeKHR present_mode = SelectPresentMode(creation_options->presentModes);
-		VkExtent2D extent = SelectExtent(creation_options->capabilities, context.window);
+		VkExtent2D extent = SelectExtent(creation_options->capabilities, Context.window);
 
-		out_params.swapchain_image_format = surface_format.format;
-		out_params.swapchain_extent = extent;
+		out_SwapchainData.swapchain_image_format = surface_format.format;
+		out_SwapchainData.swapchain_extent = extent;
 
 		VkSwapchainCreateInfoKHR create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		create_info.surface = context.vulkan_surface;
+		create_info.surface = Context.vulkan_surface;
 		create_info.minImageCount = image_count;
 		create_info.imageFormat = surface_format.format;
 		create_info.imageColorSpace = surface_format.colorSpace;
@@ -85,11 +85,11 @@ namespace renderer::detail {
 		create_info.imageArrayLayers = 1; // Always 1 unless stereoscopic 3D.
 		create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		uint32_t queue_family_indices[] = { context.supported_queues.graphicsFamily.value(), context.supported_queues.presentFamily.value() };
+		uint32_t queue_family_indices[] = { Context.supported_queues.graphicsFamily.value(), Context.supported_queues.presentFamily.value() };
 
 		// Must check if graphics and present queues are different.
 		// If they are, we must handle interactions concurrently.
-		if (context.supported_queues.graphicsFamily != context.supported_queues.presentFamily) {
+		if (Context.supported_queues.graphicsFamily != Context.supported_queues.presentFamily) {
 			create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			create_info.queueFamilyIndexCount = 2;
 			create_info.pQueueFamilyIndices = queue_family_indices;
@@ -98,7 +98,7 @@ namespace renderer::detail {
 			create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		}
 
-		create_info.preTransform = context.swapchain_support_details.capabilities.currentTransform;
+		create_info.preTransform = Context.swapchain_support_details.capabilities.currentTransform;
 		create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		create_info.presentMode = present_mode;
 		create_info.clipped = VK_TRUE; 
@@ -106,7 +106,7 @@ namespace renderer::detail {
 
 		VkSwapchainKHR swap_chain;
 
-		if (vkCreateSwapchainKHR(context.logical_device, &create_info, nullptr, &swap_chain) != VK_SUCCESS) {
+		if (vkCreateSwapchainKHR(Context.logical_device, &create_info, nullptr, &swap_chain) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create swap chain!");
 		}
 
