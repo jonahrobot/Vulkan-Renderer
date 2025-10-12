@@ -69,12 +69,37 @@ namespace renderer {
 		}
 
 		struct FrameBufferContext {
-			std::vector<VkImageView> ImageViews;
-			VkRenderPass RenderPass;
-			VkExtent2D SwapChainExtent;
+			std::vector<VkImageView> image_views;
+			VkRenderPass render_pass;
+			VkExtent2D swapchain_extent;
+			VkDevice logical_device;
 		};
-		std::vector<VkFramebuffer> CreateFramebuffers(const FrameBufferContext& context) {
 
+		// Link each color attachment to their matching image.
+		std::vector<VkFramebuffer> CreateFramebuffers(const FrameBufferContext& Context) {
+			
+			std::vector<VkFramebuffer> frame_buffers(Context.image_views.size());
+			
+			for (size_t i = 0; i < Context.image_views.size(); i++) {
+				VkImageView attachments[]{
+					Context.image_views[i]
+				};
+
+				VkFramebufferCreateInfo framebuffer_info{};
+				framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+				framebuffer_info.renderPass = Context.render_pass;
+				framebuffer_info.attachmentCount = 1;
+				framebuffer_info.pAttachments = attachments;
+				framebuffer_info.width = Context.swapchain_extent.width;
+				framebuffer_info.height = Context.swapchain_extent.height;
+				framebuffer_info.layers = 1;
+
+				if (vkCreateFramebuffer(Context.logical_device, &framebuffer_info, nullptr, &frame_buffers[i]) != VK_SUCCESS) {
+					throw std::runtime_error("Failed to create framebuffer!");
+				}
+			}
+
+			return frame_buffers;
 		}
 	}
 
@@ -141,9 +166,22 @@ namespace renderer {
 		graphics_pipeline = pipeline_info.pipeline;
 		graphics_pipeline_layout = pipeline_info.layout;
 
+		// Create framebuffers
+		FrameBufferContext context_framebuffer = {};
+		context_framebuffer.logical_device = logical_device;
+		context_framebuffer.image_views = swapchain_image_views;
+		context_framebuffer.render_pass = render_pass;
+		context_framebuffer.swapchain_extent = swapchain_info.swapchain_extent;
+
+		framebuffers = CreateFramebuffers(context_framebuffer);
+
 	}
 
 	Renderer::~Renderer() {
+
+		for (auto framebuffer : framebuffers) {
+			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
+		}
 
 		vkDestroyPipeline(logical_device, graphics_pipeline, nullptr);
 		vkDestroyPipelineLayout(logical_device, graphics_pipeline_layout, nullptr);
