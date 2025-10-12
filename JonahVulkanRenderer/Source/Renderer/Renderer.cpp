@@ -101,6 +101,20 @@ namespace renderer {
 
 			return frame_buffers;
 		}
+
+		VkCommandPool CreateCommandPool(const VkDevice logical_device, uint32_t graphics_family_index) {
+
+			VkCommandPoolCreateInfo pool_info{};
+			pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+			pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+			pool_info.queueFamilyIndex = graphics_family_index;
+
+			VkCommandPool out_pool;
+			if (vkCreateCommandPool(logical_device, &pool_info, nullptr, &out_pool) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to create command pool.");
+			}
+			return out_pool;
+		}
 	}
 
 	Renderer::Renderer() {
@@ -175,9 +189,12 @@ namespace renderer {
 
 		framebuffers = CreateFramebuffers(context_framebuffer);
 
+		command_pool = CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
 	}
 
 	Renderer::~Renderer() {
+
+		vkDestroyCommandPool(logical_device, command_pool, nullptr);
 
 		for (auto framebuffer : framebuffers) {
 			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
