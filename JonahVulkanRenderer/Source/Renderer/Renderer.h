@@ -56,5 +56,6 @@ private:
 	VkPipelineLayout graphics_pipeline_layout;
 	std::vector<VkFramebuffer> framebuffers;
 	VkCommandPool command_pool;
+	VkCommandBuffer command_buffer;
 };
 } // namespace renderer

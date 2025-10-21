@@ -102,18 +102,74 @@ namespace renderer {
 			return frame_buffers;
 		}
 
-		VkCommandPool CreateCommandPool(const VkDevice logical_device, uint32_t graphics_family_index) {
+		VkCommandPool CreateCommandPool(const VkDevice LogicalDevice, uint32_t GraphicsFamilyIndex) {
 
 			VkCommandPoolCreateInfo pool_info{};
 			pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 			pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			pool_info.queueFamilyIndex = graphics_family_index;
+			pool_info.queueFamilyIndex = GraphicsFamilyIndex;
 
 			VkCommandPool out_pool;
-			if (vkCreateCommandPool(logical_device, &pool_info, nullptr, &out_pool) != VK_SUCCESS) {
+			if (vkCreateCommandPool(LogicalDevice, &pool_info, nullptr, &out_pool) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create command pool.");
 			}
 			return out_pool;
+		}
+
+		VkCommandBuffer CreateCommandBuffer(const VkDevice LogicalDevice, const VkCommandPool CommandPool) {
+
+			VkCommandBufferAllocateInfo alloc_info{};
+			alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+			alloc_info.commandPool = CommandPool;
+			alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			alloc_info.commandBufferCount = 1;
+
+			VkCommandBuffer out_buffer;
+			if (vkAllocateCommandBuffers(LogicalDevice, &alloc_info, &out_buffer) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to allocate command buffers.");
+			}
+			return out_buffer;
+		}
+
+		struct CommandRecordingContext {
+			std::vector<VkFramebuffer> framebuffers;
+			VkRenderPass render_pass;
+			VkPipeline graphics_pipeline;
+			VkCommandBuffer command_buffer;
+			uint32_t image_write_index;
+			VkExtent2D swapchain_extent;
+		};
+
+		void RecordCommandBuffer(const CommandRecordingContext& Context) {
+			VkCommandBufferBeginInfo begin_info{};
+			begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			begin_info.flags = 0;
+			begin_info.pInheritanceInfo = nullptr;
+
+			if (vkBeginCommandBuffer(Context.command_buffer, &begin_info) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to begin recording command buffer.");
+			}
+
+			VkRenderPassBeginInfo render_pass_info{};
+			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			render_pass_info.renderPass = Context.render_pass;
+			render_pass_info.framebuffer = Context.framebuffers[Context.image_write_index];
+			render_pass_info.renderArea.offset = { 0,0 };
+			render_pass_info.renderArea.extent = Context.swapchain_extent;
+
+			VkClearValue clear_color = { {{0.0f,0.0f,0.0f,1.0f}} };
+			render_pass_info.clearValueCount = 1;
+			render_pass_info.pClearValues = &clear_color;
+
+			vkCmdBeginRenderPass(Context.command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context.graphics_pipeline);
+			
+			vkCmdDraw(Context.command_buffer, 3, 1, 0, 0);
+
+			vkCmdEndRenderPass(Context.command_buffer);
+			if (vkEndCommandBuffer(Context.command_buffer) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to record command buffer.");
+			}
 		}
 	}
 
@@ -189,7 +245,9 @@ namespace renderer {
 
 		framebuffers = CreateFramebuffers(context_framebuffer);
 
+		// Create Command Heirarchy
 		command_pool = CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
+		command_buffer = CreateCommandBuffer(logical_device, command_pool);
 	}
 
 	Renderer::~Renderer() {
