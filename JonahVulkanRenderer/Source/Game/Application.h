@@ -15,6 +15,9 @@ public:
 
 private:
 	renderer::Renderer* our_renderer;
+
+	void DrawFrame();
+
 };
 
 } // namespace game

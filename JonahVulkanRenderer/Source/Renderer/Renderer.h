@@ -44,6 +44,7 @@ private:
 	VkInstance vulkan_instance;
 	VkSurfaceKHR vulkan_surface;
 	VkSwapchainKHR swapchain;
+	VkExtent2D extent;
 	VkPhysicalDevice physical_device;
 	VkDevice logical_device;
 	GLFWwindow* window;

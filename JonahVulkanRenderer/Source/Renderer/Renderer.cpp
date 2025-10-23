@@ -54,12 +54,22 @@ namespace renderer {
 			subpass.colorAttachmentCount = 1;
 			subpass.pColorAttachments = &color_attachment_reference;
 
+			VkSubpassDependency dependency{};
+			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+			dependency.dstSubpass = 0;
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.srcAccessMask = 0;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
 			VkRenderPassCreateInfo render_pass_info{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 			render_pass_info.attachmentCount = 1;
 			render_pass_info.pAttachments = &color_attachment;
 			render_pass_info.subpassCount = 1;
 			render_pass_info.pSubpasses = &subpass;
+			render_pass_info.dependencyCount = 1;
+			render_pass_info.pDependencies = &dependency;
 
 			if (vkCreateRenderPass(LogicalDevice, &render_pass_info, nullptr, &render_pass) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create render pass.");
@@ -187,6 +197,7 @@ namespace renderer {
 			VkFence fence;
 			VkFenceCreateInfo fence_info{};
 			fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+			fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 			if (vkCreateFence(LogicalDevice, &fence_info, nullptr, &fence) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create fence.");
@@ -235,6 +246,7 @@ namespace renderer {
 		renderer::detail::SwapchainData swapchain_info = {};
 		swapchain_info = detail::CreateSwapchain(context_swapchain);
 		swapchain = swapchain_info.swapchain;
+		extent = swapchain_info.swapchain_extent;
 
 		// Create images
 		swapchain_images = detail::GetSwapchainImages(swapchain, logical_device);
@@ -251,7 +263,7 @@ namespace renderer {
 		detail::GraphicsPipelineContext context_graphics_pipeline = {};
 		context_graphics_pipeline.logical_device = logical_device;
 		context_graphics_pipeline.render_pass = render_pass;
-		context_graphics_pipeline.swapchain_extent = swapchain_info.swapchain_extent;
+		context_graphics_pipeline.swapchain_extent = extent;
 
 		renderer::detail::GraphicsPipelineData pipeline_info = {};
 		pipeline_info = detail::CreateGraphicsPipeline(context_graphics_pipeline);
@@ -263,7 +275,7 @@ namespace renderer {
 		context_framebuffer.logical_device = logical_device;
 		context_framebuffer.image_views = swapchain_image_views;
 		context_framebuffer.render_pass = render_pass;
-		context_framebuffer.swapchain_extent = swapchain_info.swapchain_extent;
+		context_framebuffer.swapchain_extent = extent;
 
 		framebuffers = CreateFramebuffers(context_framebuffer);
 
@@ -309,6 +321,48 @@ namespace renderer {
 
 	void Renderer::Draw() {
 
+		// Ensure no frames are being drawn already
+		vkWaitForFences(logical_device, 1, &in_flight_fence, VK_TRUE, UINT64_MAX);
+		vkResetFences(logical_device, 1, &in_flight_fence);
+
+		uint32_t image_index;
+		vkAcquireNextImageKHR(logical_device, swapchain, UINT64_MAX, image_available_semaphore, VK_NULL_HANDLE, &image_index);
+
+		vkResetCommandBuffer(command_buffer, 0);
+
+		CommandRecordingContext command_context{};
+		command_context.framebuffers = framebuffers;
+		command_context.render_pass = render_pass;
+		command_context.graphics_pipeline = graphics_pipeline;
+		command_context.command_buffer = command_buffer;
+		command_context.image_write_index = image_index;
+		command_context.swapchain_extent = extent;
+
+		RecordCommandBuffer(command_context);
+
+		VkSubmitInfo submit_info{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkSemaphore wait_semaphores[] = { image_available_semaphore }; // Command wont execute until semaphore is flagged.
+		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // These stages will wait for above flag.
+		submit_info.waitSemaphoreCount = 1;
+		submit_info.pWaitSemaphores = wait_semaphores;
+		submit_info.pWaitDstStageMask = wait_stages;
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &command_buffer;
+
+		VkSemaphore signal_semaphores[] = { render_finished_semaphore }; // These will be flagged once command complete.
+		submit_info.signalSemaphoreCount = 1;
+		submit_info.pSignalSemaphores = signal_semaphores;
+
+		if (vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fence) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to submit draw command buffer.");
+		}
+
+		VkPresentInfoKHR present_info{};
+		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		present_info.waitSemaphoreCount = 1;
+		present_info.pWaitSemaphores = signal_semaphores;
 	}
 
 	GLFWwindow* Renderer::Get_Window() {
