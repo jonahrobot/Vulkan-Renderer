@@ -171,6 +171,28 @@ namespace renderer {
 				throw std::runtime_error("Failed to record command buffer.");
 			}
 		}
+
+		VkSemaphore CreateVulkanSemaphore(VkDevice LogicalDevice) {
+			VkSemaphore semaphore;
+			VkSemaphoreCreateInfo semaphore_info{};
+			semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+			
+			if (vkCreateSemaphore(LogicalDevice, &semaphore_info, nullptr, &semaphore) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to create semaphore.");
+			}
+			return semaphore;
+		}
+
+		VkFence CreateVulkanFence(VkDevice LogicalDevice) {
+			VkFence fence;
+			VkFenceCreateInfo fence_info{};
+			fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+			if (vkCreateFence(LogicalDevice, &fence_info, nullptr, &fence) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to create fence.");
+			}
+			return fence;
+		}
 	}
 
 	Renderer::Renderer() {
@@ -248,9 +270,19 @@ namespace renderer {
 		// Create Command Heirarchy
 		command_pool = CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
 		command_buffer = CreateCommandBuffer(logical_device, command_pool);
+
+		// Create sync objects
+		image_available_semaphore = CreateVulkanSemaphore(logical_device);
+		render_finished_semaphore = CreateVulkanSemaphore(logical_device);
+		in_flight_fence = CreateVulkanFence(logical_device);
+
 	}
 
 	Renderer::~Renderer() {
+
+		vkDestroySemaphore(logical_device, image_available_semaphore, nullptr);
+		vkDestroySemaphore(logical_device, render_finished_semaphore, nullptr);
+		vkDestroyFence(logical_device, in_flight_fence, nullptr);
 
 		vkDestroyCommandPool(logical_device, command_pool, nullptr);
 
