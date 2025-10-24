@@ -288,10 +288,11 @@ namespace renderer {
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			image_available_semaphores.push_back(CreateVulkanSemaphore(logical_device));
-			render_finished_semaphores.push_back(CreateVulkanSemaphore(logical_device));
 			in_flight_fences.push_back(CreateVulkanFence(logical_device));
 		}
-
+		for (size_t i = 0; i < swapchain_images.size(); i++) {
+			render_finished_semaphores.push_back(CreateVulkanSemaphore(logical_device));
+		}
 	}
 
 	Renderer::~Renderer() {
@@ -300,8 +301,11 @@ namespace renderer {
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(logical_device, image_available_semaphores[i], nullptr);
-			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 			vkDestroyFence(logical_device, in_flight_fences[i], nullptr);
+		}
+
+		for (size_t i = 0; i < swapchain_images.size(); i++) {
+			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
 
 		vkDestroyCommandPool(logical_device, command_pool, nullptr);
@@ -364,11 +368,11 @@ namespace renderer {
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &command_buffers[current_frame];
 
-		VkSemaphore signal_semaphores[] = { render_finished_semaphores[current_frame]}; // These will be flagged once command complete.
+		VkSemaphore signal_semaphores[] = { render_finished_semaphores[image_index]}; // These will be flagged once command complete.
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = signal_semaphores;
 
-		if (vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]) != VK_SUCCESS) {
+		if (vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]) != VK_SUCCESS) { // Once queue submitted, can start next frame.
 			throw std::runtime_error("Failed to submit draw command buffer.");
 		}
 
