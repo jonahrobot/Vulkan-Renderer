@@ -17,7 +17,7 @@ GLFWwindow* Application::Get_Window() {
 
 void Application::Update() {
 	//std::cout << "Test Frame" << std::endl;
-	DrawFrame();
+	our_renderer->Draw();
 }
 
 void Application::DrawFrame() {

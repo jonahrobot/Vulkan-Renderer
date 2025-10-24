@@ -33,6 +33,8 @@ public:
 
 private:
 
+	const int MAX_FRAMES_IN_FLIGHT = 2;
+
 	const std::vector<const char*> ValidationLayersToSupport = {
 		"VK_LAYER_KHRONOS_validation"
 	};
@@ -57,10 +59,12 @@ private:
 	VkPipelineLayout graphics_pipeline_layout;
 	std::vector<VkFramebuffer> framebuffers;
 	VkCommandPool command_pool;
-	VkCommandBuffer command_buffer;
+	std::vector<VkCommandBuffer> command_buffers;
 	
-	VkSemaphore image_available_semaphore;
-	VkSemaphore render_finished_semaphore;
-	VkFence in_flight_fence;
+	std::vector<VkSemaphore> image_available_semaphores;
+	std::vector<VkSemaphore> render_finished_semaphores;
+	std::vector<VkFence> in_flight_fences;
+
+	uint32_t current_frame = 0;
 };
 } // namespace renderer
