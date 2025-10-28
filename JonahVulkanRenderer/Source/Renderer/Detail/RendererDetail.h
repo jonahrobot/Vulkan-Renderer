@@ -5,7 +5,8 @@
 #include <optional>
 #include <vector>
 
-// Helper functions for renderer.cpp
+// Internal Helper functions for renderer.cpp
+// Public Rendering API available at: "Renderer.h"
 namespace renderer::detail {
 
 	// Detail namespace seperates implementation logic of utility functions into their own classes.
@@ -65,7 +66,6 @@ namespace renderer::detail {
 		VkSwapchainKHR swapchain;
 		VkFormat swapchain_image_format;
 		VkExtent2D swapchain_extent;
-		VkDevice logical_device;
 	};
 	SwapchainData CreateSwapchain(const SwapchainContext& Context);
 
@@ -74,6 +74,29 @@ namespace renderer::detail {
 
 	// Implemented in "SwapChain.cpp"
 	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
+
+	// Implemented in "CommandBuffers.cpp"
+	VkCommandPool CreateCommandPool(const VkDevice LogicalDevice, uint32_t GraphicsFamilyIndex);
+
+	// Implemented in "CommandBuffers.cpp"
+	std::vector<VkCommandBuffer> CreateCommandBuffers(const int TotalFrames, const VkDevice LogicalDevice, const VkCommandPool CommandPool);
+
+	// Implemented in "CommandBuffers.cpp"
+	struct CommandRecordingContext {
+		std::vector<VkFramebuffer> framebuffers;
+		VkRenderPass render_pass;
+		VkPipeline graphics_pipeline;
+		VkCommandBuffer command_buffer;
+		uint32_t image_write_index;
+		VkExtent2D swapchain_extent;
+	};
+	void RecordCommandBuffer(const CommandRecordingContext& Context);
+
+	// Implemented in "SyncPrimatives.cpp"
+	VkSemaphore CreateVulkanSemaphore(VkDevice LogicalDevice);
+
+	// Implemented in "SyncPrimatives.cpp"
+	VkFence CreateVulkanFence(VkDevice LogicalDevice);
 
 	// Implemented in "GraphicsPipeline.cpp"
 	struct GraphicsPipelineContext {

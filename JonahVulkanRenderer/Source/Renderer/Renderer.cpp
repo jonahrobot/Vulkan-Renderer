@@ -111,101 +111,6 @@ namespace renderer {
 
 			return frame_buffers;
 		}
-
-		VkCommandPool CreateCommandPool(const VkDevice LogicalDevice, uint32_t GraphicsFamilyIndex) {
-
-			VkCommandPoolCreateInfo pool_info{};
-			pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-			pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-			pool_info.queueFamilyIndex = GraphicsFamilyIndex;
-
-			VkCommandPool out_pool;
-			if (vkCreateCommandPool(LogicalDevice, &pool_info, nullptr, &out_pool) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to create command pool.");
-			}
-			return out_pool;
-		}
-
-		std::vector<VkCommandBuffer> CreateCommandBuffers(const int TotalFrames, const VkDevice LogicalDevice, const VkCommandPool CommandPool) {
-
-			std::vector<VkCommandBuffer> out_buffers;
-			out_buffers.resize(TotalFrames);
-
-			VkCommandBufferAllocateInfo alloc_info{};
-			alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			alloc_info.commandPool = CommandPool;
-			alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			alloc_info.commandBufferCount = (uint32_t) TotalFrames;
-
-			if (vkAllocateCommandBuffers(LogicalDevice, &alloc_info, out_buffers.data()) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to allocate command buffers.");
-			}
-			return out_buffers;
-		}
-
-		struct CommandRecordingContext {
-			std::vector<VkFramebuffer> framebuffers;
-			VkRenderPass render_pass;
-			VkPipeline graphics_pipeline;
-			VkCommandBuffer command_buffer;
-			uint32_t image_write_index;
-			VkExtent2D swapchain_extent;
-		};
-
-		void RecordCommandBuffer(const CommandRecordingContext& Context) {
-			VkCommandBufferBeginInfo begin_info{};
-			begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			begin_info.flags = 0;
-			begin_info.pInheritanceInfo = nullptr;
-
-			if (vkBeginCommandBuffer(Context.command_buffer, &begin_info) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to begin recording command buffer.");
-			}
-
-			VkRenderPassBeginInfo render_pass_info{};
-			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			render_pass_info.renderPass = Context.render_pass;
-			render_pass_info.framebuffer = Context.framebuffers[Context.image_write_index];
-			render_pass_info.renderArea.offset = { 0,0 };
-			render_pass_info.renderArea.extent = Context.swapchain_extent;
-
-			VkClearValue clear_color = { {{0.0f,0.0f,0.0f,1.0f}} };
-			render_pass_info.clearValueCount = 1;
-			render_pass_info.pClearValues = &clear_color;
-
-			vkCmdBeginRenderPass(Context.command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context.graphics_pipeline);
-			
-			vkCmdDraw(Context.command_buffer, 3, 1, 0, 0);
-
-			vkCmdEndRenderPass(Context.command_buffer);
-			if (vkEndCommandBuffer(Context.command_buffer) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to record command buffer.");
-			}
-		}
-
-		VkSemaphore CreateVulkanSemaphore(VkDevice LogicalDevice) {
-			VkSemaphore semaphore;
-			VkSemaphoreCreateInfo semaphore_info{};
-			semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-			
-			if (vkCreateSemaphore(LogicalDevice, &semaphore_info, nullptr, &semaphore) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to create semaphore.");
-			}
-			return semaphore;
-		}
-
-		VkFence CreateVulkanFence(VkDevice LogicalDevice) {
-			VkFence fence;
-			VkFenceCreateInfo fence_info{};
-			fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-			fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-			if (vkCreateFence(LogicalDevice, &fence_info, nullptr, &fence) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to create fence.");
-			}
-			return fence;
-		}
 	}
 
 	Renderer::Renderer() {
@@ -282,16 +187,16 @@ namespace renderer {
 		framebuffers = CreateFramebuffers(context_framebuffer);
 
 		// Create Command Heirarchy
-		command_pool = CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
-		command_buffers = CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT,logical_device, command_pool);
+		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
+		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT,logical_device, command_pool);
 
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			image_available_semaphores.push_back(CreateVulkanSemaphore(logical_device));
-			in_flight_fences.push_back(CreateVulkanFence(logical_device));
+			image_available_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
+			in_flight_fences.push_back(detail::CreateVulkanFence(logical_device));
 		}
 		for (size_t i = 0; i < swapchain_images.size(); i++) {
-			render_finished_semaphores.push_back(CreateVulkanSemaphore(logical_device));
+			render_finished_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
 		}
 	}
 
@@ -346,7 +251,7 @@ namespace renderer {
 
 		/// DRAW
 
-		CommandRecordingContext command_context{};
+		detail::CommandRecordingContext command_context{};
 		command_context.framebuffers = framebuffers;
 		command_context.render_pass = render_pass;
 		command_context.graphics_pipeline = graphics_pipeline;
