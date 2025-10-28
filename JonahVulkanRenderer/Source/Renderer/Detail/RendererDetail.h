@@ -65,6 +65,7 @@ namespace renderer::detail {
 		VkSwapchainKHR swapchain;
 		VkFormat swapchain_image_format;
 		VkExtent2D swapchain_extent;
+		VkDevice logical_device;
 	};
 	SwapchainData CreateSwapchain(const SwapchainContext& Context);
 
