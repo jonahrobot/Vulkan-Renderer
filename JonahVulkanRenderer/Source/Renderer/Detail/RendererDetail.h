@@ -83,7 +83,7 @@ namespace renderer::detail {
 	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
 
 	struct RecreateSwapchainContext {
-		SwapchainContext swapchain_context;
+		SwapchainContext swapchain_creation_data;
 		VkRenderPass render_pass;
 
 		VkSwapchainKHR OLD_swapchain;

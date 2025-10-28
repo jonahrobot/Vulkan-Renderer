@@ -11,6 +11,8 @@
 #include <iostream>
 #include <string>
 
+#include "../Renderer/Detail/RendererDetail.h"
+
 #ifdef NDEBUG
 const bool UseValidationLayers = false;
 #else
@@ -31,6 +33,8 @@ public:
 
 	GLFWwindow* Get_Window();
 
+	bool framebuffer_resized = false;
+
 private:
 
 	const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -46,6 +50,7 @@ private:
 	VkInstance vulkan_instance;
 	VkSurfaceKHR vulkan_surface;
 	VkSwapchainKHR swapchain;
+	detail::SwapchainContext swapchain_creation_data;
 	VkExtent2D extent;
 	VkPhysicalDevice physical_device;
 	VkDevice logical_device;
@@ -64,7 +69,9 @@ private:
 	std::vector<VkSemaphore> image_available_semaphores;
 	std::vector<VkSemaphore> render_finished_semaphores;
 	std::vector<VkFence> in_flight_fences;
-
+	
 	uint32_t current_frame = 0;
+
+	void RecreateSwapchainHelper();
 };
 } // namespace renderer

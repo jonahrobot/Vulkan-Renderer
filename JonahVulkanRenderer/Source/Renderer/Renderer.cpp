@@ -5,7 +5,7 @@ namespace renderer {
 
 	// Unnamed namespace to show functions below are pure Utility with no internal state. 
 	// Cannot see or access private data of Renderer class.
-	namespace{
+	namespace {
 
 		GLFWwindow* CreateGLFWWindow() {
 
@@ -15,9 +15,10 @@ namespace renderer {
 			}
 
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-			glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+			glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-			return glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+			GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+			return window;
 		}
 
 		VkSurfaceKHR CreateVulkanSurface(const VkInstance VulkanInstance, GLFWwindow* Window) {
@@ -79,9 +80,17 @@ namespace renderer {
 		}
 	}
 
+	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
+		auto renderer = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
+		renderer->framebuffer_resized = true;
+	}
+
 	Renderer::Renderer() {
 
 		window = CreateGLFWWindow();
+		glfwSetWindowUserPointer(window, this);
+		glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
+
 		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
 		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
 
@@ -116,6 +125,8 @@ namespace renderer {
 		context_swapchain.supported_queues = physical_device_data.queues_supported;
 		context_swapchain.swapchain_support_details = physical_device_data.swapchain_support_details;
 
+		swapchain_creation_data = context_swapchain;
+
 		renderer::detail::SwapchainData swapchain_info = {};
 		swapchain_info = detail::CreateSwapchain(context_swapchain);
 		swapchain = swapchain_info.swapchain;
@@ -128,7 +139,7 @@ namespace renderer {
 		// Create queues
 		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphicsFamily.value(), 0, &graphics_queue);
 		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.presentFamily.value(), 0, &present_queue);
-	
+
 		// Create render pass
 		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format);
 
@@ -154,7 +165,7 @@ namespace renderer {
 
 		// Create Command Heirarchy
 		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
-		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT,logical_device, command_pool);
+		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
 
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -208,10 +219,20 @@ namespace renderer {
 
 		// Ensure no frames are being drawn already
 		vkWaitForFences(logical_device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
-		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 
 		uint32_t image_index;
-		vkAcquireNextImageKHR(logical_device, swapchain, UINT64_MAX, image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
+		VkResult result = vkAcquireNextImageKHR(logical_device, swapchain, UINT64_MAX, image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			RecreateSwapchainHelper();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+			throw std::runtime_error("Failed to acquire swapchain image.");
+		}
+
+		// Only reset fence if we are continuing work
+		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 
 		vkResetCommandBuffer(command_buffers[current_frame], 0);
 
@@ -230,7 +251,7 @@ namespace renderer {
 		VkSubmitInfo submit_info{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore wait_semaphores[] = { image_available_semaphores[current_frame]}; // Command wont execute until semaphore is flagged.
+		VkSemaphore wait_semaphores[] = { image_available_semaphores[current_frame] }; // Command wont execute until semaphore is flagged.
 		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // These stages will wait for above flag.
 		submit_info.waitSemaphoreCount = 1;
 		submit_info.pWaitSemaphores = wait_semaphores;
@@ -239,7 +260,7 @@ namespace renderer {
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &command_buffers[current_frame];
 
-		VkSemaphore signal_semaphores[] = { render_finished_semaphores[image_index]}; // These will be flagged once command complete.
+		VkSemaphore signal_semaphores[] = { render_finished_semaphores[image_index] }; // These will be flagged once command complete.
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = signal_semaphores;
 
@@ -261,7 +282,15 @@ namespace renderer {
 
 		present_info.pResults = nullptr;
 
-		vkQueuePresentKHR(present_queue, &present_info);
+		result = vkQueuePresentKHR(present_queue, &present_info);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized) {
+			framebuffer_resized = false;
+			RecreateSwapchainHelper();
+		}
+		else if (result != VK_SUCCESS) {
+			throw std::runtime_error("Failed to present swapchain image.");
+		}
 
 		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -270,4 +299,21 @@ namespace renderer {
 		return window;
 	}
 
+	void Renderer::RecreateSwapchainHelper() {
+		detail::RecreateSwapchainContext swapchain_context{};
+		swapchain_context.swapchain_creation_data = swapchain_creation_data;
+		swapchain_context.render_pass = render_pass;
+		swapchain_context.OLD_framebuffers = framebuffers;
+		swapchain_context.OLD_swapchain = swapchain;
+		swapchain_context.OLD_swapchain_image_views = swapchain_image_views;
+
+		detail::RecreateSwapchainData out_data = detail::RecreateSwapchain(swapchain_context);
+
+		swapchain = out_data.swapchain_data.swapchain;
+		extent = out_data.swapchain_data.swapchain_extent;
+
+		framebuffers = out_data.framebuffers;
+		swapchain_images = out_data.swapchain_images;
+		swapchain_image_views = out_data.swapchain_image_views;
+	}
 }// namespace renderer

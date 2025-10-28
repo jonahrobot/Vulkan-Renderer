@@ -168,7 +168,15 @@ namespace renderer::detail {
 
 		RecreateSwapchainData out_data = {};
 
-		VkDevice logical_device = Context.swapchain_context.logical_device;
+		VkDevice logical_device = Context.swapchain_creation_data.logical_device;
+
+		// If window minimized, pause execution.
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(Context.swapchain_creation_data.window, &width, &height);
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(Context.swapchain_creation_data.window, &width, &height);
+			glfwWaitEvents();
+		}
 
 		vkDeviceWaitIdle(logical_device);
 
@@ -184,7 +192,7 @@ namespace renderer::detail {
 
 		// Create new swapchain data
 
-		out_data.swapchain_data = detail::CreateSwapchain(Context.swapchain_context);
+		out_data.swapchain_data = detail::CreateSwapchain(Context.swapchain_creation_data);
 
 		out_data.swapchain_images = detail::GetSwapchainImages(out_data.swapchain_data.swapchain, logical_device);
 
