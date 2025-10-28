@@ -81,6 +81,22 @@ namespace renderer::detail {
 	std::vector<VkImage> GetSwapchainImages(const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
 
 	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
+
+	struct RecreateSwapchainContext {
+		SwapchainContext swapchain_context;
+		VkRenderPass render_pass;
+
+		VkSwapchainKHR OLD_swapchain;
+		std::vector<VkImageView> OLD_swapchain_image_views;
+		std::vector<VkFramebuffer> OLD_framebuffers;
+	};
+	struct RecreateSwapchainData {
+		SwapchainData swapchain_data;
+		std::vector<VkImage> swapchain_images;
+		std::vector<VkImageView> swapchain_image_views;
+		std::vector<VkFramebuffer> framebuffers;
+	};
+	RecreateSwapchainData RecreateSwapchain(RecreateSwapchainContext Context);
 #pragma endregion
 
 #pragma region Command Buffers

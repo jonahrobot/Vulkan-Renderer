@@ -167,10 +167,11 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Application.cpp" />
     <ClCompile Include="Source\Renderer\Detail\CommandBuffer.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\FrameBuffer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\GraphicsPipeline.cpp" />
     <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp" />
-    <ClCompile Include="Source\Renderer\Detail\SwapChain.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp" />
     <ClCompile Include="Source\Renderer\Detail\SyncPrimatives.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
