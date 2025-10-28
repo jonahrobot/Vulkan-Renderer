@@ -84,7 +84,7 @@ namespace renderer::detail {
 #pragma endregion
 
 #pragma region Command Buffers
-	// Implemented in "CommandBuffers.cpp"
+	// Implemented in "CommandBuffer.cpp"
 	VkCommandPool CreateCommandPool(const VkDevice LogicalDevice, uint32_t GraphicsFamilyIndex);
 
 	std::vector<VkCommandBuffer> CreateCommandBuffers(const int TotalFrames, const VkDevice LogicalDevice, const VkCommandPool CommandPool);
@@ -98,6 +98,17 @@ namespace renderer::detail {
 		VkExtent2D swapchain_extent;
 	};
 	void RecordCommandBuffer(const CommandRecordingContext& Context);
+#pragma endregion
+
+#pragma region Frame Buffers
+	// Implemented in "FrameBuffer.cpp"
+	struct FrameBufferContext {
+		std::vector<VkImageView> image_views;
+		VkRenderPass render_pass;
+		VkExtent2D swapchain_extent;
+		VkDevice logical_device;
+	};
+	std::vector<VkFramebuffer> CreateFramebuffers(const FrameBufferContext& Context);
 #pragma endregion
 
 #pragma region Synchronization Primitives
