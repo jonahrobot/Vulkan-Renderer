@@ -171,6 +171,7 @@
     <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\SwapChain.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\SyncPrimatives.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
   </ItemGroup>

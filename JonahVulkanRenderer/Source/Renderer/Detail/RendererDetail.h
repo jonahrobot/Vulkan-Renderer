@@ -11,10 +11,15 @@ namespace renderer::detail {
 
 	// Detail namespace seperates implementation logic of utility functions into their own classes.
 	// Renderer::detail naming convention tells us these are specific implementations for our renderer class.
-	
+
+	// All below functions construct parts of the Vulkan Renderer used in "Renderer.cpp"
+
+#pragma region Vulkan Instance
 	// Implemented in "Instance.cpp"
 	VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport);
+#pragma endregion
 
+#pragma region Physical Device
 	// Implemented in "PhysicalDevice.cpp"
 	struct PhysicalDeviceContext {
 		VkInstance vulkan_instance;
@@ -40,7 +45,9 @@ namespace renderer::detail {
 		SwapChainSupportDetails swapchain_support_details;
 	};
 	PhysicalDeviceData PickPhysicalDevice(const PhysicalDeviceContext& Context);
+#pragma endregion
 
+#pragma region Logical Device
 	// Implemented in "LogicalDevice.cpp"
 	struct LogicalDeviceContext {
 		VkInstance vulkan_instance;
@@ -52,8 +59,10 @@ namespace renderer::detail {
 		std::vector<const char*> ValidationLayersToSupport;
 	};
 	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context);
+#pragma endregion
 
-	// Implemented in "SwapChain.cpp"
+#pragma region Swapchain
+	// Implemented in "Swapchain.cpp"
 	struct SwapchainContext {
 		VkSurfaceKHR vulkan_surface;
 		VkPhysicalDevice physical_device;
@@ -69,19 +78,17 @@ namespace renderer::detail {
 	};
 	SwapchainData CreateSwapchain(const SwapchainContext& Context);
 
-	// Implemented in "SwapChain.cpp"
 	std::vector<VkImage> GetSwapchainImages(const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
 
-	// Implemented in "SwapChain.cpp"
 	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
+#pragma endregion
 
+#pragma region Command Buffers
 	// Implemented in "CommandBuffers.cpp"
 	VkCommandPool CreateCommandPool(const VkDevice LogicalDevice, uint32_t GraphicsFamilyIndex);
 
-	// Implemented in "CommandBuffers.cpp"
 	std::vector<VkCommandBuffer> CreateCommandBuffers(const int TotalFrames, const VkDevice LogicalDevice, const VkCommandPool CommandPool);
 
-	// Implemented in "CommandBuffers.cpp"
 	struct CommandRecordingContext {
 		std::vector<VkFramebuffer> framebuffers;
 		VkRenderPass render_pass;
@@ -91,13 +98,15 @@ namespace renderer::detail {
 		VkExtent2D swapchain_extent;
 	};
 	void RecordCommandBuffer(const CommandRecordingContext& Context);
+#pragma endregion
 
+#pragma region Synchronization Primitives
 	// Implemented in "SyncPrimatives.cpp"
 	VkSemaphore CreateVulkanSemaphore(VkDevice LogicalDevice);
-
-	// Implemented in "SyncPrimatives.cpp"
 	VkFence CreateVulkanFence(VkDevice LogicalDevice);
+#pragma endregion
 
+#pragma region Graphics Pipeline
 	// Implemented in "GraphicsPipeline.cpp"
 	struct GraphicsPipelineContext {
 		VkRenderPass render_pass;
@@ -109,4 +118,6 @@ namespace renderer::detail {
 		VkPipelineLayout layout;
 	};
 	GraphicsPipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
+#pragma endregion
+
 };
