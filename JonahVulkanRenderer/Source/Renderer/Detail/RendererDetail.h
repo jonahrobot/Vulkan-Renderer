@@ -34,17 +34,20 @@ namespace renderer::detail {
 			return graphicsFamily.has_value() && presentFamily.has_value();
 		}
 	};
+
+	struct PhysicalDeviceData {
+		VkPhysicalDevice physical_device;
+		QueueFamilyIndices queues_supported;
+	};
+	PhysicalDeviceData PickPhysicalDevice(const PhysicalDeviceContext& Context);
+
 	struct SwapChainSupportDetails {
 		VkSurfaceCapabilitiesKHR capabilities;
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
-	struct PhysicalDeviceData {
-		VkPhysicalDevice physical_device;
-		QueueFamilyIndices queues_supported;
-		SwapChainSupportDetails swapchain_support_details;
-	};
-	PhysicalDeviceData PickPhysicalDevice(const PhysicalDeviceContext& Context);
+	SwapChainSupportDetails GetDeviceSwapchainSupport(const VkPhysicalDevice physical_device, const VkSurfaceKHR current_surface);
+
 #pragma endregion
 
 #pragma region Logical Device
@@ -69,7 +72,6 @@ namespace renderer::detail {
 		VkDevice logical_device;
 		GLFWwindow* window;
 		QueueFamilyIndices supported_queues;
-		SwapChainSupportDetails swapchain_support_details;
 	};
 	struct SwapchainData {
 		VkSwapchainKHR swapchain;

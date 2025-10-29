@@ -58,29 +58,6 @@ namespace {
 		return required_extensions.empty();
 	}
 
-	renderer::detail::SwapChainSupportDetails GetSwapChainDetails(const VkPhysicalDevice physical_device,const VkSurfaceKHR current_surface) {
-		
-		renderer::detail::SwapChainSupportDetails details;
-
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, current_surface, &details.capabilities);
-
-		uint32_t supported_format_count;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, current_surface, &supported_format_count, nullptr);
-		if (supported_format_count != 0) {
-			details.formats.resize(supported_format_count);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, current_surface, &supported_format_count, details.formats.data());
-		}
-
-		uint32_t supported_present_mode_count;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, current_surface, &supported_present_mode_count, nullptr);
-		if (supported_present_mode_count != 0) {
-			details.presentModes.resize(supported_present_mode_count);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, current_surface, &supported_present_mode_count, details.presentModes.data());
-		}
-
-		return details;
-	}
-
 #pragma endregion
 
 	bool IsDeviceSuitable(const VkPhysicalDevice physical_device,const VkSurfaceKHR current_surface, const std::vector<const char*>& deviceExtensionsToSupport) {
@@ -93,7 +70,7 @@ namespace {
 
 		// Only check swapchain capabilities if GPU supports swapchains.
 		if (all_extensions_supported) { 
-			renderer::detail::SwapChainSupportDetails swap_chain_details = GetSwapChainDetails(physical_device, current_surface);
+			renderer::detail::SwapChainSupportDetails swap_chain_details = renderer::detail::GetDeviceSwapchainSupport(physical_device, current_surface);
 			swap_chain_capable = !swap_chain_details.formats.empty() && !swap_chain_details.presentModes.empty();
 		}
 
@@ -133,10 +110,30 @@ namespace renderer::detail {
 
 		return_data.physical_device = physical_device;
 		return_data.queues_supported = FindSupportedQueues(physical_device, Context.vulkan_surface);
-		return_data.swapchain_support_details = GetSwapChainDetails(physical_device, Context.vulkan_surface);
 
 		return return_data;
 	}
 
+	SwapChainSupportDetails GetDeviceSwapchainSupport(const VkPhysicalDevice physical_device, const VkSurfaceKHR current_surface) {
 
+		SwapChainSupportDetails details;
+
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, current_surface, &details.capabilities);
+
+		uint32_t supported_format_count;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, current_surface, &supported_format_count, nullptr);
+		if (supported_format_count != 0) {
+			details.formats.resize(supported_format_count);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, current_surface, &supported_format_count, details.formats.data());
+		}
+
+		uint32_t supported_present_mode_count;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, current_surface, &supported_present_mode_count, nullptr);
+		if (supported_present_mode_count != 0) {
+			details.presentModes.resize(supported_present_mode_count);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, current_surface, &supported_present_mode_count, details.presentModes.data());
+		}
+
+		return details;
+	}
 } // namespace renderer::detail

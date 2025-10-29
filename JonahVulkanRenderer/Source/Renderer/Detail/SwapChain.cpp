@@ -30,7 +30,11 @@ namespace {
 
 	// Sets swapchain size to window size
 	VkExtent2D SelectExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
+
+		std::cout << "Selecting an extent." << std::endl;
+
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+			std::cout << "No update." << std::endl;
 			// Usual case: Swapchain size == window resolution
 			return capabilities.currentExtent;
 		}
@@ -47,6 +51,8 @@ namespace {
 			actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
 			actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
+			std::cout << "Fetched window size!" << std::endl;
+
 			return actualExtent;
 		}
 	}
@@ -57,10 +63,10 @@ namespace renderer::detail {
 
 	SwapchainData CreateSwapchain(const SwapchainContext& Context) {
 
-		const SwapChainSupportDetails* creation_options = &Context.swapchain_support_details;
+		SwapChainSupportDetails creation_options = GetDeviceSwapchainSupport(Context.physical_device, Context.vulkan_surface);
 
-		uint32_t image_count = creation_options->capabilities.minImageCount + 1;
-		uint32_t max_images = creation_options->capabilities.maxImageCount;
+		uint32_t image_count = creation_options.capabilities.minImageCount + 1;
+		uint32_t max_images = creation_options.capabilities.maxImageCount;
 		bool has_max_image_count = max_images > 0;
 		bool over_max_images = has_max_image_count && image_count > max_images;
 
@@ -68,9 +74,9 @@ namespace renderer::detail {
 			image_count = max_images;
 		}
 
-		VkSurfaceFormatKHR surface_format = SelectSurfaceFormat(creation_options->formats);
-		VkPresentModeKHR present_mode = SelectPresentMode(creation_options->presentModes);
-		VkExtent2D extent = SelectExtent(creation_options->capabilities, Context.window);
+		VkSurfaceFormatKHR surface_format = SelectSurfaceFormat(creation_options.formats);
+		VkPresentModeKHR present_mode = SelectPresentMode(creation_options.presentModes);
+		VkExtent2D extent = SelectExtent(creation_options.capabilities, Context.window);
 
 		VkSwapchainCreateInfoKHR create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -95,7 +101,7 @@ namespace renderer::detail {
 			create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
 		}
 
-		create_info.preTransform = Context.swapchain_support_details.capabilities.currentTransform;
+		create_info.preTransform = creation_options.capabilities.currentTransform;
 		create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		create_info.presentMode = present_mode;
 		create_info.clipped = VK_TRUE; 

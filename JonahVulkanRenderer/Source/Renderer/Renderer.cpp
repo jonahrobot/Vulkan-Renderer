@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "Renderer.h"
 #include "Detail/RendererDetail.h"
 
@@ -123,7 +125,6 @@ namespace renderer {
 		context_swapchain.logical_device = logical_device;
 		context_swapchain.window = window;
 		context_swapchain.supported_queues = physical_device_data.queues_supported;
-		context_swapchain.swapchain_support_details = physical_device_data.swapchain_support_details;
 
 		swapchain_creation_data = context_swapchain;
 
@@ -311,6 +312,8 @@ namespace renderer {
 
 		swapchain = out_data.swapchain_data.swapchain;
 		extent = out_data.swapchain_data.swapchain_extent;
+
+		std::cout << "Recreated swapchain with new extent: " << extent.width << " X " << extent.height << "." << std::endl;
 
 		framebuffers = out_data.framebuffers;
 		swapchain_images = out_data.swapchain_images;
