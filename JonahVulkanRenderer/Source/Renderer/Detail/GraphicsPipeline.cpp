@@ -81,24 +81,20 @@ namespace renderer::detail {
 		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		input_assembly.primitiveRestartEnable = VK_FALSE;
 
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)Context.swapchain_extent.width;
-		viewport.height = (float)Context.swapchain_extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
+		std::vector<VkDynamicState> dynamic_states = {
+			VK_DYNAMIC_STATE_VIEWPORT,
+			VK_DYNAMIC_STATE_SCISSOR
+		};
 
-		VkRect2D scissor{};
-		scissor.offset = { 0,0 };
-		scissor.extent = Context.swapchain_extent;
+		VkPipelineDynamicStateCreateInfo dynamic_state{};
+		dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
+		dynamic_state.pDynamicStates = dynamic_states.data();
 
 		VkPipelineViewportStateCreateInfo viewport_state{};
 		viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewport_state.viewportCount = 1;
-		viewport_state.pViewports = &viewport;
 		viewport_state.scissorCount = 1;
-		viewport_state.pScissors = &scissor;
 
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -162,6 +158,7 @@ namespace renderer::detail {
 		pipeline_info.pMultisampleState = &multisampling;
 		pipeline_info.pDepthStencilState = nullptr;
 		pipeline_info.pColorBlendState = &color_blending;
+		pipeline_info.pDynamicState = &dynamic_state;
 
 		pipeline_info.layout = layout;
 		pipeline_info.renderPass = Context.render_pass;

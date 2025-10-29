@@ -64,6 +64,20 @@ namespace renderer::detail {
 		vkCmdBeginRenderPass(Context.command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 		vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context.graphics_pipeline);
 
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(Context.swapchain_extent.width);
+		viewport.height = static_cast<float>(Context.swapchain_extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(Context.command_buffer, 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.offset = { 0,0 };
+		scissor.extent = Context.swapchain_extent;
+		vkCmdSetScissor(Context.command_buffer, 0, 1, &scissor);
+
 		vkCmdDraw(Context.command_buffer, 3, 1, 0, 0);
 
 		vkCmdEndRenderPass(Context.command_buffer);
