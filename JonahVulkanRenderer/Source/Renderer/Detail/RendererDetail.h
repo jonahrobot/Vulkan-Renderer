@@ -114,6 +114,8 @@ namespace renderer::detail {
 		VkCommandBuffer command_buffer;
 		uint32_t image_write_index;
 		VkExtent2D swapchain_extent;
+		VkBuffer vertex_buffer;
+		uint32_t total_vertices;
 	};
 	void RecordCommandBuffer(const CommandRecordingContext& Context);
 #pragma endregion
@@ -147,6 +149,22 @@ namespace renderer::detail {
 		VkPipelineLayout layout;
 	};
 	GraphicsPipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
+#pragma endregion
+
+#pragma region Vertex Buffer
+	// Implemented in "VertexBuffer.cpp"
+	struct VertexBufferContext {
+		VkDevice logical_device;
+		VkDeviceSize buffer_size;
+	};
+	VkBuffer CreateVertexBuffer(const VertexBufferContext& Context);
+
+	struct AllocateMemoryContext {
+		VkBuffer vertex_buffer;
+		VkDevice logical_device;
+		VkPhysicalDevice physical_device;
+	};
+	VkDeviceMemory AllocateVertexBuffer(const AllocateMemoryContext& Context);
 #pragma endregion
 
 };

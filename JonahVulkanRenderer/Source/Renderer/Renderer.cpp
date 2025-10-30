@@ -164,6 +164,31 @@ namespace renderer {
 
 		framebuffers = detail::CreateFramebuffers(context_framebuffer);
 
+		// Create Vertex Buffer
+		VkDeviceSize buffer_size = sizeof(vertices_to_render[0]) * vertices_to_render.size(); // Currently still hardcoded
+
+		detail::VertexBufferContext context_vertexbuffer = {};
+		context_vertexbuffer.logical_device = logical_device;
+		context_vertexbuffer.buffer_size = buffer_size;
+
+		vertex_buffer = detail::CreateVertexBuffer(context_vertexbuffer);
+
+		// Allocate memory for Vertex Buffer
+		detail::AllocateMemoryContext context_vertex_memory = {};
+		context_vertex_memory.logical_device = logical_device;
+		context_vertex_memory.physical_device = physical_device;
+		context_vertex_memory.vertex_buffer = vertex_buffer;
+
+		vertex_buffer_memory = detail::AllocateVertexBuffer(context_vertex_memory);
+
+		vkBindBufferMemory(logical_device, vertex_buffer, vertex_buffer_memory, 0);
+
+		// Pass Vertex data to GPU buffer
+		void* data;
+		vkMapMemory(logical_device, vertex_buffer_memory, 0, buffer_size, 0, &data);
+		memcpy(data, vertices_to_render.data(), (size_t)buffer_size);
+		vkUnmapMemory(logical_device, vertex_buffer_memory);
+
 		// Create Command Heirarchy
 		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
 		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
@@ -206,6 +231,10 @@ namespace renderer {
 		}
 
 		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
+
+		vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
+		vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
+
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
 		vkDestroyInstance(vulkan_instance, nullptr); // Cleanup instance LAST in Vulkan Cleanup
@@ -246,6 +275,8 @@ namespace renderer {
 		command_context.command_buffer = command_buffers[current_frame];
 		command_context.image_write_index = image_index;
 		command_context.swapchain_extent = extent;
+		command_context.vertex_buffer = vertex_buffer;
+		command_context.total_vertices = static_cast<uint32_t>(vertices_to_render.size());
 
 		RecordCommandBuffer(command_context);
 
