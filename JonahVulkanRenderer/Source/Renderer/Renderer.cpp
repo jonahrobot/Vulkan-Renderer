@@ -102,8 +102,7 @@ namespace renderer {
 		context_physical.vulkan_surface = vulkan_surface;
 		context_physical.DeviceExtensionsToSupport = DeviceExtensionsToSupport;
 
-		renderer::detail::PhysicalDeviceData physical_device_data = {};
-		physical_device_data = detail::PickPhysicalDevice(context_physical);
+		detail::PhysicalDeviceData physical_device_data = detail::PickPhysicalDevice(context_physical);
 		physical_device = physical_device_data.physical_device;
 
 		// Create Logical Device
@@ -128,8 +127,7 @@ namespace renderer {
 
 		swapchain_creation_data = context_swapchain;
 
-		renderer::detail::SwapchainData swapchain_info = {};
-		swapchain_info = detail::CreateSwapchain(context_swapchain);
+		detail::SwapchainData swapchain_info = detail::CreateSwapchain(context_swapchain);
 		swapchain = swapchain_info.swapchain;
 		extent = swapchain_info.swapchain_extent;
 
@@ -150,8 +148,7 @@ namespace renderer {
 		context_graphics_pipeline.render_pass = render_pass;
 		context_graphics_pipeline.swapchain_extent = extent;
 
-		renderer::detail::GraphicsPipelineData pipeline_info = {};
-		pipeline_info = detail::CreateGraphicsPipeline(context_graphics_pipeline);
+		detail::GraphicsPipelineData pipeline_info = detail::CreateGraphicsPipeline(context_graphics_pipeline);
 		graphics_pipeline = pipeline_info.pipeline;
 		graphics_pipeline_layout = pipeline_info.layout;
 
