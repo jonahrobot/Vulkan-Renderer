@@ -151,20 +151,20 @@ namespace renderer::detail {
 	GraphicsPipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
 #pragma endregion
 
-#pragma region Vertex Buffer
-	// Implemented in "VertexBuffer.cpp"
-	struct VertexBufferContext {
-		VkDevice logical_device;
-		VkDeviceSize buffer_size;
-	};
-	VkBuffer CreateVertexBuffer(const VertexBufferContext& Context);
-
-	struct AllocateMemoryContext {
-		VkBuffer vertex_buffer;
+#pragma region Data Buffers
+	// Implemented in "DataBuffer.cpp"
+	struct BufferCreationContext {
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
+		VkDeviceSize buffer_size;
+		VkBufferUsageFlags usage_flags;
+		VkMemoryPropertyFlags  property_flags;
 	};
-	VkDeviceMemory AllocateVertexBuffer(const AllocateMemoryContext& Context);
+	struct BufferData {
+		VkBuffer created_buffer;
+		VkDeviceMemory memory_allocated_for_buffer;
+	};
+	BufferData CreateDataBuffer(const BufferCreationContext& Context);
 #pragma endregion
 
 };

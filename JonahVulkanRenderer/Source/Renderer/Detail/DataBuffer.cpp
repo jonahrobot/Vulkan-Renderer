@@ -25,41 +25,42 @@ namespace {
 // Implements all Vertex Buffer functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 	
-	VkBuffer CreateVertexBuffer(const VertexBufferContext& Context) {
+	BufferData CreateDataBuffer(const BufferCreationContext& Context) {
 
-		VkBuffer vertex_buffer;
+		VkBuffer buffer;
 
+		// Create buffer
 		VkBufferCreateInfo buffer_info{};
 		buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
 		buffer_info.size = Context.buffer_size;
-		buffer_info.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		buffer_info.usage = Context.usage_flags;
 		buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-		if (vkCreateBuffer(Context.logical_device, &buffer_info, nullptr, &vertex_buffer) != VK_SUCCESS) {
+		if (vkCreateBuffer(Context.logical_device, &buffer_info, nullptr, &buffer) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create vertex buffer.");
 		}
 
-		return vertex_buffer;
-	}
-
-	VkDeviceMemory AllocateVertexBuffer(const AllocateMemoryContext& Context) {
-
-		VkDeviceMemory vertex_buffer_memory;
+		// Allocate buffer memory
+		VkDeviceMemory buffer_memory;
 
 		VkMemoryRequirements memory_requirements;
-		vkGetBufferMemoryRequirements(Context.logical_device, Context.vertex_buffer, &memory_requirements);
-
-		VkMemoryPropertyFlags memory_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		vkGetBufferMemoryRequirements(Context.logical_device, buffer, &memory_requirements);
 
 		VkMemoryAllocateInfo allocate_info{};
 		allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		allocate_info.allocationSize = memory_requirements.size;
-		allocate_info.memoryTypeIndex = FindMemoryType(Context.physical_device, memory_requirements.memoryTypeBits, memory_flags);
+		allocate_info.memoryTypeIndex = FindMemoryType(Context.physical_device, memory_requirements.memoryTypeBits, Context.property_flags);
 
-		if (vkAllocateMemory(Context.logical_device, &allocate_info, nullptr, &vertex_buffer_memory) != VK_SUCCESS) {
+		if (vkAllocateMemory(Context.logical_device, &allocate_info, nullptr, &buffer_memory) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to allocate vertex buffer memory.");
 		}
 
-		return vertex_buffer_memory;
+		vkBindBufferMemory(Context.logical_device, buffer, buffer_memory, 0);
+
+		BufferData return_data{};
+		return_data.created_buffer = buffer;
+		return_data.memory_allocated_for_buffer = buffer_memory;
+
+		return return_data;
 	}
 }

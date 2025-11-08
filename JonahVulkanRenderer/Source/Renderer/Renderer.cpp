@@ -167,21 +167,17 @@ namespace renderer {
 		// Create Vertex Buffer
 		VkDeviceSize buffer_size = sizeof(vertices_to_render[0]) * vertices_to_render.size(); // Currently still hardcoded
 
-		detail::VertexBufferContext context_vertexbuffer = {};
+		detail::BufferCreationContext context_vertexbuffer = {};
 		context_vertexbuffer.logical_device = logical_device;
 		context_vertexbuffer.buffer_size = buffer_size;
+		context_vertexbuffer.physical_device = physical_device;
+		context_vertexbuffer.property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		context_vertexbuffer.usage_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		vertex_buffer = detail::CreateVertexBuffer(context_vertexbuffer);
+		detail::BufferData out_data = detail::CreateDataBuffer(context_vertexbuffer);
 
-		// Allocate memory for Vertex Buffer
-		detail::AllocateMemoryContext context_vertex_memory = {};
-		context_vertex_memory.logical_device = logical_device;
-		context_vertex_memory.physical_device = physical_device;
-		context_vertex_memory.vertex_buffer = vertex_buffer;
-
-		vertex_buffer_memory = detail::AllocateVertexBuffer(context_vertex_memory);
-
-		vkBindBufferMemory(logical_device, vertex_buffer, vertex_buffer_memory, 0);
+		vertex_buffer = out_data.created_buffer;
+		vertex_buffer_memory = out_data.memory_allocated_for_buffer;
 
 		// Pass Vertex data to GPU buffer
 		void* data;

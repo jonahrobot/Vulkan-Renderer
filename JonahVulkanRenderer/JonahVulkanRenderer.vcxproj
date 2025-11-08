@@ -173,7 +173,7 @@
     <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp" />
     <ClCompile Include="Source\Renderer\Detail\SyncPrimatives.cpp" />
-    <ClCompile Include="Source\Renderer\Detail\VertexBuffer.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\DataBuffer.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
   </ItemGroup>
