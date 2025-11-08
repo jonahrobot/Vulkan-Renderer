@@ -37,37 +37,6 @@ public:
 
 	bool framebuffer_resized = false;
 
-	struct Vertex {
-		glm::vec2 position;
-		glm::vec3 color;
-
-		static VkVertexInputBindingDescription GetBindingDescription() {
-			VkVertexInputBindingDescription binding_description{};
-			binding_description.binding = 0;
-			binding_description.stride = sizeof(Vertex);
-			binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			return binding_description;
-		}
-
-		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescription() {
-			std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions = {};
-
-			// Position
-			attribute_descriptions[0].binding = 0;
-			attribute_descriptions[0].location = 0;
-			attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT; // Vec2
-			attribute_descriptions[0].offset = offsetof(Vertex, position);
-
-			// Color
-			attribute_descriptions[1].binding = 0;
-			attribute_descriptions[1].location = 1;
-			attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
-			attribute_descriptions[1].offset = offsetof(Vertex, color);
-
-			return attribute_descriptions;
-		}
-	};
-
 private:
 
 	const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -109,7 +78,7 @@ private:
 
 	void RecreateSwapchainHelper();
 
-	const std::vector<Vertex> vertices_to_render = {
+	const std::vector<detail::Vertex> vertices_to_render = {
 		{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
 		{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
 		{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}

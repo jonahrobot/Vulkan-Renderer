@@ -2,8 +2,10 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <glm/glm.hpp>
 #include <optional>
 #include <vector>
+#include <array>
 
 // Internal Helper functions for renderer.cpp
 // Public Rendering API available at: "Renderer.h"
@@ -11,6 +13,39 @@ namespace renderer::detail {
 
 	// Detail namespace seperates implementation logic of utility functions into their own classes.
 	// Renderer::detail naming convention tells us these are specific implementations for our renderer class.
+
+#pragma region Vertex Type
+	struct Vertex {
+		glm::vec2 position;
+		glm::vec3 color;
+
+		static VkVertexInputBindingDescription GetBindingDescription() {
+			VkVertexInputBindingDescription binding_description{};
+			binding_description.binding = 0;
+			binding_description.stride = sizeof(Vertex);
+			binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			return binding_description;
+		}
+
+		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescription() {
+			std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions = {};
+
+			// Position
+			attribute_descriptions[0].binding = 0;
+			attribute_descriptions[0].location = 0;
+			attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT; // Vec2
+			attribute_descriptions[0].offset = offsetof(Vertex, position);
+
+			// Color
+			attribute_descriptions[1].binding = 0;
+			attribute_descriptions[1].location = 1;
+			attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
+			attribute_descriptions[1].offset = offsetof(Vertex, color);
+
+			return attribute_descriptions;
+		}
+	};
+#pragma endregion
 
 	// All below functions construct parts of the Vulkan Renderer used in "Renderer.cpp"
 
@@ -153,18 +188,18 @@ namespace renderer::detail {
 
 #pragma region Data Buffers
 	// Implemented in "DataBuffer.cpp"
-	struct BufferCreationContext {
+	struct VertexBufferContext {
+		std::vector<Vertex> vertices_to_render;
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
-		VkDeviceSize buffer_size;
-		VkBufferUsageFlags usage_flags;
-		VkMemoryPropertyFlags  property_flags;
+		VkQueue graphics_queue;
+		VkCommandPool command_pool;
 	};
-	struct BufferData {
+	struct VertexBufferData {
 		VkBuffer created_buffer;
 		VkDeviceMemory memory_allocated_for_buffer;
 	};
-	BufferData CreateDataBuffer(const BufferCreationContext& Context);
+	VertexBufferData CreateVertexBuffer(const VertexBufferContext& Context);
 #pragma endregion
 
 };

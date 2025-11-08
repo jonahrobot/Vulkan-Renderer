@@ -161,30 +161,21 @@ namespace renderer {
 
 		framebuffers = detail::CreateFramebuffers(context_framebuffer);
 
-		// Create Vertex Buffer
-		VkDeviceSize buffer_size = sizeof(vertices_to_render[0]) * vertices_to_render.size(); // Currently still hardcoded
-
-		detail::BufferCreationContext context_vertexbuffer = {};
-		context_vertexbuffer.logical_device = logical_device;
-		context_vertexbuffer.buffer_size = buffer_size;
-		context_vertexbuffer.physical_device = physical_device;
-		context_vertexbuffer.property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		context_vertexbuffer.usage_flags = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-
-		detail::BufferData out_data = detail::CreateDataBuffer(context_vertexbuffer);
-
-		vertex_buffer = out_data.created_buffer;
-		vertex_buffer_memory = out_data.memory_allocated_for_buffer;
-
-		// Pass Vertex data to GPU buffer
-		void* data;
-		vkMapMemory(logical_device, vertex_buffer_memory, 0, buffer_size, 0, &data);
-		memcpy(data, vertices_to_render.data(), (size_t)buffer_size);
-		vkUnmapMemory(logical_device, vertex_buffer_memory);
-
 		// Create Command Heirarchy
 		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
 		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
+
+		// Create Vertex Buffer
+		detail::VertexBufferContext context_vertexbuffer = {};
+		context_vertexbuffer.vertices_to_render = vertices_to_render;
+		context_vertexbuffer.logical_device = logical_device;
+		context_vertexbuffer.physical_device = physical_device;
+		context_vertexbuffer.graphics_queue = graphics_queue;
+		context_vertexbuffer.command_pool = command_pool;
+
+		detail::VertexBufferData vertexbuffer_info = detail::CreateVertexBuffer(context_vertexbuffer);
+		vertex_buffer = vertexbuffer_info.created_buffer;
+		vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
 
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {

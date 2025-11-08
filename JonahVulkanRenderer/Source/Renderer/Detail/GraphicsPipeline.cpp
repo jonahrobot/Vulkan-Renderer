@@ -1,4 +1,3 @@
-#include "../Renderer.h"
 #include "RendererDetail.h"
 #include <string>
 #include <fstream>
@@ -73,11 +72,11 @@ namespace renderer::detail {
 		VkPipelineVertexInputStateCreateInfo vertex_input_info{};
 		vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-		auto binding_description = Renderer::Vertex::GetBindingDescription();
+		auto binding_description = Vertex::GetBindingDescription();
 		vertex_input_info.vertexBindingDescriptionCount = 1;
 		vertex_input_info.pVertexBindingDescriptions = &binding_description;
 
-		auto attribute_description = Renderer::Vertex::GetAttributeDescription();
+		auto attribute_description = Vertex::GetAttributeDescription();
 		vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_description.size());
 		vertex_input_info.pVertexAttributeDescriptions = attribute_description.data();
 
