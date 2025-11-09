@@ -37,6 +37,12 @@ public:
 
 	bool framebuffer_resized = false;
 
+	struct UniformBufferObject {
+		glm::mat4 model;
+		glm::mat4 view;
+		glm::mat4 proj;
+	};
+
 private:
 
 	const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -63,6 +69,7 @@ private:
 	VkQueue present_queue;
 	VkRenderPass render_pass;
 	VkPipeline graphics_pipeline;
+	VkDescriptorSetLayout descriptor_set_layout;
 	VkPipelineLayout graphics_pipeline_layout;
 	std::vector<VkFramebuffer> framebuffers;
 	VkCommandPool command_pool;
@@ -72,6 +79,10 @@ private:
 	VkDeviceMemory vertex_buffer_memory;
 	VkBuffer index_buffer;
 	VkDeviceMemory index_buffer_memory;
+
+	std::vector<VkBuffer> uniform_buffers;
+	std::vector<VkDeviceMemory> uniform_buffers_memory;
+	std::vector<void*> uniform_buffers_mapped;
 	
 	std::vector<VkSemaphore> image_available_semaphores;
 	std::vector<VkSemaphore> render_finished_semaphores;

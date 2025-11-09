@@ -180,6 +180,7 @@ namespace renderer::detail {
 		VkRenderPass render_pass;
 		VkDevice logical_device;
 		VkExtent2D swapchain_extent;
+		VkDescriptorSetLayout vertex_descriptor_set_layout;
 	};
 	struct GraphicsPipelineData {
 		VkPipeline pipeline;
@@ -214,6 +215,31 @@ namespace renderer::detail {
 	};
 	BufferData CreateIndexBuffer(const IndexBufferContext& Context);
 
+	struct UniformBufferContext {
+		uint8_t max_frames_in_flight;
+		uint16_t ubo_size;
+		VkDevice logical_device;
+		VkPhysicalDevice physical_device;
+	};
+	struct UniformBufferData {
+		std::vector<VkBuffer> uniform_buffers;
+		std::vector<VkDeviceMemory> uniform_buffers_memory;
+		std::vector<void*> uniform_buffers_mapped;
+	};
+	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context);
+
 #pragma endregion
+
+#pragma region Descriptor Sets
+	// Implemented in "DescriptorSet.cpp"
+
+	struct DescriptorLayoutContext {
+		VkDevice logical_device;
+	};
+	VkDescriptorSetLayout CreateDescriptorLayout(const DescriptorLayoutContext& Context);
+
+#pragma endregion
+
+
 
 };

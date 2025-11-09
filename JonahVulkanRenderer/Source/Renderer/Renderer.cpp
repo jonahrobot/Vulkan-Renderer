@@ -1,3 +1,9 @@
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
+
 #include <iostream>
 
 #include "Renderer.h"
@@ -80,6 +86,23 @@ namespace renderer {
 
 			return render_pass;
 		}
+
+		Renderer::UniformBufferObject GetNextUBO(VkExtent2D swapchain_extent) {
+
+			static auto start_time = std::chrono::high_resolution_clock::now();
+
+			auto current_time = std::chrono::high_resolution_clock::now();
+			float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+
+			Renderer::UniformBufferObject ubo{};
+			ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f);
+
+			ubo.proj[1][1] *= -1;
+
+			return ubo;
+		}
 	}
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -142,11 +165,15 @@ namespace renderer {
 		// Create render pass
 		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format);
 
+		// Create descriptor set for camera UBO, used in graphics pipeline creation
+		descriptor_set_layout = detail::CreateDescriptorLayout({logical_device});
+
 		// Create graphics pipeline
 		detail::GraphicsPipelineContext context_graphics_pipeline = {};
 		context_graphics_pipeline.logical_device = logical_device;
 		context_graphics_pipeline.render_pass = render_pass;
 		context_graphics_pipeline.swapchain_extent = extent;
+		context_graphics_pipeline.vertex_descriptor_set_layout = descriptor_set_layout;
 
 		detail::GraphicsPipelineData pipeline_info = detail::CreateGraphicsPipeline(context_graphics_pipeline);
 		graphics_pipeline = pipeline_info.pipeline;
@@ -189,6 +216,18 @@ namespace renderer {
 		index_buffer = indexbuffer_info.created_buffer;
 		index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
 
+		// Create UBO for Vertex
+		detail::UniformBufferContext context_ubo = {};
+		context_ubo.logical_device = logical_device;
+		context_ubo.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
+		context_ubo.physical_device = physical_device;
+		context_ubo.ubo_size = sizeof(UniformBufferObject);
+
+		detail::UniformBufferData ubo_info = detail::CreateUniformBuffers(context_ubo);
+		uniform_buffers = ubo_info.uniform_buffers;
+		uniform_buffers_memory = ubo_info.uniform_buffers_memory;
+		uniform_buffers_mapped = ubo_info.uniform_buffers_mapped;
+
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			image_available_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
@@ -211,6 +250,13 @@ namespace renderer {
 		for (size_t i = 0; i < swapchain_images.size(); i++) {
 			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			vkDestroyBuffer(logical_device, uniform_buffers[i], nullptr);
+			vkFreeMemory(logical_device, uniform_buffers_memory[i], nullptr);
+		}
+
+		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr);
 
 		vkDestroyCommandPool(logical_device, command_pool, nullptr);
 
@@ -264,6 +310,10 @@ namespace renderer {
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 
 		vkResetCommandBuffer(command_buffers[current_frame], 0);
+
+		// Update camera position (temp)
+		UniformBufferObject current_ubo_data = GetNextUBO(extent);
+		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data, sizeof(current_ubo_data));
 
 		/// DRAW
 
