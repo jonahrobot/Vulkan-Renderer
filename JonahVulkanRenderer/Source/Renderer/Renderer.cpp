@@ -173,9 +173,21 @@ namespace renderer {
 		context_vertexbuffer.graphics_queue = graphics_queue;
 		context_vertexbuffer.command_pool = command_pool;
 
-		detail::VertexBufferData vertexbuffer_info = detail::CreateVertexBuffer(context_vertexbuffer);
+		detail::BufferData vertexbuffer_info = detail::CreateVertexBuffer(context_vertexbuffer);
 		vertex_buffer = vertexbuffer_info.created_buffer;
 		vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
+
+		// Create Index Buffer
+		detail::IndexBufferContext context_indexbuffer = {};
+		context_indexbuffer.indices = indices;
+		context_indexbuffer.logical_device = logical_device;
+		context_indexbuffer.physical_device = physical_device;
+		context_indexbuffer.graphics_queue = graphics_queue;
+		context_indexbuffer.command_pool = command_pool;
+
+		detail::BufferData indexbuffer_info = detail::CreateIndexBuffer(context_indexbuffer);
+		index_buffer = indexbuffer_info.created_buffer;
+		index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
 
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -215,6 +227,9 @@ namespace renderer {
 		}
 
 		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
+
+		vkDestroyBuffer(logical_device, index_buffer, nullptr);
+		vkFreeMemory(logical_device, index_buffer_memory, nullptr);
 
 		vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
 		vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
@@ -261,6 +276,8 @@ namespace renderer {
 		command_context.swapchain_extent = extent;
 		command_context.vertex_buffer = vertex_buffer;
 		command_context.total_vertices = static_cast<uint32_t>(vertices_to_render.size());
+		command_context.index_buffer = index_buffer;
+		command_context.total_indices = static_cast<uint32_t>(indices.size());
 
 		RecordCommandBuffer(command_context);
 

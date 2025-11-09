@@ -150,6 +150,8 @@ namespace renderer::detail {
 		uint32_t image_write_index;
 		VkExtent2D swapchain_extent;
 		VkBuffer vertex_buffer;
+		VkBuffer index_buffer;
+		uint32_t total_indices;
 		uint32_t total_vertices;
 	};
 	void RecordCommandBuffer(const CommandRecordingContext& Context);
@@ -188,6 +190,12 @@ namespace renderer::detail {
 
 #pragma region Data Buffers
 	// Implemented in "DataBuffer.cpp"
+
+	struct BufferData {
+		VkBuffer created_buffer;
+		VkDeviceMemory memory_allocated_for_buffer;
+	};
+
 	struct VertexBufferContext {
 		std::vector<Vertex> vertices_to_render;
 		VkDevice logical_device;
@@ -195,11 +203,17 @@ namespace renderer::detail {
 		VkQueue graphics_queue;
 		VkCommandPool command_pool;
 	};
-	struct VertexBufferData {
-		VkBuffer created_buffer;
-		VkDeviceMemory memory_allocated_for_buffer;
+	BufferData CreateVertexBuffer(const VertexBufferContext& Context);
+
+	struct IndexBufferContext {
+		std::vector<uint16_t> indices;
+		VkDevice logical_device;
+		VkPhysicalDevice physical_device;
+		VkQueue graphics_queue;
+		VkCommandPool command_pool;
 	};
-	VertexBufferData CreateVertexBuffer(const VertexBufferContext& Context);
+	BufferData CreateIndexBuffer(const IndexBufferContext& Context);
+
 #pragma endregion
 
 };

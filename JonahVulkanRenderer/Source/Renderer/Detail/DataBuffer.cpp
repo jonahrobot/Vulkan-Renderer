@@ -20,11 +20,7 @@ namespace {
 		throw std::runtime_error("Failed to find suitable memory type.");
 	}
 
-	struct BufferData {
-		VkBuffer created_buffer;
-		VkDeviceMemory memory_allocated_for_buffer;
-	};
-	BufferData CreateDataBuffer(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkDeviceSize BufferSize, VkBufferUsageFlags UsageFlags, VkMemoryPropertyFlags PropertyFlags) {
+	renderer::detail::BufferData CreateDataBuffer(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkDeviceSize BufferSize, VkBufferUsageFlags UsageFlags, VkMemoryPropertyFlags PropertyFlags) {
 
 		VkBuffer buffer;
 
@@ -56,7 +52,7 @@ namespace {
 
 		vkBindBufferMemory(LogicalDevice, buffer, buffer_memory, 0);
 
-		BufferData return_data{};
+		renderer::detail::BufferData return_data{};
 		return_data.created_buffer = buffer;
 		return_data.memory_allocated_for_buffer = buffer_memory;
 
@@ -98,58 +94,77 @@ namespace {
 
 		vkFreeCommandBuffers(LogicalDevice, CommandPool, 1, &command_buffer);
 	}
+
+	/*
+	 * Optimization:
+	 * Instead of creating a VkBuffer on the GPU and writing to it from the CPU, we create two buffers.
+	 * One opens the CPU to write data onto the GPU.
+	 * The second is strictly for the GPU.
+	 *
+	 * The first is a temp buffer, whose data is copied to the GPU only buffer.
+	 * This allows us to end with a buffer only on the GPU. Reducing read times as CPU coherency is not required.
+	 */
+
+	renderer::detail::BufferData CreateGPULocalBuffer(const void* DataSrc, VkDeviceSize DataSize, VkBufferUsageFlags UsageFlags, VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkQueue GraphicsQueue, VkCommandPool CommandPool) {
+
+		// Create temp buffer that CPU and GPU can both see and write to.
+		VkBufferUsageFlags temp_usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+		VkMemoryPropertyFlags temp_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+		renderer::detail::BufferData temp_buffer_data = CreateDataBuffer(LogicalDevice, PhysicalDevice, DataSize, temp_usage_flags, temp_property_flags);
+		VkBuffer temp_buffer = temp_buffer_data.created_buffer;
+		VkDeviceMemory temp_buffer_memory = temp_buffer_data.memory_allocated_for_buffer;
+
+		void* data;
+		vkMapMemory(LogicalDevice, temp_buffer_memory, 0, DataSize, 0, &data);
+		memcpy(data, DataSrc, (size_t)DataSize);
+		vkUnmapMemory(LogicalDevice, temp_buffer_memory);
+
+		// Create GPU only buffer that CPU can't see
+		VkBufferUsageFlags usage_flags = UsageFlags;
+		VkMemoryPropertyFlags property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+		renderer::detail::BufferData created_buffer_data = CreateDataBuffer(LogicalDevice, PhysicalDevice, DataSize, usage_flags, property_flags);
+
+		// Copy temp buffer data into GPU only buffer
+		CopyBuffer(GraphicsQueue, LogicalDevice, CommandPool, temp_buffer, created_buffer_data.created_buffer, DataSize);
+
+		// Destroy temp
+		vkDestroyBuffer(LogicalDevice, temp_buffer, nullptr);
+		vkFreeMemory(LogicalDevice, temp_buffer_memory, nullptr);
+
+		return created_buffer_data;
+	}
+
 }
 
 
 // Implements all Vertex Buffer functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 	
-	/*
-	 * Optimization: 
-	 * Instead of creating a VkBuffer on the GPU and writing to it from the CPU, we create two buffers.
-	 * One opens the CPU to write data onto the GPU.
-	 * The second is strictly for the GPU.
-	 * 
-	 * The first is a temp buffer, whose data is copied to the GPU only buffer.
-	 * This allows us to end with a buffer only on the GPU. Reducing read times as CPU coherency is not required.
-	 */
 
-	VertexBufferData CreateVertexBuffer(const VertexBufferContext& Context) {
+	BufferData CreateVertexBuffer(const VertexBufferContext& Context) {
 
-		VkDeviceSize vertex_buffer_size = sizeof(Context.vertices_to_render[0]) * Context.vertices_to_render.size();
-
-		// Create temp buffer that CPU and GPU can both see and write to.
-		VkBufferUsageFlags temp_usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-		VkMemoryPropertyFlags temp_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-		BufferData temp_buffer_data = CreateDataBuffer(Context.logical_device, Context.physical_device, vertex_buffer_size, temp_usage_flags, temp_property_flags);
-		VkBuffer temp_buffer = temp_buffer_data.created_buffer;
-		VkDeviceMemory temp_buffer_memory = temp_buffer_data.memory_allocated_for_buffer;
-
-		void* data;
-		vkMapMemory(Context.logical_device, temp_buffer_memory, 0, vertex_buffer_size, 0, &data);
-		memcpy(data, Context.vertices_to_render.data(), (size_t)vertex_buffer_size);
-		vkUnmapMemory(Context.logical_device, temp_buffer_memory);
-
-		// Create GPU only buffer that CPU can't see
+		const void* data_src = Context.vertices_to_render.data();
+		VkDeviceSize data_size = sizeof(Context.vertices_to_render[0]) * Context.vertices_to_render.size();
 		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		VkMemoryPropertyFlags property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		BufferData vertex_buffer_data = CreateDataBuffer(Context.logical_device, Context.physical_device, vertex_buffer_size, usage_flags, property_flags);
-		VkBuffer vertex_buffer = vertex_buffer_data.created_buffer;
+		BufferData created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+										   Context.physical_device, Context.graphics_queue, Context.command_pool);
 
-		// Copy temp buffer data into GPU only buffer
-		CopyBuffer(Context.graphics_queue, Context.logical_device, Context.command_pool, temp_buffer, vertex_buffer, vertex_buffer_size);
-
-		// Destroy temp
-		vkDestroyBuffer(Context.logical_device, temp_buffer, nullptr);
-		vkFreeMemory(Context.logical_device, temp_buffer_memory, nullptr);
-
-		VertexBufferData return_data{};
-		return_data.created_buffer = vertex_buffer;
-		return_data.memory_allocated_for_buffer = vertex_buffer_data.memory_allocated_for_buffer;
-
-		return return_data;
+		return created_buffer;
 	}
 
+	BufferData CreateIndexBuffer(const IndexBufferContext& Context) {
+
+		const void* data_src = Context.indices.data();
+		VkDeviceSize data_size = sizeof(Context.indices[0]) * Context.indices.size();
+		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+
+		BufferData created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+										   Context.physical_device, Context.graphics_queue, Context.command_pool);
+
+		return created_buffer;
+
+	}
 }

@@ -82,7 +82,9 @@ namespace renderer::detail {
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(Context.command_buffer, 0, 1, vertex_buffers, offsets);
 
-		vkCmdDraw(Context.command_buffer, Context.total_vertices, 1, 0, 0);
+		vkCmdBindIndexBuffer(Context.command_buffer, Context.index_buffer, 0, VK_INDEX_TYPE_UINT16);
+
+		vkCmdDrawIndexed(Context.command_buffer, Context.total_indices, 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(Context.command_buffer);
 		if (vkEndCommandBuffer(Context.command_buffer) != VK_SUCCESS) {
