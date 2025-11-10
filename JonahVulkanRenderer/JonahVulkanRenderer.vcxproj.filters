@@ -51,6 +51,9 @@
     <ClCompile Include="Source\Renderer\Detail\DataBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Renderer\Detail\DescriptorSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Application.h">

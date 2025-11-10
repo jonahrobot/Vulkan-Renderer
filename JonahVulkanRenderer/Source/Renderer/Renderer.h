@@ -69,6 +69,8 @@ private:
 	VkQueue present_queue;
 	VkRenderPass render_pass;
 	VkPipeline graphics_pipeline;
+	VkDescriptorPool descriptor_pool;
+	std::vector<VkDescriptorSet> descriptor_sets;
 	VkDescriptorSetLayout descriptor_set_layout;
 	VkPipelineLayout graphics_pipeline_layout;
 	std::vector<VkFramebuffer> framebuffers;

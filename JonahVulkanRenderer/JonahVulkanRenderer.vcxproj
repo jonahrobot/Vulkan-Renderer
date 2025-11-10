@@ -167,6 +167,7 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Application.cpp" />
     <ClCompile Include="Source\Renderer\Detail\CommandBuffer.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\DescriptorSet.cpp" />
     <ClCompile Include="Source\Renderer\Detail\FrameBuffer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\GraphicsPipeline.cpp" />
     <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp" />

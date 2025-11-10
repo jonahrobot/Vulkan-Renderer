@@ -146,6 +146,7 @@ namespace renderer::detail {
 		std::vector<VkFramebuffer> framebuffers;
 		VkRenderPass render_pass;
 		VkPipeline graphics_pipeline;
+		VkPipelineLayout graphics_pipeline_layout;
 		VkCommandBuffer command_buffer;
 		uint32_t image_write_index;
 		VkExtent2D swapchain_extent;
@@ -153,6 +154,7 @@ namespace renderer::detail {
 		VkBuffer index_buffer;
 		uint32_t total_indices;
 		uint32_t total_vertices;
+		VkDescriptorSet current_descriptor_set;
 	};
 	void RecordCommandBuffer(const CommandRecordingContext& Context);
 #pragma endregion
@@ -237,6 +239,22 @@ namespace renderer::detail {
 		VkDevice logical_device;
 	};
 	VkDescriptorSetLayout CreateDescriptorLayout(const DescriptorLayoutContext& Context);
+
+	struct DescriptorPoolContext {
+		uint8_t max_frames_in_flight;
+		VkDevice logical_device;
+	};
+	VkDescriptorPool CreateDescriptorPool(const DescriptorPoolContext& Context);
+
+	struct DescriptorSetContext {
+		std::vector<VkBuffer> uniform_buffers;
+		uint16_t ubo_size;
+		VkDescriptorSetLayout descriptor_set_layout;
+		VkDescriptorPool descriptor_pool;
+		uint8_t max_frames_in_flight;
+		VkDevice logical_device;
+	};
+	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorSetContext& Context);
 
 #pragma endregion
 

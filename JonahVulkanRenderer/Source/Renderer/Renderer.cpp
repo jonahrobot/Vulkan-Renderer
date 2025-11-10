@@ -228,6 +228,24 @@ namespace renderer {
 		uniform_buffers_memory = ubo_info.uniform_buffers_memory;
 		uniform_buffers_mapped = ubo_info.uniform_buffers_mapped;
 
+		// Create Descriptor Pool
+		detail::DescriptorPoolContext context_pool = {};
+		context_pool.logical_device = logical_device;
+		context_pool.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
+
+		descriptor_pool = detail::CreateDescriptorPool(context_pool);
+
+		// Create Descriptor Sets to link UBO to GPU
+		detail::DescriptorSetContext context_descriptor_set = {};
+		context_descriptor_set.descriptor_pool = descriptor_pool;
+		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
+		context_descriptor_set.logical_device = logical_device;
+		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
+		context_descriptor_set.ubo_size = sizeof(UniformBufferObject);
+		context_descriptor_set.uniform_buffers = uniform_buffers;
+
+		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
+
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			image_available_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
@@ -255,6 +273,8 @@ namespace renderer {
 			vkDestroyBuffer(logical_device, uniform_buffers[i], nullptr);
 			vkFreeMemory(logical_device, uniform_buffers_memory[i], nullptr);
 		}
+
+		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
 
 		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr);
 
@@ -321,7 +341,9 @@ namespace renderer {
 		command_context.framebuffers = framebuffers;
 		command_context.render_pass = render_pass;
 		command_context.graphics_pipeline = graphics_pipeline;
+		command_context.graphics_pipeline_layout = graphics_pipeline_layout;
 		command_context.command_buffer = command_buffers[current_frame];
+		command_context.current_descriptor_set = descriptor_sets[current_frame];
 		command_context.image_write_index = image_index;
 		command_context.swapchain_extent = extent;
 		command_context.vertex_buffer = vertex_buffer;
