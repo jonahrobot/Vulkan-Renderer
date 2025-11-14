@@ -9,6 +9,7 @@
 #include <optional>
 #include <vector>
 #include <array>
+#include "RendererDetail_Common.h"
 
 // Internal Helper functions for renderer.cpp
 // Public Rendering API available at: "Renderer.h"
@@ -196,11 +197,6 @@ namespace renderer::detail {
 
 #pragma region Data Buffers
 	// Implemented in "DataBuffer.cpp"
-
-	struct BufferData {
-		VkBuffer created_buffer;
-		VkDeviceMemory memory_allocated_for_buffer;
-	};
 
 	struct VertexBufferContext {
 		std::vector<Vertex> vertices_to_render;

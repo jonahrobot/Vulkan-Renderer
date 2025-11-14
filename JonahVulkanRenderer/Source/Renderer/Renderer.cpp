@@ -199,15 +199,19 @@ namespace renderer {
 		// Create Texture Image
 		detail::TextureBundle rock_texture = detail::LoadTextureImage("textures/rock.jpg");
 
-		detail::ImageBufferContext context_imagebuffer = {};
-		context_imagebuffer.pixels = rock_texture.pixels;
-		context_imagebuffer.image_size = rock_texture.image_size;
+		//TextureBundle texture_bundle;
+		//VkDevice logical_device;
+		//VkPhysicalDevice physical_device;
+		//VkImageTiling data_tiling_mode;
+		//VkImageUsageFlags usage_flags;
+		//VkMemoryPropertyFlagBits memory_flags_required;
+
+		detail::ImageObjectContext context_imagebuffer = {};
+		context_imagebuffer.texture_bundle = rock_texture;
 		context_imagebuffer.logical_device = logical_device;
 		context_imagebuffer.physical_device = physical_device;
-		context_imagebuffer.graphics_queue = graphics_queue;
-		context_imagebuffer.command_pool = command_pool;
 
-		detail::BufferData imagebuffer_info = detail::CreateImageBuffer(context_imagebuffer);
+		detail::ImageObject imagebuffer_info = detail::CreateImageObject(context_imagebuffer);
 
 
 
