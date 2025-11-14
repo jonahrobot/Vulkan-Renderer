@@ -2,6 +2,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_master/stb_image.h>
+
 #include <chrono>
 
 #include <iostream>
@@ -103,6 +106,7 @@ namespace renderer {
 
 			return ubo;
 		}
+		
 	}
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -191,6 +195,23 @@ namespace renderer {
 		// Create Command Heirarchy
 		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
 		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
+
+		// Create Texture Image
+		detail::TextureBundle rock_texture = detail::LoadTextureImage("textures/rock.jpg");
+
+		detail::ImageBufferContext context_imagebuffer = {};
+		context_imagebuffer.pixels = rock_texture.pixels;
+		context_imagebuffer.image_size = rock_texture.image_size;
+		context_imagebuffer.logical_device = logical_device;
+		context_imagebuffer.physical_device = physical_device;
+		context_imagebuffer.graphics_queue = graphics_queue;
+		context_imagebuffer.command_pool = command_pool;
+
+		detail::BufferData imagebuffer_info = detail::CreateImageBuffer(context_imagebuffer);
+
+
+
+		detail::FreeTextureBundle(rock_texture);
 
 		// Create Vertex Buffer
 		detail::VertexBufferContext context_vertexbuffer = {};

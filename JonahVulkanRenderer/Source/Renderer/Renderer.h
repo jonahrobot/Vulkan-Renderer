@@ -38,9 +38,9 @@ public:
 	bool framebuffer_resized = false;
 
 	struct UniformBufferObject {
-		glm::mat4 model;
-		glm::mat4 view;
-		glm::mat4 proj;
+		alignas(16) glm::mat4 model;
+		alignas(16) glm::mat4 view;
+		alignas(16) glm::mat4 proj;
 	};
 
 private:
@@ -77,6 +77,8 @@ private:
 	VkCommandPool command_pool;
 	std::vector<VkCommandBuffer> command_buffers;
 
+	VkImage texture_image_0;
+	VkDeviceMemory texture_image_memory_0;
 	VkBuffer vertex_buffer;
 	VkDeviceMemory vertex_buffer_memory;
 	VkBuffer index_buffer;

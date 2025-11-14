@@ -2,6 +2,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_master/stb_image.h>
+
 #include <glm/glm.hpp>
 #include <optional>
 #include <vector>
@@ -259,5 +262,32 @@ namespace renderer::detail {
 #pragma endregion
 
 
+#pragma region Image Loading
+	// Implemented in "ImageLoader.cpp"
 
+	struct TextureBundle {
+		stbi_uc* pixels;
+		VkDeviceSize image_size;
+		int width;
+		int height;
+		VkFormat format;
+	};
+	TextureBundle LoadTextureImage(const char* TexturePath);
+	void FreeTextureBundle(TextureBundle& TextureBundle);
+
+	struct ImageObjectContext {
+		TextureBundle texture_bundle;
+		VkDevice logical_device;
+		VkPhysicalDevice physical_device;
+		VkImageTiling data_tiling_mode;
+		VkImageUsageFlags usage_flags;
+		VkMemoryPropertyFlagBits memory_flags_required;
+	};
+	struct ImageObject {
+		VkImage texture_image;
+		VkDeviceMemory texture_image_memory;
+	};
+	ImageObject CreateImageObject(const ImageObjectContext& Context);
+
+#pragma endregion
 };
