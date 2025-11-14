@@ -2,14 +2,14 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_master/stb_image.h>
-
 #include <glm/glm.hpp>
 #include <optional>
 #include <vector>
 #include <array>
+
 #include "RendererDetail_Common.h"
+
 
 // Internal Helper functions for renderer.cpp
 // Public Rendering API available at: "Renderer.h"
@@ -278,6 +278,8 @@ namespace renderer::detail {
 		VkImageTiling data_tiling_mode;
 		VkImageUsageFlags usage_flags;
 		VkMemoryPropertyFlagBits memory_flags_required;
+		VkQueue graphics_queue;
+		VkCommandPool command_pool;
 	};
 	struct ImageObject {
 		VkImage texture_image;

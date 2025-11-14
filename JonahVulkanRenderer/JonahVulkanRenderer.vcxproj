@@ -173,15 +173,18 @@
     <ClCompile Include="Source\Renderer\Detail\ImageLoader.cpp" />
     <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\RendererDetail_Common.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp" />
     <ClCompile Include="Source\Renderer\Detail\SyncPrimatives.cpp" />
     <ClCompile Include="Source\Renderer\Detail\DataBuffer.cpp" />
+    <ClCompile Include="Source\Renderer\Implementation.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Application.h" />
     <ClInclude Include="Source\Renderer\Detail\RendererDetail.h" />
+    <ClInclude Include="Source\Renderer\Detail\RendererDetail_Common.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
   </ItemGroup>
   <ItemGroup>

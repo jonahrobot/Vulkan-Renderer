@@ -2,9 +2,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_master/stb_image.h>
-
 #include <chrono>
 
 #include <iostream>
@@ -199,21 +196,20 @@ namespace renderer {
 		// Create Texture Image
 		detail::TextureBundle rock_texture = detail::LoadTextureImage("textures/rock.jpg");
 
-		//TextureBundle texture_bundle;
-		//VkDevice logical_device;
-		//VkPhysicalDevice physical_device;
-		//VkImageTiling data_tiling_mode;
-		//VkImageUsageFlags usage_flags;
-		//VkMemoryPropertyFlagBits memory_flags_required;
-
 		detail::ImageObjectContext context_imagebuffer = {};
 		context_imagebuffer.texture_bundle = rock_texture;
 		context_imagebuffer.logical_device = logical_device;
 		context_imagebuffer.physical_device = physical_device;
+		context_imagebuffer.command_pool = command_pool;
+		context_imagebuffer.data_tiling_mode = VK_IMAGE_TILING_OPTIMAL;
+		context_imagebuffer.graphics_queue = graphics_queue;
+		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		detail::ImageObject imagebuffer_info = detail::CreateImageObject(context_imagebuffer);
 
-
+		texture_image_0 = imagebuffer_info.texture_image;
+		texture_image_memory_0 = imagebuffer_info.texture_image_memory;
 
 		detail::FreeTextureBundle(rock_texture);
 
@@ -293,6 +289,9 @@ namespace renderer {
 		for (size_t i = 0; i < swapchain_images.size(); i++) {
 			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
+
+		vkDestroyImage(logical_device, texture_image_0, nullptr);
+		vkFreeMemory(logical_device, texture_image_memory_0, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(logical_device, uniform_buffers[i], nullptr);

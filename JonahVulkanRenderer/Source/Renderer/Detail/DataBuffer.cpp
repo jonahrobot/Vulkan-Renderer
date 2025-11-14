@@ -6,20 +6,8 @@ namespace {
 
 	// Copy two buffers on the GPU through GPU commands.
 	void CopyBuffer(VkQueue GraphicsQueue, VkDevice LogicalDevice, VkCommandPool CommandPool, VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize size) {
-		VkCommandBufferAllocateInfo alloc_info{};
-		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		alloc_info.commandPool = CommandPool;
-		alloc_info.commandBufferCount = 1;
-
-		VkCommandBuffer command_buffer;
-		vkAllocateCommandBuffers(LogicalDevice, &alloc_info, &command_buffer);
-
-		VkCommandBufferBeginInfo begin_info{};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-		vkBeginCommandBuffer(command_buffer, &begin_info);
+		
+		VkCommandBuffer command_buffer = renderer::detail::BeginSingleTimeCommand(CommandPool, LogicalDevice);
 
 		VkBufferCopy copy_region{};
 		copy_region.srcOffset = 0;
@@ -27,17 +15,7 @@ namespace {
 		copy_region.size = size;
 		vkCmdCopyBuffer(command_buffer, SrcBuffer, DstBuffer, 1, &copy_region);
 
-		vkEndCommandBuffer(command_buffer);
-
-		VkSubmitInfo submit_info{};
-		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &command_buffer;
-
-		vkQueueSubmit(GraphicsQueue, 1, &submit_info, VK_NULL_HANDLE);
-		vkQueueWaitIdle(GraphicsQueue);
-
-		vkFreeCommandBuffers(LogicalDevice, CommandPool, 1, &command_buffer);
+		renderer::detail::EndSingleTimeCommand(command_buffer, CommandPool, LogicalDevice, GraphicsQueue);
 	}
 
 	/*
