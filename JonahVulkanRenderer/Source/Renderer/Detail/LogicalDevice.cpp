@@ -19,22 +19,23 @@ namespace renderer::detail {
 		float queue_priority = 1.0f;
 		for (uint32_t queue : supported_queues) {
 
-			VkDeviceQueueCreateInfo createInfo{};
-			createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			createInfo.queueFamilyIndex = queue;
-			createInfo.queueCount = 1;
-			createInfo.pQueuePriorities = &queue_priority;
+			VkDeviceQueueCreateInfo create_info{};
+			create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			create_info.queueFamilyIndex = queue;
+			create_info.queueCount = 1;
+			create_info.pQueuePriorities = &queue_priority;
 
-			queue_create_infos.push_back(createInfo);
+			queue_create_infos.push_back(create_info);
 		}
 
-		VkPhysicalDeviceFeatures deviceFeatures{};
+		VkPhysicalDeviceFeatures device_features{};
+		device_features.samplerAnisotropy = VK_TRUE;
 
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		createInfo.pQueueCreateInfos = queue_create_infos.data();
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
-		createInfo.pEnabledFeatures = &deviceFeatures;
+		createInfo.pEnabledFeatures = &device_features;
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(Context.DeviceExtensionsToSupport.size());;
 		createInfo.ppEnabledExtensionNames = Context.DeviceExtensionsToSupport.data();
 

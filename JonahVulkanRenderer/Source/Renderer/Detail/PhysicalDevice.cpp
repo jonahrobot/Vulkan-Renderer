@@ -9,14 +9,14 @@ namespace {
 
 #pragma region IsDeviceSuitable HELPERS
 
-	renderer::detail::QueueFamilyIndices FindSupportedQueues(const VkPhysicalDevice physical_device, const VkSurfaceKHR current_surface) {
+	renderer::detail::QueueFamilyIndices FindSupportedQueues(const VkPhysicalDevice PhysicalDevice, const VkSurfaceKHR CurrentSurface) {
 		
 		renderer::detail::QueueFamilyIndices queues_found;
 
 		uint32_t supported_queues_count = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &supported_queues_count, nullptr);
+		vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &supported_queues_count, nullptr);
 		std::vector<VkQueueFamilyProperties> queues_supported_by_device(supported_queues_count);
-		vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &supported_queues_count, queues_supported_by_device.data());
+		vkGetPhysicalDeviceQueueFamilyProperties(PhysicalDevice, &supported_queues_count, queues_supported_by_device.data());
 
 		int index = 0;
 		for (const VkQueueFamilyProperties& queue : queues_supported_by_device) {
@@ -26,7 +26,7 @@ namespace {
 			}
 
 			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, index, current_surface, &presentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, index, CurrentSurface, &presentSupport);
 
 			if (presentSupport) {
 				queues_found.presentFamily = index;
@@ -42,12 +42,12 @@ namespace {
 		return queues_found;
 	}
 	
-	bool CheckDeviceExtensionSupport(const VkPhysicalDevice physical_device, const std::vector<const char*>& deviceExtensionsToSupport) {
+	bool CheckDeviceExtensionSupport(const VkPhysicalDevice PhysicalDevice, const std::vector<const char*>& deviceExtensionsToSupport) {
 
 		uint32_t available_extension_count;
-		vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &available_extension_count, nullptr);
+		vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &available_extension_count, nullptr);
 		std::vector<VkExtensionProperties> available_extensions(available_extension_count);
-		vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &available_extension_count, available_extensions.data());
+		vkEnumerateDeviceExtensionProperties(PhysicalDevice, nullptr, &available_extension_count, available_extensions.data());
 
 		std::set<std::string> required_extensions(deviceExtensionsToSupport.begin(), deviceExtensionsToSupport.end());
 
@@ -60,21 +60,25 @@ namespace {
 
 #pragma endregion
 
-	bool IsDeviceSuitable(const VkPhysicalDevice physical_device,const VkSurfaceKHR current_surface, const std::vector<const char*>& deviceExtensionsToSupport) {
+	bool IsDeviceSuitable(const VkPhysicalDevice PhysicalDevice,const VkSurfaceKHR CurrentSurface, const std::vector<const char*>& deviceExtensionsToSupport) {
 
-		renderer::detail::QueueFamilyIndices queues_found = FindSupportedQueues(physical_device, current_surface);
+		renderer::detail::QueueFamilyIndices queues_found = FindSupportedQueues(PhysicalDevice, CurrentSurface);
 
-		bool all_extensions_supported = CheckDeviceExtensionSupport(physical_device, deviceExtensionsToSupport);
+		bool all_extensions_supported = CheckDeviceExtensionSupport(PhysicalDevice, deviceExtensionsToSupport);
 
 		bool swap_chain_capable = false;
 
 		// Only check swapchain capabilities if GPU supports swapchains.
 		if (all_extensions_supported) { 
-			renderer::detail::SwapChainSupportDetails swap_chain_details = renderer::detail::GetDeviceSwapchainSupport(physical_device, current_surface);
+			renderer::detail::SwapChainSupportDetails swap_chain_details = renderer::detail::GetDeviceSwapchainSupport(PhysicalDevice, CurrentSurface);
 			swap_chain_capable = !swap_chain_details.formats.empty() && !swap_chain_details.presentModes.empty();
 		}
 
-		return queues_found.isComplete() && all_extensions_supported && swap_chain_capable;
+		// Check if GPU supports Anisotropic Filtering
+		VkPhysicalDeviceFeatures supported_features{};
+		vkGetPhysicalDeviceFeatures(PhysicalDevice, &supported_features);
+
+		return queues_found.isComplete() && all_extensions_supported && swap_chain_capable && supported_features.samplerAnisotropy;
 	}
 
 }
@@ -114,24 +118,24 @@ namespace renderer::detail {
 		return return_data;
 	}
 
-	SwapChainSupportDetails GetDeviceSwapchainSupport(const VkPhysicalDevice physical_device, const VkSurfaceKHR current_surface) {
+	SwapChainSupportDetails GetDeviceSwapchainSupport(const VkPhysicalDevice PhysicalDevice, const VkSurfaceKHR current_surface) {
 
 		SwapChainSupportDetails details;
 
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, current_surface, &details.capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(PhysicalDevice, current_surface, &details.capabilities);
 
 		uint32_t supported_format_count;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, current_surface, &supported_format_count, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, current_surface, &supported_format_count, nullptr);
 		if (supported_format_count != 0) {
 			details.formats.resize(supported_format_count);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, current_surface, &supported_format_count, details.formats.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(PhysicalDevice, current_surface, &supported_format_count, details.formats.data());
 		}
 
 		uint32_t supported_present_mode_count;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, current_surface, &supported_present_mode_count, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, current_surface, &supported_present_mode_count, nullptr);
 		if (supported_present_mode_count != 0) {
 			details.presentModes.resize(supported_present_mode_count);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, current_surface, &supported_present_mode_count, details.presentModes.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(PhysicalDevice, current_surface, &supported_present_mode_count, details.presentModes.data());
 		}
 
 		return details;
