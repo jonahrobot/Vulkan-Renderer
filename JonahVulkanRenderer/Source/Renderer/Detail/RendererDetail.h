@@ -22,6 +22,7 @@ namespace renderer::detail {
 	struct Vertex {
 		glm::vec2 position;
 		glm::vec3 color;
+		glm::vec2 tex_coord;
 
 		static VkVertexInputBindingDescription GetBindingDescription() {
 			VkVertexInputBindingDescription binding_description{};
@@ -31,8 +32,8 @@ namespace renderer::detail {
 			return binding_description;
 		}
 
-		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescription() {
-			std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions = {};
+		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescription() {
+			std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions = {};
 
 			// Position
 			attribute_descriptions[0].binding = 0;
@@ -45,6 +46,12 @@ namespace renderer::detail {
 			attribute_descriptions[1].location = 1;
 			attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
 			attribute_descriptions[1].offset = offsetof(Vertex, color);
+
+			// Texture Coordinates
+			attribute_descriptions[2].binding = 0;
+			attribute_descriptions[2].location = 2;
+			attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT; // Vec2
+			attribute_descriptions[2].offset = offsetof(Vertex, tex_coord);
 
 			return attribute_descriptions;
 		}
@@ -252,6 +259,8 @@ namespace renderer::detail {
 		VkDescriptorPool descriptor_pool;
 		uint8_t max_frames_in_flight;
 		VkDevice logical_device;
+		VkImageView texture_image_view;
+		VkSampler texture_sampler;
 	};
 	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorSetContext& Context);
 

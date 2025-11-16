@@ -299,6 +299,8 @@ namespace renderer {
 		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_descriptor_set.ubo_size = sizeof(UniformBufferObject);
 		context_descriptor_set.uniform_buffers = uniform_buffers;
+		context_descriptor_set.texture_image_view = texture_0.texture_image_view;
+		context_descriptor_set.texture_sampler = texture_sampler;
 
 		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
 
