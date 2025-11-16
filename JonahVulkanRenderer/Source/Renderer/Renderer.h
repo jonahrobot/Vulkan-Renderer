@@ -77,8 +77,8 @@ private:
 	VkCommandPool command_pool;
 	std::vector<VkCommandBuffer> command_buffers;
 
-	VkImage texture_image_0;
-	VkDeviceMemory texture_image_memory_0;
+	detail::ImageObject texture_0;
+
 	VkBuffer vertex_buffer;
 	VkDeviceMemory vertex_buffer_memory;
 	VkBuffer index_buffer;

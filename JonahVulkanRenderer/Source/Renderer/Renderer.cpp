@@ -206,10 +206,7 @@ namespace renderer {
 		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-		detail::ImageObject imagebuffer_info = detail::CreateImageObject(context_imagebuffer);
-
-		texture_image_0 = imagebuffer_info.texture_image;
-		texture_image_memory_0 = imagebuffer_info.texture_image_memory;
+		texture_0 = detail::CreateImageObject(context_imagebuffer);
 
 		detail::FreeTextureBundle(rock_texture);
 
@@ -290,8 +287,7 @@ namespace renderer {
 			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
 
-		vkDestroyImage(logical_device, texture_image_0, nullptr);
-		vkFreeMemory(logical_device, texture_image_memory_0, nullptr);
+		detail::FreeImageObject(texture_0);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(logical_device, uniform_buffers[i], nullptr);

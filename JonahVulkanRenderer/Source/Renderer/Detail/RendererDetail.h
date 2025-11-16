@@ -257,7 +257,6 @@ namespace renderer::detail {
 
 #pragma endregion
 
-
 #pragma region Image Loading
 	// Implemented in "ImageLoader.cpp"
 
@@ -284,8 +283,10 @@ namespace renderer::detail {
 	struct ImageObject {
 		VkImage texture_image;
 		VkDeviceMemory texture_image_memory;
+		VkImageView texture_image_view;
 	};
 	ImageObject CreateImageObject(const ImageObjectContext& Context);
+	void FreeImageObject(ImageObject& ImageObject);
 
 #pragma endregion
 };

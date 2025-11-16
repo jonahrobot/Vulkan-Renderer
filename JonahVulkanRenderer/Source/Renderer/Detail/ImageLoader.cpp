@@ -167,6 +167,33 @@ namespace renderer::detail {
 		vkDestroyBuffer(Context.logical_device, staging_buffer.created_buffer, nullptr);
 		vkFreeMemory(Context.logical_device, staging_buffer.memory_allocated_for_buffer, nullptr);
 
+		// Create view for Image
+
+		VkImageViewCreateInfo view_info{};
+		view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		view_info.image = new_image.texture_image;
+		view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		view_info.format = Context.texture_bundle.format;
+		view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		view_info.subresourceRange.baseMipLevel = 0;
+		view_info.subresourceRange.levelCount = 1;
+		view_info.subresourceRange.baseArrayLayer = 0;
+		view_info.subresourceRange.layerCount = 1;
+
+		if (vkCreateImageView(Context.logical_device, &view_info, nullptr, &new_image.texture_image_view) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create image view.");
+		}
+
 		return new_image;
+	}
+
+	void FreeImageObject(ImageObject& ImageObject, const VkDevice& LogicalDevice) {
+		vkDestroyImageView(LogicalDevice, ImageObject.texture_image_view, nullptr);
+		vkDestroyImage(LogicalDevice, ImageObject.texture_image, nullptr);
+		vkFreeMemory(LogicalDevice, ImageObject.texture_image_memory, nullptr);
+
+		ImageObject.texture_image = nullptr;
+		ImageObject.texture_image_view = nullptr;
+		ImageObject.texture_image_memory = nullptr;
 	}
 }
