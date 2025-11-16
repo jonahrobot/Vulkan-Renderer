@@ -79,6 +79,8 @@ private:
 
 	detail::ImageObject texture_0;
 
+	VkSampler texture_sampler;
+
 	VkBuffer vertex_buffer;
 	VkDeviceMemory vertex_buffer_memory;
 	VkBuffer index_buffer;

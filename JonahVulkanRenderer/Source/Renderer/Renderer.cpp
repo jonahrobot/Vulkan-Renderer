@@ -103,6 +103,41 @@ namespace renderer {
 
 			return ubo;
 		}
+
+		VkSampler CreateTextureSampler(const VkPhysicalDevice& PhysicalDevice, const VkDevice& LogicalDevice) {
+
+			VkSampler our_sampler;
+
+			VkSamplerCreateInfo sampler_info{};
+			sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			sampler_info.magFilter = VK_FILTER_LINEAR;
+			sampler_info.minFilter = VK_FILTER_LINEAR;
+
+			sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+			sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+
+			sampler_info.anisotropyEnable = VK_TRUE;
+
+			VkPhysicalDeviceProperties properties{};
+			vkGetPhysicalDeviceProperties(PhysicalDevice, &properties);
+
+			sampler_info.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+			sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+			sampler_info.unnormalizedCoordinates = VK_FALSE;
+			sampler_info.compareEnable = VK_FALSE;
+			sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+			sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+			sampler_info.mipLodBias = 0.0f;
+			sampler_info.minLod = 0.0f;
+			sampler_info.maxLod = 0.0f;
+
+			if (vkCreateSampler(LogicalDevice, &sampler_info, nullptr, &our_sampler) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to create texture sample.");
+			}
+
+			return our_sampler;
+		}
 		
 	}
 
@@ -210,6 +245,9 @@ namespace renderer {
 
 		detail::FreeTextureBundle(rock_texture);
 
+		// Create Texture Sampler
+		texture_sampler = CreateTextureSampler(physical_device, logical_device);
+
 		// Create Vertex Buffer
 		detail::VertexBufferContext context_vertexbuffer = {};
 		context_vertexbuffer.vertices_to_render = vertices_to_render;
@@ -287,7 +325,9 @@ namespace renderer {
 			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
 
-		detail::FreeImageObject(texture_0);
+		vkDestroySampler(logical_device, texture_sampler, nullptr);
+
+		detail::FreeImageObject(texture_0, logical_device);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(logical_device, uniform_buffers[i], nullptr);

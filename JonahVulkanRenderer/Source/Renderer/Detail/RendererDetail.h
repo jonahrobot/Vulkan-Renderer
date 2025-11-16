@@ -286,7 +286,7 @@ namespace renderer::detail {
 		VkImageView texture_image_view;
 	};
 	ImageObject CreateImageObject(const ImageObjectContext& Context);
-	void FreeImageObject(ImageObject& ImageObject);
+	void FreeImageObject(ImageObject& ImageObject, const VkDevice& LogicalDevice);
 
 #pragma endregion
 };
