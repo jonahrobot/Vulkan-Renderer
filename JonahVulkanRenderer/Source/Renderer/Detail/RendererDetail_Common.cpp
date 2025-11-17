@@ -141,7 +141,7 @@ namespace renderer::detail {
 		view_info.image = Context.image;
 		view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		view_info.format = Context.image_format;
-		view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		view_info.subresourceRange.aspectMask = Context.aspect_flags;
 		view_info.subresourceRange.baseMipLevel = 0;
 		view_info.subresourceRange.levelCount = 1;
 		view_info.subresourceRange.baseArrayLayer = 0;

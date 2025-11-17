@@ -150,6 +150,28 @@ namespace renderer::detail {
 
 		VkFormat depth_format = FindDepthFormat(Context.physical_device);
 
+		CreateImageContext context_image{};
+		context_image.format = depth_format;
+		context_image.height = Context.swapchain_extent.height;
+		context_image.width = Context.swapchain_extent.width;
+		context_image.logical_device = Context.logical_device;
+		context_image.physical_device = Context.physical_device;
+		context_image.required_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		context_image.tiling = VK_IMAGE_TILING_OPTIMAL;
+		context_image.usage_flags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+		GPUImage created_image = CreateImage(context_image);
+		depth_buffer.texture_image = created_image.texture_image;
+		depth_buffer.texture_image_memory = created_image.texture_image_memory;
+
+		ImageViewContext context_image_view{};
+		context_image_view.image_format = depth_format;
+		context_image_view.image = created_image.texture_image;
+		context_image_view.logical_device = Context.logical_device;
+		context_image_view.aspect_flags = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+		depth_buffer.texture_image_view = CreateImageView(context_image_view);
+
 		return depth_buffer;
 	}
 }

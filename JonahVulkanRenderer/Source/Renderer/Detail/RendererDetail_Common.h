@@ -53,6 +53,7 @@ namespace renderer::detail {
 		VkDevice logical_device;
 		VkImage image;
 		VkFormat image_format;
+		VkImageAspectFlags aspect_flags;
 	};
 	VkImageView CreateImageView(const ImageViewContext& Context);
 #pragma endregion

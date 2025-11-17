@@ -239,6 +239,7 @@ namespace renderer::detail {
 	struct DepthBufferContext {
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
+		VkExtent2D swapchain_extent;
 	};
 	GPUResource CreateDepthBuffer(const DepthBufferContext& Context);
 

@@ -149,6 +149,7 @@ namespace renderer::detail {
 		context_image_view.image = return_image.texture_image;
 		context_image_view.image_format = Context.texture_bundle.format;
 		context_image_view.logical_device = Context.logical_device;
+		context_image_view.aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
 
 		return_image.texture_image_view = CreateImageView(context_image_view);
 
