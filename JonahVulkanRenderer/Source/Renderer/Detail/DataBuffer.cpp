@@ -59,6 +59,38 @@ namespace {
 		return created_buffer_data;
 	}
 
+	VkFormat FindSupportedFormat(const std::vector<VkFormat>& Options, VkPhysicalDevice PhysicalDevice, VkImageTiling DesiredTiling, VkFormatFeatureFlags DesiredFeatures) {
+
+		for (VkFormat format : Options) {
+			VkFormatProperties properties;
+			vkGetPhysicalDeviceFormatProperties(PhysicalDevice, format, &properties);
+
+			bool support_for_linear_tiling = (properties.linearTilingFeatures & DesiredFeatures) == DesiredFeatures;
+			bool support_for_optimal_tiling = (properties.optimalTilingFeatures & DesiredFeatures) == DesiredFeatures;
+
+			if (DesiredTiling == VK_IMAGE_TILING_LINEAR && support_for_linear_tiling) {
+				return format;
+			}
+			else if (DesiredTiling == VK_IMAGE_TILING_OPTIMAL && support_for_optimal_tiling) {
+				return format;
+			}
+		}
+
+		throw std::runtime_error("Failed to find a supported format.");
+	}
+
+	// Depth formats are ways we can store depth data, along with a possible stencil buffer
+	// Only some GPUS support specific formats, so we must check which ours supports.
+	VkFormat FindDepthFormat(VkPhysicalDevice PhysicalDevice) {
+
+		std::vector<VkFormat> Options = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
+
+		return FindSupportedFormat(Options, PhysicalDevice, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+	}
+
+	bool HasStencilComponent(VkFormat Format) {
+		return Format == VK_FORMAT_D32_SFLOAT_S8_UINT || Format == VK_FORMAT_D24_UNORM_S8_UINT;
+	}
 }
 
 
@@ -110,5 +142,14 @@ namespace renderer::detail {
 		}
 
 		return buffer_data;
+	}
+
+	GPUResource CreateDepthBuffer(const DepthBufferContext& Context) {
+
+		GPUResource depth_buffer{};
+
+		VkFormat depth_format = FindDepthFormat(Context.physical_device);
+
+
 	}
 }

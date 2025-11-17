@@ -99,7 +99,7 @@ namespace renderer::detail {
 		TextureBundle.image_size = 0;
 	}
 
-	ImageObject CreateImageObject(const ImageObjectContext& Context) {
+	GPUResource CreateImageObject(const ImageObjectContext& Context) {
 
 		// Create staging buffer
 		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -113,7 +113,7 @@ namespace renderer::detail {
 		vkUnmapMemory(Context.logical_device, staging_buffer.memory_allocated_for_buffer);
 
 		// Create image on GPU
-		ImageObject new_image{};
+		GPUResource new_image{};
 
 		uint32_t width = static_cast<uint32_t>(Context.texture_bundle.width);
 		uint32_t height = static_cast<uint32_t>(Context.texture_bundle.height);
@@ -187,7 +187,7 @@ namespace renderer::detail {
 		return new_image;
 	}
 
-	void FreeImageObject(ImageObject& ImageObject, const VkDevice& LogicalDevice) {
+	void FreeImageObject(GPUResource& ImageObject, const VkDevice& LogicalDevice) {
 		vkDestroyImageView(LogicalDevice, ImageObject.texture_image_view, nullptr);
 		vkDestroyImage(LogicalDevice, ImageObject.texture_image, nullptr);
 		vkFreeMemory(LogicalDevice, ImageObject.texture_image_memory, nullptr);

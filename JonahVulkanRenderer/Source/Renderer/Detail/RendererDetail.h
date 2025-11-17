@@ -20,7 +20,7 @@ namespace renderer::detail {
 
 #pragma region Vertex Type
 	struct Vertex {
-		glm::vec2 position;
+		glm::vec3 position;
 		glm::vec3 color;
 		glm::vec2 tex_coord;
 
@@ -38,7 +38,7 @@ namespace renderer::detail {
 			// Position
 			attribute_descriptions[0].binding = 0;
 			attribute_descriptions[0].location = 0;
-			attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT; // Vec2
+			attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
 			attribute_descriptions[0].offset = offsetof(Vertex, position);
 
 			// Color
@@ -236,6 +236,12 @@ namespace renderer::detail {
 	};
 	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context);
 
+	struct DepthBufferContext {
+		VkDevice logical_device;
+		VkPhysicalDevice physical_device;
+	};
+	GPUResource CreateDepthBuffer(const DepthBufferContext& Context);
+
 #pragma endregion
 
 #pragma region Descriptor Sets
@@ -289,13 +295,8 @@ namespace renderer::detail {
 		VkQueue graphics_queue;
 		VkCommandPool command_pool;
 	};
-	struct ImageObject {
-		VkImage texture_image;
-		VkDeviceMemory texture_image_memory;
-		VkImageView texture_image_view;
-	};
-	ImageObject CreateImageObject(const ImageObjectContext& Context);
-	void FreeImageObject(ImageObject& ImageObject, const VkDevice& LogicalDevice);
+	GPUResource CreateImageObject(const ImageObjectContext& Context);
+	void FreeImageObject(GPUResource& ImageObject, const VkDevice& LogicalDevice);
 
 #pragma endregion
 };

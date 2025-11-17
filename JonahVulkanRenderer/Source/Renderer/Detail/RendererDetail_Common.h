@@ -7,6 +7,12 @@
 
 namespace renderer::detail {
 
+	struct GPUResource {
+		VkImage texture_image;
+		VkDeviceMemory texture_image_memory;
+		VkImageView texture_image_view;
+	};
+
 	uint32_t FindMemoryType(VkPhysicalDevice PhysicalDevice, uint32_t TypeFilter, VkMemoryPropertyFlags properties);
 
 	struct BufferData {
