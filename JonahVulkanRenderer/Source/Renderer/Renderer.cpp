@@ -268,7 +268,7 @@ namespace renderer {
 		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
-		texture_0 = detail::CreateImageObject(context_imagebuffer);
+		texture_0 = detail::CreateGPUResource(context_imagebuffer);
 
 		detail::FreeTextureBundle(rock_texture);
 
@@ -356,7 +356,8 @@ namespace renderer {
 
 		vkDestroySampler(logical_device, texture_sampler, nullptr);
 
-		detail::FreeImageObject(texture_0, logical_device);
+		detail::FreeGPUResource(texture_0, logical_device);
+		detail::FreeGPUResource(depth_buffer, logical_device);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(logical_device, uniform_buffers[i], nullptr);
@@ -500,6 +501,7 @@ namespace renderer {
 		swapchain_context.OLD_framebuffers = framebuffers;
 		swapchain_context.OLD_swapchain = swapchain;
 		swapchain_context.OLD_swapchain_image_views = swapchain_image_views;
+		swapchain_context.OLD_depth_buffer = depth_buffer;
 
 		detail::RecreateSwapchainData out_data = detail::RecreateSwapchain(swapchain_context);
 
@@ -511,5 +513,6 @@ namespace renderer {
 		framebuffers = out_data.framebuffers;
 		swapchain_images = out_data.swapchain_images;
 		swapchain_image_views = out_data.swapchain_image_views;
+		depth_buffer = out_data.depth_buffer;
 	}
 }// namespace renderer

@@ -188,6 +188,8 @@ namespace renderer::detail {
 
 		// Cleanup old swapchain data
 
+		FreeGPUResource(Context.OLD_depth_buffer, logical_device);
+
 		for (auto framebuffer : Context.OLD_framebuffers) {
 			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
 		}
@@ -204,11 +206,20 @@ namespace renderer::detail {
 
 		out_data.swapchain_image_views = detail::CreateSwapchainViews(out_data.swapchain_images, logical_device, out_data.swapchain_data.swapchain_image_format);
 
+		// Create Depth Resource
+		detail::DepthBufferContext context_depth_buffer = {};
+		context_depth_buffer.logical_device = logical_device;
+		context_depth_buffer.physical_device = Context.swapchain_creation_data.physical_device;
+		context_depth_buffer.swapchain_extent = out_data.swapchain_data.swapchain_extent;
+
+		out_data.depth_buffer = CreateDepthBuffer(context_depth_buffer);
+
 		detail::FrameBufferContext context_framebuffer = {};
 		context_framebuffer.image_views = out_data.swapchain_image_views;
 		context_framebuffer.render_pass = Context.render_pass;
 		context_framebuffer.swapchain_extent = out_data.swapchain_data.swapchain_extent;
 		context_framebuffer.logical_device = logical_device;
+		context_framebuffer.depth_image_view = out_data.depth_buffer.image_view;
 
 		out_data.framebuffers = detail::CreateFramebuffers(context_framebuffer);
 

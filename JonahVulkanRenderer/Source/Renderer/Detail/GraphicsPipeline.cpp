@@ -100,6 +100,14 @@ namespace renderer::detail {
 		viewport_state.viewportCount = 1;
 		viewport_state.scissorCount = 1;
 
+		VkPipelineDepthStencilStateCreateInfo depth_stencil{};
+		depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depth_stencil.depthTestEnable = VK_TRUE;
+		depth_stencil.depthWriteEnable = VK_TRUE;
+		depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
+		depth_stencil.depthBoundsTestEnable = VK_FALSE;
+		depth_stencil.stencilTestEnable = VK_FALSE;
+
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizer.depthClampEnable = VK_FALSE;
@@ -160,7 +168,7 @@ namespace renderer::detail {
 		pipeline_info.pViewportState = &viewport_state;
 		pipeline_info.pRasterizationState = &rasterizer;
 		pipeline_info.pMultisampleState = &multisampling;
-		pipeline_info.pDepthStencilState = nullptr;
+		pipeline_info.pDepthStencilState = &depth_stencil;
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pDynamicState = &dynamic_state;
 

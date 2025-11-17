@@ -99,7 +99,7 @@ namespace renderer::detail {
 		TextureBundle.image_size = 0;
 	}
 
-	GPUResource CreateImageObject(const ImageObjectContext& Context) {
+	GPUResource CreateGPUResource(const ImageObjectContext& Context) {
 
 		GPUResource return_image{};
 
@@ -156,7 +156,7 @@ namespace renderer::detail {
 		return return_image;
 	}
 
-	void FreeImageObject(GPUResource& ImageObject, const VkDevice& LogicalDevice) {
+	void FreeGPUResource(GPUResource& ImageObject, const VkDevice& LogicalDevice) {
 		vkDestroyImageView(LogicalDevice, ImageObject.image_view, nullptr);
 		vkDestroyImage(LogicalDevice, ImageObject.image, nullptr);
 		vkFreeMemory(LogicalDevice, ImageObject.image_memory, nullptr);

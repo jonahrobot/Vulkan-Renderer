@@ -135,11 +135,13 @@ namespace renderer::detail {
 		VkRenderPass render_pass;
 
 		VkSwapchainKHR OLD_swapchain;
+		GPUResource OLD_depth_buffer;
 		std::vector<VkImageView> OLD_swapchain_image_views;
 		std::vector<VkFramebuffer> OLD_framebuffers;
 	};
 	struct RecreateSwapchainData {
 		SwapchainData swapchain_data;
+		GPUResource depth_buffer;
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;
 		std::vector<VkFramebuffer> framebuffers;
@@ -299,8 +301,8 @@ namespace renderer::detail {
 		VkQueue graphics_queue;
 		VkCommandPool command_pool;
 	};
-	GPUResource CreateImageObject(const ImageObjectContext& Context);
-	void FreeImageObject(GPUResource& ImageObject, const VkDevice& LogicalDevice);
+	GPUResource CreateGPUResource(const ImageObjectContext& Context);
+	void FreeGPUResource(GPUResource& ImageObject, const VkDevice& LogicalDevice);
 
 #pragma endregion
 };

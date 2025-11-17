@@ -92,7 +92,7 @@ namespace renderer::detail {
 
 			VkDescriptorImageInfo image_info{};
 			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			image_info.imageView = Context.texture_image_view;
+			image_info.imageView = Context.image_view;
 			image_info.sampler = Context.texture_sampler;
 
 			std::array<VkWriteDescriptorSet, 2> descriptor_writes{};
