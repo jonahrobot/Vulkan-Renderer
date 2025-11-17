@@ -150,6 +150,6 @@ namespace renderer::detail {
 
 		VkFormat depth_format = FindDepthFormat(Context.physical_device);
 
-
+		return depth_buffer;
 	}
 }

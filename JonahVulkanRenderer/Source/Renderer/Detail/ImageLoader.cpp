@@ -101,6 +101,8 @@ namespace renderer::detail {
 
 	GPUResource CreateImageObject(const ImageObjectContext& Context) {
 
+		GPUResource return_image{};
+
 		// Create staging buffer
 		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		VkMemoryPropertyFlags property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -113,78 +115,44 @@ namespace renderer::detail {
 		vkUnmapMemory(Context.logical_device, staging_buffer.memory_allocated_for_buffer);
 
 		// Create image on GPU
-		GPUResource new_image{};
+		CreateImageContext context_image{};
+		context_image.format = Context.texture_bundle.format;
+		context_image.height = Context.texture_bundle.height;
+		context_image.width = Context.texture_bundle.width;
+		context_image.logical_device = Context.logical_device;
+		context_image.physical_device = Context.physical_device;
+		context_image.required_properties = Context.memory_flags_required;
+		context_image.tiling = Context.data_tiling_mode;
+		context_image.usage_flags = Context.usage_flags;
+		GPUImage created_image = CreateImage(context_image);
 
-		uint32_t width = static_cast<uint32_t>(Context.texture_bundle.width);
-		uint32_t height = static_cast<uint32_t>(Context.texture_bundle.height);
-
-		VkImageCreateInfo image_info{};
-		image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		image_info.imageType = VK_IMAGE_TYPE_2D;
-		image_info.extent.width = width;
-		image_info.extent.height = height;
-		image_info.extent.depth = 1;
-		image_info.mipLevels = 1;
-		image_info.arrayLayers = 1;
-		image_info.format = Context.texture_bundle.format;
-		image_info.tiling = Context.data_tiling_mode;
-		image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		image_info.usage = Context.usage_flags;
-		image_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		image_info.samples = VK_SAMPLE_COUNT_1_BIT;
-		image_info.flags = 0;
-		
-		if (vkCreateImage(Context.logical_device, &image_info, nullptr, &new_image.texture_image) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create image.");
-		}
-
-		// Allocate memory for GPU Image
-		VkMemoryRequirements mem_requirements;
-		vkGetImageMemoryRequirements(Context.logical_device, new_image.texture_image, &mem_requirements);
-
-		VkMemoryAllocateInfo alloc_info{};
-		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		alloc_info.allocationSize = mem_requirements.size;
-		alloc_info.memoryTypeIndex = FindMemoryType(Context.physical_device,mem_requirements.memoryTypeBits, Context.memory_flags_required);
-
-		if (vkAllocateMemory(Context.logical_device, &alloc_info, nullptr, &new_image.texture_image_memory) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to allocate image memory.");
-		}
-
-		vkBindImageMemory(Context.logical_device, new_image.texture_image, new_image.texture_image_memory, 0);
+		return_image.texture_image = created_image.texture_image;
+		return_image.texture_image_memory = created_image.texture_image_memory;
 
 		// Pass Buffer data into Image
 		VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, new_image.texture_image, Context.texture_bundle.format, old_layout, new_layout);
+		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.texture_image, Context.texture_bundle.format, old_layout, new_layout);
 
-		CopyBufferToImage(Context.graphics_queue, Context.logical_device, Context.command_pool, staging_buffer.created_buffer, new_image.texture_image, width, height);
+		CopyBufferToImage(Context.graphics_queue, Context.logical_device, Context.command_pool, staging_buffer.created_buffer, return_image.texture_image, Context.texture_bundle.width, Context.texture_bundle.height);
 
 		old_layout = new_layout;
 		new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, new_image.texture_image, Context.texture_bundle.format, old_layout, new_layout);
+		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.texture_image, Context.texture_bundle.format, old_layout, new_layout);
 
 		vkDestroyBuffer(Context.logical_device, staging_buffer.created_buffer, nullptr);
 		vkFreeMemory(Context.logical_device, staging_buffer.memory_allocated_for_buffer, nullptr);
 
-		// Create view for Image
+		// Create Image View
 
-		VkImageViewCreateInfo view_info{};
-		view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		view_info.image = new_image.texture_image;
-		view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		view_info.format = Context.texture_bundle.format;
-		view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		view_info.subresourceRange.baseMipLevel = 0;
-		view_info.subresourceRange.levelCount = 1;
-		view_info.subresourceRange.baseArrayLayer = 0;
-		view_info.subresourceRange.layerCount = 1;
+		ImageViewContext context_image_view{};
+		context_image_view.image = return_image.texture_image;
+		context_image_view.image_format = Context.texture_bundle.format;
+		context_image_view.logical_device = Context.logical_device;
 
-		if (vkCreateImageView(Context.logical_device, &view_info, nullptr, &new_image.texture_image_view) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create image view.");
-		}
+		return_image.texture_image_view = CreateImageView(context_image_view);
 
-		return new_image;
+		return return_image;
 	}
 
 	void FreeImageObject(GPUResource& ImageObject, const VkDevice& LogicalDevice) {
