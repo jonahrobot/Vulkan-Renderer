@@ -110,24 +110,24 @@ namespace renderer::detail {
 		image_info.samples = VK_SAMPLE_COUNT_1_BIT;
 		image_info.flags = 0;
 
-		if (vkCreateImage(Context.logical_device, &image_info, nullptr, &our_image.texture_image) != VK_SUCCESS) {
+		if (vkCreateImage(Context.logical_device, &image_info, nullptr, &our_image.image) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create image.");
 		}
 
 		// Allocate memory for GPU Image
 		VkMemoryRequirements mem_requirements;
-		vkGetImageMemoryRequirements(Context.logical_device, our_image.texture_image, &mem_requirements);
+		vkGetImageMemoryRequirements(Context.logical_device, our_image.image, &mem_requirements);
 
 		VkMemoryAllocateInfo alloc_info{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		alloc_info.allocationSize = mem_requirements.size;
 		alloc_info.memoryTypeIndex = FindMemoryType(Context.physical_device, mem_requirements.memoryTypeBits, Context.required_properties);
 
-		if (vkAllocateMemory(Context.logical_device, &alloc_info, nullptr, &our_image.texture_image_memory) != VK_SUCCESS) {
+		if (vkAllocateMemory(Context.logical_device, &alloc_info, nullptr, &our_image.image_memory) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to allocate image memory.");
 		}
 
-		vkBindImageMemory(Context.logical_device, our_image.texture_image, our_image.texture_image_memory, 0);
+		vkBindImageMemory(Context.logical_device, our_image.image, our_image.image_memory, 0);
 
 		return our_image;
 	}

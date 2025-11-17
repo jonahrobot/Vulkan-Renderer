@@ -90,9 +90,7 @@ private:
 	std::vector<VkDeviceMemory> uniform_buffers_memory;
 	std::vector<void*> uniform_buffers_mapped;
 	
-	VkImage depth_image;
-	VkDeviceMemory depth_image_memory;
-	VkImageView depth_image_view;
+	detail::GPUResource depth_buffer;
 
 	std::vector<VkSemaphore> image_available_semaphores;
 	std::vector<VkSemaphore> render_finished_semaphores;

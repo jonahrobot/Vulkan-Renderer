@@ -28,9 +28,9 @@ namespace renderer::detail {
 
 #pragma region Image Creation
 	struct GPUResource {
-		VkImage texture_image;
-		VkDeviceMemory texture_image_memory;
-		VkImageView texture_image_view;
+		VkImage image;
+		VkDeviceMemory image_memory;
+		VkImageView image_view;
 	};
 
 	struct CreateImageContext {
@@ -44,8 +44,8 @@ namespace renderer::detail {
 		VkMemoryPropertyFlags required_properties;
 	};
 	struct GPUImage {
-		VkImage texture_image;
-		VkDeviceMemory texture_image_memory;
+		VkImage image;
+		VkDeviceMemory image_memory;
 	};
 	GPUImage CreateImage(const CreateImageContext& Context);
 

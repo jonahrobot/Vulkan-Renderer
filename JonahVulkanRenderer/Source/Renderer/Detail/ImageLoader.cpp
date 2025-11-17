@@ -126,19 +126,19 @@ namespace renderer::detail {
 		context_image.usage_flags = Context.usage_flags;
 		GPUImage created_image = CreateImage(context_image);
 
-		return_image.texture_image = created_image.texture_image;
-		return_image.texture_image_memory = created_image.texture_image_memory;
+		return_image.image = created_image.image;
+		return_image.image_memory = created_image.image_memory;
 
 		// Pass Buffer data into Image
 		VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.texture_image, Context.texture_bundle.format, old_layout, new_layout);
+		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout);
 
-		CopyBufferToImage(Context.graphics_queue, Context.logical_device, Context.command_pool, staging_buffer.created_buffer, return_image.texture_image, Context.texture_bundle.width, Context.texture_bundle.height);
+		CopyBufferToImage(Context.graphics_queue, Context.logical_device, Context.command_pool, staging_buffer.created_buffer, return_image.image, Context.texture_bundle.width, Context.texture_bundle.height);
 
 		old_layout = new_layout;
 		new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.texture_image, Context.texture_bundle.format, old_layout, new_layout);
+		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout);
 
 		vkDestroyBuffer(Context.logical_device, staging_buffer.created_buffer, nullptr);
 		vkFreeMemory(Context.logical_device, staging_buffer.memory_allocated_for_buffer, nullptr);
@@ -146,23 +146,23 @@ namespace renderer::detail {
 		// Create Image View
 
 		ImageViewContext context_image_view{};
-		context_image_view.image = return_image.texture_image;
+		context_image_view.image = return_image.image;
 		context_image_view.image_format = Context.texture_bundle.format;
 		context_image_view.logical_device = Context.logical_device;
 		context_image_view.aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
 
-		return_image.texture_image_view = CreateImageView(context_image_view);
+		return_image.image_view = CreateImageView(context_image_view);
 
 		return return_image;
 	}
 
 	void FreeImageObject(GPUResource& ImageObject, const VkDevice& LogicalDevice) {
-		vkDestroyImageView(LogicalDevice, ImageObject.texture_image_view, nullptr);
-		vkDestroyImage(LogicalDevice, ImageObject.texture_image, nullptr);
-		vkFreeMemory(LogicalDevice, ImageObject.texture_image_memory, nullptr);
+		vkDestroyImageView(LogicalDevice, ImageObject.image_view, nullptr);
+		vkDestroyImage(LogicalDevice, ImageObject.image, nullptr);
+		vkFreeMemory(LogicalDevice, ImageObject.image_memory, nullptr);
 
-		ImageObject.texture_image = nullptr;
-		ImageObject.texture_image_view = nullptr;
-		ImageObject.texture_image_memory = nullptr;
+		ImageObject.image = nullptr;
+		ImageObject.image_view = nullptr;
+		ImageObject.image_memory = nullptr;
 	}
 }

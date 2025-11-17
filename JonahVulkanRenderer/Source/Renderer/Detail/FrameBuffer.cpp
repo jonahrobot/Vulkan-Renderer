@@ -14,15 +14,16 @@ namespace renderer::detail {
 		std::vector<VkFramebuffer> frame_buffers(Context.image_views.size());
 
 		for (size_t i = 0; i < Context.image_views.size(); i++) {
-			VkImageView attachments[]{
-				Context.image_views[i]
+			std::array<VkImageView, 2> attachments = {
+				Context.image_views[i],
+				Context.depth_image_view
 			};
 
 			VkFramebufferCreateInfo framebuffer_info{};
 			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			framebuffer_info.renderPass = Context.render_pass;
-			framebuffer_info.attachmentCount = 1;
-			framebuffer_info.pAttachments = attachments;
+			framebuffer_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+			framebuffer_info.pAttachments = attachments.data();
 			framebuffer_info.width = Context.swapchain_extent.width;
 			framebuffer_info.height = Context.swapchain_extent.height;
 			framebuffer_info.layers = 1;

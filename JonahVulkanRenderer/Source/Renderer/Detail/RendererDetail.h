@@ -177,6 +177,7 @@ namespace renderer::detail {
 		VkRenderPass render_pass;
 		VkExtent2D swapchain_extent;
 		VkDevice logical_device;
+		VkImageView depth_image_view;
 	};
 	std::vector<VkFramebuffer> CreateFramebuffers(const FrameBufferContext& Context);
 #pragma endregion
@@ -236,6 +237,8 @@ namespace renderer::detail {
 	};
 	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context);
 
+	VkFormat FindDepthFormat(VkPhysicalDevice PhysicalDevice);
+
 	struct DepthBufferContext {
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
@@ -266,7 +269,7 @@ namespace renderer::detail {
 		VkDescriptorPool descriptor_pool;
 		uint8_t max_frames_in_flight;
 		VkDevice logical_device;
-		VkImageView texture_image_view;
+		VkImageView image_view;
 		VkSampler texture_sampler;
 	};
 	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorSetContext& Context);

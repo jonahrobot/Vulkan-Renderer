@@ -41,7 +41,7 @@ namespace renderer {
 			return vulkanSurface;
 		}
 
-		VkRenderPass CreateRenderPass(const VkDevice LogicalDevice, const VkFormat SwapChainFormat) {
+		VkRenderPass CreateRenderPass(const VkDevice LogicalDevice, const VkFormat SwapChainFormat, const VkPhysicalDevice PhysicalDevice) {
 
 			VkRenderPass render_pass;
 
@@ -59,23 +59,40 @@ namespace renderer {
 			color_attachment_reference.attachment = 0;
 			color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+			VkAttachmentDescription depth_attachment{};
+			depth_attachment.format = renderer::detail::FindDepthFormat(PhysicalDevice);
+			depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+			depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+			depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+			depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+			VkAttachmentReference depth_attachment_reference{};
+			depth_attachment_reference.attachment = 1;
+			depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
 			VkSubpassDescription subpass{};
 			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subpass.colorAttachmentCount = 1;
 			subpass.pColorAttachments = &color_attachment_reference;
+			subpass.pDepthStencilAttachment = &depth_attachment_reference;
 
 			VkSubpassDependency dependency{};
 			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
 			dependency.dstSubpass = 0;
-			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.srcAccessMask = 0;
-			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+			dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+			std::array<VkAttachmentDescription, 2> attachments = { color_attachment, depth_attachment };
 
 			VkRenderPassCreateInfo render_pass_info{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-			render_pass_info.attachmentCount = 1;
-			render_pass_info.pAttachments = &color_attachment;
+			render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+			render_pass_info.pAttachments = attachments.data();
 			render_pass_info.subpassCount = 1;
 			render_pass_info.pSubpasses = &subpass;
 			render_pass_info.dependencyCount = 1;
@@ -200,7 +217,7 @@ namespace renderer {
 		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.presentFamily.value(), 0, &present_queue);
 
 		// Create render pass
-		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format);
+		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format, physical_device);
 
 		// Create descriptor set for camera UBO, used in graphics pipeline creation
 		descriptor_set_layout = detail::CreateDescriptorLayout({logical_device});
@@ -216,12 +233,21 @@ namespace renderer {
 		graphics_pipeline = pipeline_info.pipeline;
 		graphics_pipeline_layout = pipeline_info.layout;
 
+		// Create depth buffer
+		detail::DepthBufferContext context_depth_buffer = {};
+		context_depth_buffer.logical_device = logical_device;
+		context_depth_buffer.physical_device = physical_device;
+		context_depth_buffer.swapchain_extent = extent;
+
+		depth_buffer = detail::CreateDepthBuffer(context_depth_buffer);
+
 		// Create framebuffers
 		detail::FrameBufferContext context_framebuffer = {};
 		context_framebuffer.logical_device = logical_device;
 		context_framebuffer.image_views = swapchain_image_views;
 		context_framebuffer.render_pass = render_pass;
 		context_framebuffer.swapchain_extent = extent;
+		context_framebuffer.depth_image_view = depth_buffer.image_view;
 
 		framebuffers = detail::CreateFramebuffers(context_framebuffer);
 
@@ -300,7 +326,7 @@ namespace renderer {
 		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_descriptor_set.ubo_size = sizeof(UniformBufferObject);
 		context_descriptor_set.uniform_buffers = uniform_buffers;
-		context_descriptor_set.texture_image_view = texture_0.texture_image_view;
+		context_descriptor_set.image_view = texture_0.image_view;
 		context_descriptor_set.texture_sampler = texture_sampler;
 
 		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
