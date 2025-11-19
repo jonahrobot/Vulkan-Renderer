@@ -1,12 +1,9 @@
 #pragma once
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
 #include <stb_master/stb_image.h>
-#include <glm/glm.hpp>
+#include <tiny_obj_loader/tiny_obj_loader.h>
 #include <optional>
 #include <vector>
-#include <array>
 
 #include "RendererDetail_Common.h"
 
@@ -17,46 +14,6 @@ namespace renderer::detail {
 
 	// Detail namespace seperates implementation logic of utility functions into their own classes.
 	// Renderer::detail naming convention tells us these are specific implementations for our renderer class.
-
-#pragma region Vertex Type
-	struct Vertex {
-		glm::vec3 position;
-		glm::vec3 color;
-		glm::vec2 tex_coord;
-
-		static VkVertexInputBindingDescription GetBindingDescription() {
-			VkVertexInputBindingDescription binding_description{};
-			binding_description.binding = 0;
-			binding_description.stride = sizeof(Vertex);
-			binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-			return binding_description;
-		}
-
-		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescription() {
-			std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions = {};
-
-			// Position
-			attribute_descriptions[0].binding = 0;
-			attribute_descriptions[0].location = 0;
-			attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
-			attribute_descriptions[0].offset = offsetof(Vertex, position);
-
-			// Color
-			attribute_descriptions[1].binding = 0;
-			attribute_descriptions[1].location = 1;
-			attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
-			attribute_descriptions[1].offset = offsetof(Vertex, color);
-
-			// Texture Coordinates
-			attribute_descriptions[2].binding = 0;
-			attribute_descriptions[2].location = 2;
-			attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT; // Vec2
-			attribute_descriptions[2].offset = offsetof(Vertex, tex_coord);
-
-			return attribute_descriptions;
-		}
-	};
-#pragma endregion
 
 	// All below functions construct parts of the Vulkan Renderer used in "Renderer.cpp"
 
@@ -218,7 +175,7 @@ namespace renderer::detail {
 	BufferData CreateVertexBuffer(const VertexBufferContext& Context);
 
 	struct IndexBufferContext {
-		std::vector<uint16_t> indices;
+		std::vector<uint32_t> indices;
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
 		VkQueue graphics_queue;

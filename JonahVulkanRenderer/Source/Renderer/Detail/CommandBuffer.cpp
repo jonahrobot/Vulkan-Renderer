@@ -85,7 +85,7 @@ namespace renderer::detail {
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(Context.command_buffer, 0, 1, vertex_buffers, offsets);
 
-		vkCmdBindIndexBuffer(Context.command_buffer, Context.index_buffer, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(Context.command_buffer, Context.index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
 								Context.graphics_pipeline_layout, 0, 1, &Context.current_descriptor_set, 0, nullptr);

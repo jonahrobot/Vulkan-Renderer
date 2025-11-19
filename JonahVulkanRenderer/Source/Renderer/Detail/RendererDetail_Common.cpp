@@ -1,4 +1,5 @@
 #include "RendererDetail_Common.h"
+#include <iostream>
 
 namespace renderer::detail {
 
