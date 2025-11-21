@@ -4,20 +4,23 @@ namespace game {
 
 
 Application::Application() {
-	our_renderer = new renderer::Renderer();
+	renderer = new renderer::Renderer();
+	window = renderer->Get_Window();
+	camera = new Camera(window);
 }
 
 Application::~Application() {
-	delete our_renderer;
+	delete renderer;
+	delete camera;
 }
 
 GLFWwindow* Application::Get_Window() {
-	return our_renderer->Get_Window();
+	return window;
 }
 
 void Application::Update() {
-	//std::cout << "Test Frame" << std::endl;
-	our_renderer->Draw();
+	camera->MoveCamera(window);
+	renderer->Draw(camera->GetViewMatrix());
 }
 
 void Application::DrawFrame() {

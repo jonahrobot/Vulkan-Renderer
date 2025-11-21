@@ -110,9 +110,9 @@ namespace renderer {
 			float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
 			Renderer::UniformBufferObject ubo{};
-			ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f);
+			ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This handles the objects position relative to the world space
+			//ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
+			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f); // This helps us project the point to the viewport
 
 			ubo.proj[1][1] *= -1;
 
@@ -450,7 +450,7 @@ namespace renderer {
 		glfwTerminate();
 	}
 
-	void Renderer::Draw() {
+	void Renderer::Draw(glm::mat4 CameraPosition) {
 
 		/// PREP DRAW
 
@@ -475,6 +475,7 @@ namespace renderer {
 
 		// Update camera position (temp)
 		UniformBufferObject current_ubo_data = GetNextUBO(extent);
+		current_ubo_data.view = CameraPosition;
 		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data, sizeof(current_ubo_data));
 
 		/// DRAW

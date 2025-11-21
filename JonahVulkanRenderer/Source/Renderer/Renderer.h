@@ -25,7 +25,7 @@ public:
 	Renderer();
 	~Renderer();
 
-	void Draw();
+	void Draw(glm::mat4 CameraPosition);
 
 	GLFWwindow* Get_Window();
 
