@@ -19,7 +19,7 @@ private:
 	renderer::Renderer* renderer;
 	Camera* camera;
 
-	//glm::mat4 camera_position = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	float last_frame_time;
 
 	void DrawFrame();
 

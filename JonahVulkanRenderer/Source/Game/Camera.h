@@ -17,7 +17,7 @@ namespace game {
 
 		Camera(GLFWwindow* window);
 
-		void MoveCamera(GLFWwindow* window);
+		void MoveCamera(GLFWwindow* window, float delta_time);
 
 		glm::mat4 GetViewMatrix();
 
@@ -30,8 +30,10 @@ namespace game {
 		float speed = 0.001f;
 		float sensitivity = 100.0f;
 
-		int width;
-		int height;
+		int render_width;
+		int render_height;
+
+		bool first_click_flag = true;
 	};
 
 } // namespace game

@@ -4,50 +4,51 @@
 namespace game {
 
 	Camera::Camera(GLFWwindow* window) {
-		glfwGetFramebufferSize(window, &width, &height);
+		glfwGetFramebufferSize(window, &render_width, &render_height);
 	}
 
-	void Camera::MoveCamera(GLFWwindow* window) {
+	void Camera::MoveCamera(GLFWwindow* window, float delta_time) {
 
-		// XY Movement
 		if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-			position += speed * front;
+			position += speed * front * delta_time;
 		}
 		if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-			position += speed * -front;
+			position += speed * -front * delta_time;
 		}
 		if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-			position += speed * -glm::normalize(glm::cross(front,up));
+			position += speed * -glm::normalize(glm::cross(front,up)) * delta_time;
 		}
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-			position += speed * glm::normalize(glm::cross(front, up));
+			position += speed * glm::normalize(glm::cross(front, up)) * delta_time;
 		}
 
 		if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-			speed = 0.005f;
+			speed = 5.0f;
 		}
 		else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
-			speed = 0.001f;
+			speed = 1.0f;
 		}
-
-		// Z Movement
-		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-			position += speed * up;
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+			position += speed * up * delta_time;
 		}
 		if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
-			position += speed * -up;
+			position += speed * -up * delta_time;
 		}
-
-		// Mouse look
 		if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
+			if (first_click_flag) {
+				glfwSetCursorPos(window, (render_width / 2), (render_height / 2));
+				first_click_flag = false;
+			}
+			
 			double mouse_x;
 			double mouse_y;
 			glfwGetCursorPos(window, &mouse_x, &mouse_y);
 			
-			float rotation_x = sensitivity * (float)(mouse_y - (height / 2)) / height;
-			float rotation_y = sensitivity * (float)(mouse_x - (width / 2)) / height;
+			float rotation_x = sensitivity * (float)(mouse_y - (render_height / 2)) / render_height;
+			float rotation_y = sensitivity * (float)(mouse_x - (render_width / 2)) / render_width;
 
 			glm::vec3 new_orientation = glm::rotate(front, glm::radians(-rotation_x), glm::normalize(glm::cross(front, up)));
 
@@ -57,12 +58,15 @@ namespace game {
 
 			front = glm::rotate(front, glm::radians(-rotation_y), up);
 
-			glfwSetCursorPos(window, (width / 2), (height / 2));
+			glfwSetCursorPos(window, (render_width / 2), (render_height / 2));
+		}
+		else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			first_click_flag = true;
 		}
 	}
 
 	glm::mat4 Camera::GetViewMatrix() {
-		//return glm::lookAt(position, position + orientation, up);
 		return glm::lookAt(position, position + front, up);
 	}
 

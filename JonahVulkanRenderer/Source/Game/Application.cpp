@@ -19,7 +19,12 @@ GLFWwindow* Application::Get_Window() {
 }
 
 void Application::Update() {
-	camera->MoveCamera(window);
+
+	float frame_time = glfwGetTime();
+	float delta_time = frame_time  - last_frame_time;
+	last_frame_time = frame_time;
+
+	camera->MoveCamera(window, delta_time);
 	renderer->Draw(camera->GetViewMatrix());
 }
 
