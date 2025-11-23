@@ -262,4 +262,15 @@ namespace renderer::detail {
 	void FreeGPUResource(GPUResource& ImageObject, const VkDevice& LogicalDevice);
 
 #pragma endregion
+
+#pragma region Model Loading
+	// Implemented in "ModelLoader.cpp"
+
+	struct ModelData {
+		std::vector<detail::Vertex> vertices_to_render;
+		std::vector<uint32_t>indices;
+	};
+	ModelData LoadModel(std::string ModelPath);
+
+#pragma endregion
 };

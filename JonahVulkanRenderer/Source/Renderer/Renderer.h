@@ -27,6 +27,8 @@ public:
 
 	void Draw(glm::mat4 CameraPosition);
 
+	void UpdateDrawVertices(std::vector<renderer::detail::Vertex> Vertices, std::vector<uint32_t> Indices);
+
 	GLFWwindow* Get_Window();
 
 	bool framebuffer_resized = false;

@@ -153,58 +153,7 @@ namespace renderer {
 
 			return our_sampler;
 		}
-
-		struct ModelData {
-			std::vector<detail::Vertex> vertices_to_render;
-			std::vector<uint32_t>indices;
-		};
-		ModelData LoadModel(std::string ModelPath) {
-
-			ModelData new_model;
-
-			tinyobj::attrib_t attrib;
-			std::vector<tinyobj::shape_t> shapes;
-			std::vector<tinyobj::material_t> materials;
-			std::string err;
-			std::string warn;
-
-			if (tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, ModelPath.c_str()) == false) {
-				throw std::runtime_error(err);
-			}
-
-			std::unordered_map<detail::Vertex, uint32_t> unique_vertices{};
-
-			for (const auto& shape : shapes) {
-				for (const auto& index : shape.mesh.indices) {
-					detail::Vertex vertex{};
-
-					vertex.position = {
-						attrib.vertices[3 * index.vertex_index + 0],
-						attrib.vertices[3 * index.vertex_index + 1],
-						attrib.vertices[3 * index.vertex_index + 2]
-					};
-
-					vertex.tex_coord = {
-						attrib.texcoords[2 * index.texcoord_index + 0],
-						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-					};
-
-					vertex.color = { 1.0f, 1.0f, 1.0f };
-
-					// If vertex not been acounted for then add it!
-					if (unique_vertices.count(vertex) == 0) {
-						unique_vertices[vertex] = static_cast<uint32_t> (new_model.vertices_to_render.size());
-						new_model.vertices_to_render.push_back(vertex);
-					}
-
-					// Find vertex's index and add it to indices array
-					new_model.indices.push_back(unique_vertices[vertex]);
-				}
-			}
-
-			return new_model;
-		}
-	}
+	} // namespace util
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
 		auto renderer = reinterpret_cast<Renderer*>(glfwGetWindowUserPointer(window));
@@ -320,13 +269,13 @@ namespace renderer {
 		detail::FreeTextureBundle(rock_texture);
 
 		// Load Model
-		ModelData model_0 = LoadModel(MODEL_PATH);
+		detail::ModelData model_0 = detail::LoadModel(MODEL_PATH);
 		vertices_to_render = model_0.vertices_to_render;
 		indices = model_0.indices;
 
 		// Create Texture Sampler
 		texture_sampler = CreateTextureSampler(physical_device, logical_device);
-
+		
 		// Create Vertex Buffer
 		detail::VertexBufferContext context_vertexbuffer = {};
 		context_vertexbuffer.vertices_to_render = vertices_to_render;
@@ -466,7 +415,7 @@ namespace renderer {
 		}
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
 			throw std::runtime_error("Failed to acquire swapchain image.");
-		}
+		} 
 
 		// Only reset fence if we are continuing work
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
@@ -541,6 +490,62 @@ namespace renderer {
 		}
 
 		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+	}
+
+	void Renderer::UpdateDrawVertices(std::vector<renderer::detail::Vertex> Vertices, std::vector<uint32_t> Indices) {
+
+		vkDeviceWaitIdle(logical_device);
+
+		if (index_buffer != NULL) {
+			vkDestroyBuffer(logical_device, index_buffer, nullptr);
+			vkFreeMemory(logical_device, index_buffer_memory, nullptr);
+		}
+
+		if (vertex_buffer != NULL) {
+			vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
+			vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
+		}
+
+		vertices_to_render = Vertices;
+		indices = Indices;
+
+		// Create Vertex Buffer
+		detail::VertexBufferContext context_vertexbuffer = {};
+		context_vertexbuffer.vertices_to_render = vertices_to_render;
+		context_vertexbuffer.logical_device = logical_device;
+		context_vertexbuffer.physical_device = physical_device;
+		context_vertexbuffer.graphics_queue = graphics_queue;
+		context_vertexbuffer.command_pool = command_pool;
+
+		detail::BufferData vertexbuffer_info = detail::CreateVertexBuffer(context_vertexbuffer);
+
+		if (vertexbuffer_info.err_code == detail::BufferData::SUCCESS) {
+			vertex_buffer = vertexbuffer_info.created_buffer;
+			vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
+		}
+		else {
+			vertex_buffer = nullptr;
+			vertex_buffer_memory = nullptr;
+		}
+
+		// Create Index Buffer
+		detail::IndexBufferContext context_indexbuffer = {};
+		context_indexbuffer.indices = indices;
+		context_indexbuffer.logical_device = logical_device;
+		context_indexbuffer.physical_device = physical_device;
+		context_indexbuffer.graphics_queue = graphics_queue;
+		context_indexbuffer.command_pool = command_pool;
+
+		detail::BufferData indexbuffer_info = detail::CreateIndexBuffer(context_indexbuffer);
+
+		if (indexbuffer_info.err_code == detail::BufferData::SUCCESS) {
+			index_buffer = indexbuffer_info.created_buffer;
+			index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
+		}
+		else {
+			index_buffer = nullptr;
+			index_buffer_memory = nullptr;
+		}
 	}
 
 	GLFWwindow* Renderer::Get_Window() {

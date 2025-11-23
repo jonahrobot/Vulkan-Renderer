@@ -63,6 +63,9 @@ namespace renderer::detail {
 	struct BufferData {
 		VkBuffer created_buffer;
 		VkDeviceMemory memory_allocated_for_buffer;
+		
+		enum BufferCreationErrors{SUCCESS, SIZEZERO};
+		BufferCreationErrors err_code;
 	};
 	BufferData CreateDataBuffer(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkDeviceSize BufferSize, VkBufferUsageFlags UsageFlags, VkMemoryPropertyFlags PropertyFlags);
 

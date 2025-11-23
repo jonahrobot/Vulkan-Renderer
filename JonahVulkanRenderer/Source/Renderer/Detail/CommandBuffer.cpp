@@ -81,16 +81,18 @@ namespace renderer::detail {
 		scissor.extent = Context.swapchain_extent;
 		vkCmdSetScissor(Context.command_buffer, 0, 1, &scissor);
 
-		VkBuffer vertex_buffers[] = { Context.vertex_buffer };
-		VkDeviceSize offsets[] = { 0 };
-		vkCmdBindVertexBuffers(Context.command_buffer, 0, 1, vertex_buffers, offsets);
+		if (Context.total_vertices != 0) {
+			VkBuffer vertex_buffers[] = { Context.vertex_buffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(Context.command_buffer, 0, 1, vertex_buffers, offsets);
 
-		vkCmdBindIndexBuffer(Context.command_buffer, Context.index_buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(Context.command_buffer, Context.index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
-								Context.graphics_pipeline_layout, 0, 1, &Context.current_descriptor_set, 0, nullptr);
+			vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				Context.graphics_pipeline_layout, 0, 1, &Context.current_descriptor_set, 0, nullptr);
 
-		vkCmdDrawIndexed(Context.command_buffer, Context.total_indices, 1, 0, 0, 0);
+			vkCmdDrawIndexed(Context.command_buffer, Context.total_indices, 1, 0, 0, 0);
+		}
 
 		vkCmdEndRenderPass(Context.command_buffer);
 		if (vkEndCommandBuffer(Context.command_buffer) != VK_SUCCESS) {

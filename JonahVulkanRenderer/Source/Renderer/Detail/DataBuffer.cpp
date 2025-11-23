@@ -95,8 +95,14 @@ namespace renderer::detail {
 		VkDeviceSize data_size = sizeof(Context.vertices_to_render[0]) * Context.vertices_to_render.size();
 		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		BufferData created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
-										   Context.physical_device, Context.graphics_queue, Context.command_pool);
+		BufferData created_buffer;
+
+		if (data_size != 0) {
+			created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+				Context.physical_device, Context.graphics_queue, Context.command_pool);
+		} else {
+			created_buffer.err_code = BufferData::SIZEZERO;
+		}
 
 		return created_buffer;
 	}
@@ -107,8 +113,14 @@ namespace renderer::detail {
 		VkDeviceSize data_size = sizeof(Context.indices[0]) * Context.indices.size();
 		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-		BufferData created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
-										   Context.physical_device, Context.graphics_queue, Context.command_pool);
+		BufferData created_buffer;
+
+		if (data_size != 0) {
+			created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+				Context.physical_device, Context.graphics_queue, Context.command_pool);
+		} else {
+			created_buffer.err_code = BufferData::SIZEZERO;
+		}
 
 		return created_buffer;
 

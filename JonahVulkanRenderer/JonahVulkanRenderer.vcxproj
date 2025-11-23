@@ -173,6 +173,7 @@
     <ClCompile Include="Source\Renderer\Detail\GraphicsPipeline.cpp" />
     <ClCompile Include="Source\Renderer\Detail\ImageLoader.cpp" />
     <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\ModelLoader.cpp" />
     <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\RendererDetail_Common.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp" />

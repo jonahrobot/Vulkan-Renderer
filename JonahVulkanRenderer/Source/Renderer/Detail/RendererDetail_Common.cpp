@@ -23,6 +23,12 @@ namespace renderer::detail {
 
 		VkBuffer buffer;
 
+		if (BufferSize == 0) {
+			BufferData failed{};
+			failed.err_code = BufferData::SIZEZERO;
+			return failed;
+		}
+
 		// Create buffer
 		VkBufferCreateInfo buffer_info{};
 		buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

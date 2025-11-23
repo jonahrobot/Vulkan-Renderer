@@ -22,7 +22,6 @@ private:
 	float last_frame_time;
 
 	void DrawFrame();
-
 };
 
 } // namespace game
