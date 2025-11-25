@@ -56,6 +56,13 @@ namespace renderer::detail {
 			return position == other.position && color == other.color && tex_coord == other.tex_coord;
 		}
 	};
+
+	struct MergedIndexVertexBuffer {
+		std::vector<Vertex> merged_vertex_buffer;
+		std::vector<uint32_t> merged_index_buffer;
+	};
+
+	MergedIndexVertexBuffer MergeIndexVertexBuffer(const std::vector<Vertex>& V1, const std::vector<uint32_t>& I1, const std::vector<Vertex>& V2, const std::vector<uint32_t>& I2);
 #pragma endregion
 
 
