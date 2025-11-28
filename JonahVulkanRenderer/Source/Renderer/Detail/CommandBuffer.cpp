@@ -91,7 +91,11 @@ namespace renderer::detail {
 			vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
 				Context.graphics_pipeline_layout, 0, 1, &Context.current_descriptor_set, 0, nullptr);
 
-			vkCmdDrawIndexed(Context.command_buffer, Context.total_indices, 1, 0, 0, 0);
+			uint32_t size_of_command = sizeof(VkDrawIndexedIndirectCommand);
+
+			for (auto x = 0; x < Context.total_meshes; x++) {
+				vkCmdDrawIndexedIndirect(Context.command_buffer, Context.indirect_command_buffer, x * size_of_command, 1, size_of_command);
+			}
 		}
 
 		vkCmdEndRenderPass(Context.command_buffer);

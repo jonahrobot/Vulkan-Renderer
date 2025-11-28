@@ -83,6 +83,7 @@ private:
 	VkDeviceMemory index_buffer_memory;
 	VkBuffer indirect_command_buffer;
 	VkDeviceMemory indirect_command_buffer_memory;
+	uint32_t number_of_meshes;
 
 	std::vector<VkBuffer> uniform_buffers;
 	std::vector<VkDeviceMemory> uniform_buffers_memory;
