@@ -110,13 +110,13 @@ namespace renderer {
 			float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
 			Renderer::UniformBufferObject ubo{};
-			ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This handles the objects position relative to the world space
-			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 100.0f); // This helps us project the point to the viewport
-
-			//ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This handles the objects position relative to the world space
+			//ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This handles the objects position relative to the world space
 			//ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-			//ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
+			//ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 100.0f); // This helps us project the point to the viewport
+
+			ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This handles the objects position relative to the world space
+			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
+			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
 
 			ubo.proj[1][1] *= -1;
 
@@ -272,37 +272,32 @@ namespace renderer {
 
 		detail::FreeTextureBundle(rock_texture);
 
-		// Load Model
-		detail::ModelData model_0 = detail::LoadModel(MODEL_PATH);
-		vertices_to_render = model_0.vertices_to_render;
-		indices = model_0.indices;
-
 		// Create Texture Sampler
 		texture_sampler = CreateTextureSampler(physical_device, logical_device);
 		
-		// Create Vertex Buffer
-		detail::VertexBufferContext context_vertexbuffer = {};
-		context_vertexbuffer.vertices_to_render = vertices_to_render;
-		context_vertexbuffer.logical_device = logical_device;
-		context_vertexbuffer.physical_device = physical_device;
-		context_vertexbuffer.graphics_queue = graphics_queue;
-		context_vertexbuffer.command_pool = command_pool;
+		//// Create Vertex Buffer
+		//detail::VertexBufferContext context_vertexbuffer = {};
+		//context_vertexbuffer.vertices_to_render = vertices_to_render;
+		//context_vertexbuffer.logical_device = logical_device;
+		//context_vertexbuffer.physical_device = physical_device;
+		//context_vertexbuffer.graphics_queue = graphics_queue;
+		//context_vertexbuffer.command_pool = command_pool;
 
-		detail::BufferData vertexbuffer_info = detail::CreateVertexBuffer(context_vertexbuffer);
-		vertex_buffer = vertexbuffer_info.created_buffer;
-		vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
+		//detail::BufferData vertexbuffer_info = detail::CreateVertexBuffer(context_vertexbuffer);
+		//vertex_buffer = vertexbuffer_info.created_buffer;
+		//vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
 
-		// Create Index Buffer
-		detail::IndexBufferContext context_indexbuffer = {};
-		context_indexbuffer.indices = indices;
-		context_indexbuffer.logical_device = logical_device;
-		context_indexbuffer.physical_device = physical_device;
-		context_indexbuffer.graphics_queue = graphics_queue;
-		context_indexbuffer.command_pool = command_pool;
+		//// Create Index Buffer
+		//detail::IndexBufferContext context_indexbuffer = {};
+		//context_indexbuffer.indices = indices;
+		//context_indexbuffer.logical_device = logical_device;
+		//context_indexbuffer.physical_device = physical_device;
+		//context_indexbuffer.graphics_queue = graphics_queue;
+		//context_indexbuffer.command_pool = command_pool;
 
-		detail::BufferData indexbuffer_info = detail::CreateIndexBuffer(context_indexbuffer);
-		index_buffer = indexbuffer_info.created_buffer;
-		index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
+		//detail::BufferData indexbuffer_info = detail::CreateIndexBuffer(context_indexbuffer);
+		//index_buffer = indexbuffer_info.created_buffer;
+		//index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
 
 		// Create UBO for Vertex
 		detail::UniformBufferContext context_ubo = {};
@@ -539,9 +534,6 @@ namespace renderer {
 			uint32_t offset = vertices_to_render.size();
 
 			for (detail::Vertex v : model.vertices_to_render) {
-				if (number_of_meshes == 1) {
-					v.position.y += 2;
-				}
 				vertices_to_render.push_back(v);
 			}
 

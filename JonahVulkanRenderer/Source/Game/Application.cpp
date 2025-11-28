@@ -9,6 +9,8 @@ namespace game {
 
 Application::Application() {
 	renderer = new renderer::Renderer();
+	//renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/viking_room.obj");
+	//renderer->UpdateModelSet({ model_0 });
 	window = renderer->Get_Window();
 	camera = new Camera(window);
 }
