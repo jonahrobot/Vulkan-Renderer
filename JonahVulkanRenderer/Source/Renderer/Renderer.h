@@ -27,7 +27,7 @@ public:
 
 	void Draw(glm::mat4 CameraPosition);
 
-	void UpdateDrawVertices(std::vector<renderer::detail::Vertex> Vertices, std::vector<uint32_t> Indices);
+	void UpdateModelSet(std::vector<detail::ModelData> NewModelSet);
 
 	GLFWwindow* Get_Window();
 
@@ -81,6 +81,8 @@ private:
 	VkDeviceMemory vertex_buffer_memory;
 	VkBuffer index_buffer;
 	VkDeviceMemory index_buffer_memory;
+	VkBuffer indirect_command_buffer;
+	VkDeviceMemory indirect_command_buffer_memory;
 
 	std::vector<VkBuffer> uniform_buffers;
 	std::vector<VkDeviceMemory> uniform_buffers_memory;

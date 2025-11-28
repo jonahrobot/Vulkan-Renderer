@@ -32,19 +32,15 @@ void Application::Update() {
 	renderer->Draw(camera->GetViewMatrix());
 
 	if (!held_space && glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-		std::vector<renderer::detail::Vertex> vertices_to_render;
-		std::vector<uint32_t> indices;
-		renderer->UpdateDrawVertices(vertices_to_render,indices);
+		renderer::detail::ModelData model_null = {};
+		renderer->UpdateModelSet({ model_null });
 		held_space = true;
 	}
 
 	if (held_space && glfwGetKey(window, GLFW_KEY_F) == GLFW_RELEASE) {
-		renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/viking_room.obj");
+		renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/iron_golem.obj");
 
-		renderer::detail::MergedIndexVertexBuffer merged_data{};
-		merged_data = renderer::detail::MergeIndexVertexBuffer(model_0.vertices_to_render, model_0.indices, model_0.vertices_to_render, model_0.indices);
-
-		renderer->UpdateDrawVertices(merged_data.merged_vertex_buffer, merged_data.merged_index_buffer);
+		renderer->UpdateModelSet({ model_0 });
 		held_space = false;
 	}
 }

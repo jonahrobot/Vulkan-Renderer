@@ -116,7 +116,7 @@ namespace renderer {
 
 			ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This handles the objects position relative to the world space
 			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 10.0f); // This helps us project the point to the viewport
+			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
 
 			ubo.proj[1][1] *= -1;
 
@@ -395,6 +395,9 @@ namespace renderer {
 		vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
 		vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
 
+		vkDestroyBuffer(logical_device, indirect_command_buffer, nullptr);
+		vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
+
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
 		vkDestroyInstance(vulkan_instance, nullptr); // Cleanup instance LAST in Vulkan Cleanup
@@ -496,7 +499,7 @@ namespace renderer {
 		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
-	void Renderer::UpdateDrawVertices(std::vector<renderer::detail::Vertex> Vertices, std::vector<uint32_t> Indices) {
+	void Renderer::UpdateModelSet(std::vector<detail::ModelData> NewModelSet) {
 
 		vkDeviceWaitIdle(logical_device);
 
@@ -510,8 +513,47 @@ namespace renderer {
 			vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
 		}
 
-		vertices_to_render = Vertices;
-		indices = Indices;
+		if (indirect_command_buffer != NULL) {
+			vkDestroyBuffer(logical_device, indirect_command_buffer, nullptr);
+			vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
+		}
+
+		// Make vertex, index and command list
+		std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
+
+		uint32_t m = 0;
+		uint32_t instance_count = 1;
+		vertices_to_render.clear();
+		indices.clear();
+
+		for (detail::ModelData model : NewModelSet) {
+
+			bool no_data = model.vertices_to_render.size() == 0 || model.indices.size() == 0;
+			if (no_data) continue;
+			
+			uint32_t offset = vertices_to_render.size();
+
+			for (detail::Vertex v : model.vertices_to_render) {
+				vertices_to_render.push_back(v);
+			}
+
+			uint32_t first_index = indices.size();
+
+			for (uint32_t i : model.indices) {
+				indices.push_back(i + offset);
+			}
+
+			// Create draw command
+			VkDrawIndexedIndirectCommand indirect_command{};
+			indirect_command.instanceCount = instance_count;
+			indirect_command.firstInstance = m * instance_count;
+			indirect_command.firstIndex = first_index;
+			indirect_command.indexCount = model.indices.size();
+
+			indirect_commands.push_back(indirect_command);
+
+			m++;
+		}
 
 		// Create Vertex Buffer
 		detail::VertexBufferContext context_vertexbuffer = {};
@@ -549,6 +591,25 @@ namespace renderer {
 		else {
 			index_buffer = nullptr;
 			index_buffer_memory = nullptr;
+		}
+
+		// Create Command Buffer
+		detail::IndirectCommandBufferContext context_commandbuffer = {};
+		context_commandbuffer.command_set = indirect_commands;
+		context_commandbuffer.logical_device = logical_device;
+		context_commandbuffer.physical_device = physical_device;
+		context_commandbuffer.graphics_queue = graphics_queue;
+		context_commandbuffer.command_pool = command_pool;
+
+		detail::BufferData commandbuffer_info = detail::CreateIndirectCommandBuffer(context_commandbuffer);
+
+		if (commandbuffer_info.err_code == detail::BufferData::SUCCESS) {
+			indirect_command_buffer = commandbuffer_info.created_buffer;
+			indirect_command_buffer_memory = commandbuffer_info.memory_allocated_for_buffer;
+		}
+		else {
+			indirect_command_buffer = nullptr;
+			indirect_command_buffer_memory = nullptr;
 		}
 	}
 

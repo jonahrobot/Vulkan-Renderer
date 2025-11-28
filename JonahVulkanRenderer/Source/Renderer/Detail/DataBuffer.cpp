@@ -186,4 +186,25 @@ namespace renderer::detail {
 
 		return depth_buffer;
 	}
+
+	BufferData CreateIndirectCommandBuffer(const IndirectCommandBufferContext& Context) {
+
+		const void* data_src = Context.command_set.data();
+		VkDeviceSize data_size = sizeof(Context.command_set[0]) * Context.command_set.size();
+		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+		BufferData created_buffer;
+
+		if (data_size != 0) {
+			created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+				Context.physical_device, Context.graphics_queue, Context.command_pool);
+		}
+		else {
+			created_buffer.err_code = BufferData::SIZEZERO;
+		}
+
+		return created_buffer;
+
+	}
+
 }

@@ -205,6 +205,15 @@ namespace renderer::detail {
 	};
 	GPUResource CreateDepthBuffer(const DepthBufferContext& Context);
 
+	struct IndirectCommandBufferContext {
+		std::vector<VkDrawIndexedIndirectCommand> command_set;
+		VkDevice logical_device;
+		VkPhysicalDevice physical_device;
+		VkQueue graphics_queue;
+		VkCommandPool command_pool;
+	};
+	BufferData CreateIndirectCommandBuffer(const IndirectCommandBufferContext& Context);
+
 #pragma endregion
 
 #pragma region Descriptor Sets
