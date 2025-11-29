@@ -4,6 +4,74 @@
 // Unnamed namespace to show functions below are pure Utility strictly for this .cpp file.
 namespace {
 
+	renderer::detail::TextureData LoadTextureImage(const char* TexturePath) {
+
+		renderer::detail::TextureData texture_loaded;
+
+		int texture_channels;
+		texture_loaded.pixels = stbi_load(TexturePath, &texture_loaded.width, &texture_loaded.height, &texture_channels, STBI_rgb_alpha);
+		texture_loaded.image_size = texture_loaded.width * texture_loaded.height * 4;
+		texture_loaded.format = VK_FORMAT_R8G8B8A8_SRGB;
+
+		if (!texture_loaded.pixels) {
+			throw std::runtime_error("Failed to load texture image.");
+		}
+
+		return texture_loaded;
+	}
+
+	struct ModelGeometry {
+		std::vector<renderer::detail::Vertex> vertices;
+		std::vector<uint32_t> indices;
+	};
+
+	ModelGeometry LoadModelGeometry(std::string ModelPath) {
+
+		ModelGeometry geometry;
+
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string err;
+		std::string warn;
+
+		if (tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, ModelPath.c_str()) == false) {
+			throw std::runtime_error(err);
+		}
+
+		std::unordered_map<renderer::detail::Vertex, uint32_t> unique_vertices{};
+
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				renderer::detail::Vertex vertex{};
+
+				vertex.position = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				vertex.tex_coord = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+				};
+
+				vertex.color = { 1.0f, 1.0f, 1.0f };
+
+				// If vertex not been acounted for then add it!
+				if (unique_vertices.count(vertex) == 0) {
+					unique_vertices[vertex] = static_cast<uint32_t> (geometry.vertices.size());
+					geometry.vertices.push_back(vertex);
+				}
+
+				// Find vertex's index and add it to indices array
+				geometry.indices.push_back(unique_vertices[vertex]);
+			}
+		}
+
+		return geometry;
+	}
+
 	// Function waits for a specific part of the pipeline to transfer a Image layout
 	void TransitionImageLayout(VkQueue GraphicsQueue, VkDevice LogicalDevice, VkCommandPool CommandPool, VkImage Image, VkFormat Format, VkImageLayout OldLayout, VkImageLayout NewLayout) {
 
@@ -77,29 +145,31 @@ namespace {
 // Implements all Image Loading functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	TextureBundle LoadTextureImage(const char* TexturePath) {
+	ModelData LoadModel(std::string ModelPath, const char* TexturePath) {
 
-		TextureBundle texture_loaded;
+		ModelData new_model;
 
-		int texture_channels;
-		texture_loaded.pixels = stbi_load(TexturePath, &texture_loaded.width, &texture_loaded.height, &texture_channels, STBI_rgb_alpha);
-		texture_loaded.image_size = texture_loaded.width * texture_loaded.height * 4;
-		texture_loaded.format = VK_FORMAT_R8G8B8A8_SRGB;
+		ModelGeometry geometry = LoadModelGeometry(ModelPath);
+		new_model.vertices = geometry.vertices;
+		new_model.indices = geometry.indices;
 
-		if (!texture_loaded.pixels) {
-			throw std::runtime_error("Failed to load texture image.");
-		}
+		TextureData texture = LoadTextureImage(TexturePath);
+		new_model.texture_data = texture;
 
-		return texture_loaded;
+		return new_model;
 	}
 
-	void FreeTextureBundle(TextureBundle& TextureBundle) {
-		stbi_image_free(TextureBundle.pixels);
-		TextureBundle.pixels = NULL;
-		TextureBundle.image_size = 0;
+	void FreeModel(ModelData Model) {
+
+		Model.vertices.clear();
+		Model.indices.clear();
+
+		stbi_image_free(Model.texture_data.pixels);
+		Model.texture_data.pixels = NULL;
+		Model.texture_data.image_size = 0;
 	}
 
-	GPUResource CreateGPUResource(const ImageObjectContext& Context) {
+	GPUResource CreateTextureBuffer(const TextureBufferContext& Context) {
 
 		GPUResource return_image{};
 

@@ -73,7 +73,7 @@ private:
 	VkCommandPool command_pool;
 	std::vector<VkCommandBuffer> command_buffers;
 
-	detail::GPUResource texture_0;
+	detail::GPUResource texture_buffer;
 
 	VkSampler texture_sampler;
 
@@ -101,8 +101,5 @@ private:
 
 	std::vector<detail::Vertex> vertices_to_render;
 	std::vector<uint32_t>indices;
-
-	const std::string MODEL_PATH = "models/viking_room.obj";
-	const std::string TEXTURE_PATH = "textures/viking_room.png";
 };
 } // namespace renderer

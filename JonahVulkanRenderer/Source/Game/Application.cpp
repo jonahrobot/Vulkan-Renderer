@@ -9,8 +9,9 @@ namespace game {
 
 Application::Application() {
 	renderer = new renderer::Renderer();
-	//renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/viking_room.obj");
-	//renderer->UpdateModelSet({ model_0 });
+	renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/viking_room.obj","textures/viking_room.png");
+	renderer::detail::ModelData model_1 = renderer::detail::LoadModel("models/iron_golem.obj","textures/iron_golem.png");
+	renderer->UpdateModelSet({ model_0, model_1 });
 	window = renderer->Get_Window();
 	camera = new Camera(window);
 }
@@ -40,7 +41,7 @@ void Application::Update() {
 	}
 
 	if (held_space && glfwGetKey(window, GLFW_KEY_F) == GLFW_RELEASE) {
-		renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/viking_room.obj");
+		renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/viking_room.obj", "textures/iron_golem.png");
 
 		renderer->UpdateModelSet({ model_0, model_0 });
 		held_space = false;

@@ -255,49 +255,8 @@ namespace renderer {
 		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
 		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
 
-		// Create Texture Image
-		detail::TextureBundle rock_texture = detail::LoadTextureImage(TEXTURE_PATH.c_str());
-
-		detail::ImageObjectContext context_imagebuffer = {};
-		context_imagebuffer.texture_bundle = rock_texture;
-		context_imagebuffer.logical_device = logical_device;
-		context_imagebuffer.physical_device = physical_device;
-		context_imagebuffer.command_pool = command_pool;
-		context_imagebuffer.data_tiling_mode = VK_IMAGE_TILING_OPTIMAL;
-		context_imagebuffer.graphics_queue = graphics_queue;
-		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-		texture_0 = detail::CreateGPUResource(context_imagebuffer);
-
-		detail::FreeTextureBundle(rock_texture);
-
 		// Create Texture Sampler
 		texture_sampler = CreateTextureSampler(physical_device, logical_device);
-		
-		//// Create Vertex Buffer
-		//detail::VertexBufferContext context_vertexbuffer = {};
-		//context_vertexbuffer.vertices_to_render = vertices_to_render;
-		//context_vertexbuffer.logical_device = logical_device;
-		//context_vertexbuffer.physical_device = physical_device;
-		//context_vertexbuffer.graphics_queue = graphics_queue;
-		//context_vertexbuffer.command_pool = command_pool;
-
-		//detail::BufferData vertexbuffer_info = detail::CreateVertexBuffer(context_vertexbuffer);
-		//vertex_buffer = vertexbuffer_info.created_buffer;
-		//vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
-
-		//// Create Index Buffer
-		//detail::IndexBufferContext context_indexbuffer = {};
-		//context_indexbuffer.indices = indices;
-		//context_indexbuffer.logical_device = logical_device;
-		//context_indexbuffer.physical_device = physical_device;
-		//context_indexbuffer.graphics_queue = graphics_queue;
-		//context_indexbuffer.command_pool = command_pool;
-
-		//detail::BufferData indexbuffer_info = detail::CreateIndexBuffer(context_indexbuffer);
-		//index_buffer = indexbuffer_info.created_buffer;
-		//index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
 
 		// Create UBO for Vertex
 		detail::UniformBufferContext context_ubo = {};
@@ -317,19 +276,6 @@ namespace renderer {
 		context_pool.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 
 		descriptor_pool = detail::CreateDescriptorPool(context_pool);
-
-		// Create Descriptor Sets to link UBO to GPU
-		detail::DescriptorSetContext context_descriptor_set = {};
-		context_descriptor_set.descriptor_pool = descriptor_pool;
-		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
-		context_descriptor_set.logical_device = logical_device;
-		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
-		context_descriptor_set.ubo_size = sizeof(UniformBufferObject);
-		context_descriptor_set.uniform_buffers = uniform_buffers;
-		context_descriptor_set.image_view = texture_0.image_view;
-		context_descriptor_set.texture_sampler = texture_sampler;
-
-		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
 
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -356,7 +302,7 @@ namespace renderer {
 
 		vkDestroySampler(logical_device, texture_sampler, nullptr);
 
-		detail::FreeGPUResource(texture_0, logical_device);
+		detail::FreeGPUResource(texture_buffer, logical_device);
 		detail::FreeGPUResource(depth_buffer, logical_device);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -526,14 +472,14 @@ namespace renderer {
 
 		for (detail::ModelData model : NewModelSet) {
 
-			bool no_data = model.vertices_to_render.size() == 0 || model.indices.size() == 0;
+			bool no_data = model.vertices.size() == 0 || model.indices.size() == 0;
 			if (no_data) continue;
 
 			number_of_meshes += 1;
 			
 			uint32_t offset = vertices_to_render.size();
 
-			for (detail::Vertex v : model.vertices_to_render) {
+			for (detail::Vertex v : model.vertices) {
 				vertices_to_render.push_back(v);
 			}
 
@@ -611,6 +557,32 @@ namespace renderer {
 			indirect_command_buffer = nullptr;
 			indirect_command_buffer_memory = nullptr;
 		}
+
+		// Add textures to GPU
+		detail::TextureBufferContext context_imagebuffer = {};
+		context_imagebuffer.texture_bundle = NewModelSet[0].texture_data;
+		context_imagebuffer.logical_device = logical_device;
+		context_imagebuffer.physical_device = physical_device;
+		context_imagebuffer.command_pool = command_pool;
+		context_imagebuffer.data_tiling_mode = VK_IMAGE_TILING_OPTIMAL;
+		context_imagebuffer.graphics_queue = graphics_queue;
+		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
+
+		// Create Descriptor Sets to link UBO to GPU
+		detail::DescriptorSetContext context_descriptor_set = {};
+		context_descriptor_set.descriptor_pool = descriptor_pool;
+		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
+		context_descriptor_set.logical_device = logical_device;
+		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
+		context_descriptor_set.ubo_size = sizeof(UniformBufferObject);
+		context_descriptor_set.uniform_buffers = uniform_buffers;
+		context_descriptor_set.image_view = texture_buffer.image_view;
+		context_descriptor_set.texture_sampler = texture_sampler;
+
+		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
 	}
 
 	GLFWwindow* Renderer::Get_Window() {

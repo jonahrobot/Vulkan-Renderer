@@ -246,21 +246,27 @@ namespace renderer::detail {
 
 #pragma endregion
 
-#pragma region Image Loading
-	// Implemented in "ImageLoader.cpp"
+#pragma region Asset Loading
+	// Implemented in "AssetLoader.cpp"
 
-	struct TextureBundle {
+	struct TextureData {
 		stbi_uc* pixels;
 		VkDeviceSize image_size;
 		int width;
 		int height;
 		VkFormat format;
 	};
-	TextureBundle LoadTextureImage(const char* TexturePath);
-	void FreeTextureBundle(TextureBundle& TextureBundle);
+	struct ModelData {
+		std::vector<detail::Vertex> vertices;
+		std::vector<uint32_t> indices;
+		TextureData texture_data;
+	};
 
-	struct ImageObjectContext {
-		TextureBundle texture_bundle;
+	ModelData LoadModel(std::string ModelPath, const char* TexturePath);
+	void FreeModel(ModelData Model);
+
+	struct TextureBufferContext {
+		TextureData texture_bundle;
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
 		VkImageTiling data_tiling_mode;
@@ -269,19 +275,9 @@ namespace renderer::detail {
 		VkQueue graphics_queue;
 		VkCommandPool command_pool;
 	};
-	GPUResource CreateGPUResource(const ImageObjectContext& Context);
+	GPUResource CreateTextureBuffer(const TextureBufferContext& Context);
 	void FreeGPUResource(GPUResource& ImageObject, const VkDevice& LogicalDevice);
 
 #pragma endregion
 
-#pragma region Model Loading
-	// Implemented in "ModelLoader.cpp"
-
-	struct ModelData {
-		std::vector<detail::Vertex> vertices_to_render;
-		std::vector<uint32_t>indices;
-	};
-	ModelData LoadModel(std::string ModelPath);
-
-#pragma endregion
 };
