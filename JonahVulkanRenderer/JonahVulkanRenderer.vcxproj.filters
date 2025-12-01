@@ -54,9 +54,6 @@
     <ClCompile Include="Source\Renderer\Detail\DescriptorSet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\ImageLoader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Renderer\Detail\RendererDetail_Common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,7 +63,7 @@
     <ClCompile Include="Source\Game\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\ModelLoader.cpp">
+    <ClCompile Include="Source\Renderer\Detail\AssetLoader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

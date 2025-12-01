@@ -244,6 +244,8 @@ namespace renderer::detail {
 	};
 	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorSetContext& Context);
 
+	std::vector<VkDescriptorSet> UpdateDescriptorSets(const DescriptorSetContext& Context, std::vector<VkDescriptorSet> old_set);
+
 #pragma endregion
 
 #pragma region Asset Loading
@@ -264,6 +266,7 @@ namespace renderer::detail {
 
 	ModelData LoadModel(std::string ModelPath, const char* TexturePath);
 	void FreeModel(ModelData Model);
+	bool VerifyModel(ModelData Model);
 
 	struct TextureBufferContext {
 		TextureData texture_bundle;

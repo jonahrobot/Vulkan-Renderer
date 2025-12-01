@@ -119,4 +119,42 @@ namespace renderer::detail {
 		return descriptor_sets;
 	}
 
+	std::vector<VkDescriptorSet> UpdateDescriptorSets(const DescriptorSetContext& Context, std::vector<VkDescriptorSet> old_set) {
+
+		// Allocate our descriptor sets from the layout template and ubo information
+		for (size_t i = 0; i < Context.max_frames_in_flight; i++) {
+			VkDescriptorBufferInfo buffer_info{};
+			buffer_info.buffer = Context.uniform_buffers[i];
+			buffer_info.offset = 0;
+			buffer_info.range = Context.ubo_size;
+
+			VkDescriptorImageInfo image_info{};
+			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			image_info.imageView = Context.image_view;
+			image_info.sampler = Context.texture_sampler;
+
+			std::array<VkWriteDescriptorSet, 2> descriptor_writes{};
+
+			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[0].dstSet = old_set[i];
+			descriptor_writes[0].dstBinding = 0;
+			descriptor_writes[0].dstArrayElement = 0;
+			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptor_writes[0].descriptorCount = 1;
+			descriptor_writes[0].pBufferInfo = &buffer_info;
+
+			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[1].dstSet = old_set[i];
+			descriptor_writes[1].dstBinding = 1;
+			descriptor_writes[1].dstArrayElement = 0;
+			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptor_writes[1].descriptorCount = 1;
+			descriptor_writes[1].pImageInfo = &image_info;
+
+			vkUpdateDescriptorSets(Context.logical_device, static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
+		}
+
+		return old_set;
+	}
+
 }

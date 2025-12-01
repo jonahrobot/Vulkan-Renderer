@@ -312,7 +312,7 @@ namespace renderer {
 
 		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
 
-		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr);
+		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr); 
 
 		vkDestroyCommandPool(logical_device, command_pool, nullptr);
 
@@ -444,6 +444,12 @@ namespace renderer {
 
 	void Renderer::UpdateModelSet(std::vector<detail::ModelData> NewModelSet) {
 
+		for (detail::ModelData model : NewModelSet) {
+			if (detail::VerifyModel(model) != true) {
+				return;
+			}
+		}
+
 		vkDeviceWaitIdle(logical_device);
 
 		if (index_buffer != NULL) {
@@ -460,6 +466,8 @@ namespace renderer {
 			vkDestroyBuffer(logical_device, indirect_command_buffer, nullptr);
 			vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
 		}
+
+		detail::FreeGPUResource(texture_buffer, logical_device);
 
 		// Make vertex, index and command list
 		std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
@@ -500,6 +508,8 @@ namespace renderer {
 
 			m++;
 		}
+
+		bool no_update = false;
 
 		// Create Vertex Buffer
 		detail::VertexBufferContext context_vertexbuffer = {};
@@ -560,7 +570,7 @@ namespace renderer {
 
 		// Add textures to GPU
 		detail::TextureBufferContext context_imagebuffer = {};
-		context_imagebuffer.texture_bundle = NewModelSet[0].texture_data;
+		context_imagebuffer.texture_bundle = NewModelSet[0].texture_data; // TODO: Update to include all model textures
 		context_imagebuffer.logical_device = logical_device;
 		context_imagebuffer.physical_device = physical_device;
 		context_imagebuffer.command_pool = command_pool;
@@ -570,7 +580,7 @@ namespace renderer {
 		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
 		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
-
+		
 		// Create Descriptor Sets to link UBO to GPU
 		detail::DescriptorSetContext context_descriptor_set = {};
 		context_descriptor_set.descriptor_pool = descriptor_pool;
@@ -582,7 +592,13 @@ namespace renderer {
 		context_descriptor_set.image_view = texture_buffer.image_view;
 		context_descriptor_set.texture_sampler = texture_sampler;
 
-		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
+		if(descriptor_set_initialized == false){
+			descriptor_set_initialized = true;
+			descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
+		}
+		else {
+			descriptor_sets = detail::UpdateDescriptorSets(context_descriptor_set, descriptor_sets);
+		}
 	}
 
 	GLFWwindow* Renderer::Get_Window() {

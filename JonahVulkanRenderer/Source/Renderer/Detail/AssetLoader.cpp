@@ -169,6 +169,12 @@ namespace renderer::detail {
 		Model.texture_data.image_size = 0;
 	}
 
+	bool VerifyModel(ModelData Model) {
+
+		return !(Model.texture_data.image_size == 0 || Model.texture_data.pixels == nullptr || Model.vertices.size() == 0 || Model.indices.size() == 0);
+
+	}
+
 	GPUResource CreateTextureBuffer(const TextureBufferContext& Context) {
 
 		GPUResource return_image{};
