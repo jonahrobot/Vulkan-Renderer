@@ -186,7 +186,7 @@ namespace renderer::detail {
 	struct UniformBufferData {
 		std::vector<VkBuffer> uniform_buffers;
 		std::vector<VkDeviceMemory> uniform_buffers_memory;
-		std::vector<void*> uniform_buffers_mapped;
+		std::vector<UniformBufferObject*> uniform_buffers_mapped;
 	};
 	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context);
 

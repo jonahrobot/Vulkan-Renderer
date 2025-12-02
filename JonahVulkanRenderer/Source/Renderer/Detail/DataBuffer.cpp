@@ -142,9 +142,11 @@ namespace renderer::detail {
 			buffer_data.uniform_buffers[i] = current_buffer.created_buffer;
 			buffer_data.uniform_buffers_memory[i] = current_buffer.memory_allocated_for_buffer;
 
-			vkMapMemory(Context.logical_device, buffer_data.uniform_buffers_memory[i], 0, Context.ubo_size, 0, &buffer_data.uniform_buffers_mapped[i]);
-		}
+			void* mapped_data;
+			vkMapMemory(Context.logical_device, buffer_data.uniform_buffers_memory[i], 0, Context.ubo_size, 0, &mapped_data);
 
+			buffer_data.uniform_buffers_mapped[i] = static_cast<UniformBufferObject*>(mapped_data);
+		}
 		return buffer_data;
 	}
 

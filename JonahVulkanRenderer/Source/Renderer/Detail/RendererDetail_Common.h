@@ -14,6 +14,24 @@
 
 namespace renderer::detail {
 
+#pragma region Uniform Data
+	struct UniformInstanceData {
+		alignas(16) glm::mat4 model;
+		alignas(16) glm::vec4 array_index;
+	};
+
+	struct UniformBufferObject {
+
+		struct {
+			alignas(16) glm::mat4 view;
+			alignas(16) glm::mat4 proj;
+		} matrices;
+
+		UniformInstanceData* instance;
+	};
+
+#pragma endregion
+
 #pragma region Vertex Type
 	struct Vertex {
 		glm::vec3 position;

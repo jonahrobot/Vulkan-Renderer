@@ -102,23 +102,31 @@ namespace renderer {
 			return render_pass;
 		}
 
-		Renderer::UniformBufferObject GetNextUBO(VkExtent2D swapchain_extent) {
+		detail::UniformBufferObject GetNextUBO(VkExtent2D swapchain_extent, uint32_t object_count) {
 
 			static auto start_time = std::chrono::high_resolution_clock::now();
 
 			auto current_time = std::chrono::high_resolution_clock::now();
 			float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-			Renderer::UniformBufferObject ubo{};
-			//ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This handles the objects position relative to the world space
-			//ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-			//ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.1f, 100.0f); // This helps us project the point to the viewport
+			detail::UniformBufferObject ubo{};
 
-			ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This handles the objects position relative to the world space
-			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
+			ubo.instance = new detail::UniformInstanceData[object_count];
 
-			ubo.proj[1][1] *= -1;
+			float offset = -1.5f;
+			float center = (object_count * offset) / 2.0f - (offset * 0.5f);
+
+			for (uint32_t i = 0; i < object_count; i++) {
+				ubo.instance[i].model = glm::translate(glm::mat4(1.0f), glm::vec3(i * offset - center, 0.0f, 0.0f));
+				ubo.instance[i].model = glm::scale(ubo.instance[i].model, glm::vec3(0.5f));
+
+				ubo.instance[i].array_index.x = (float)i; // Instance in texture array
+			}
+
+			ubo.matrices.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
+			ubo.matrices.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
+
+			ubo.matrices.proj[1][1] *= -1;
 
 			return ubo;
 		}
@@ -307,7 +315,7 @@ namespace renderer {
 		context_ubo.logical_device = logical_device;
 		context_ubo.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_ubo.physical_device = physical_device;
-		context_ubo.ubo_size = sizeof(UniformBufferObject);
+		context_ubo.ubo_size = sizeof(detail::UniformBufferObject);
 
 		detail::UniformBufferData ubo_info = detail::CreateUniformBuffers(context_ubo);
 		uniform_buffers = ubo_info.uniform_buffers;
@@ -414,13 +422,14 @@ namespace renderer {
 
 		vkResetCommandBuffer(command_buffers[current_frame], 0);
 
-		// Update camera position (temp)
-		UniformBufferObject current_ubo_data = GetNextUBO(extent);
-		current_ubo_data.view = CameraPosition;
-		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data, sizeof(current_ubo_data));
+		// Get positions of objects
+		detail::UniformBufferObject current_ubo_data = GetNextUBO(extent,object_count);
+
+		memcpy(uniform_buffers_mapped[current_frame]->instance, current_ubo_data.instance, object_count * sizeof(detail::UniformInstanceData));
+		current_ubo_data.matrices.view = CameraPosition;
+		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data.matrices, sizeof(current_ubo_data.matrices));
 
 		/// DRAW
-
 		detail::CommandRecordingContext command_context{};
 		command_context.framebuffers = framebuffers;
 		command_context.render_pass = render_pass;
@@ -555,13 +564,13 @@ namespace renderer {
 
 		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
 		
-		// Create Descriptor Sets to link UBO to GPU
+		// Create or update Descriptor Sets to link new Texture data to GPU
 		detail::DescriptorSetContext context_descriptor_set = {};
 		context_descriptor_set.descriptor_pool = descriptor_pool;
 		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
 		context_descriptor_set.logical_device = logical_device;
 		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
-		context_descriptor_set.ubo_size = sizeof(UniformBufferObject);
+		context_descriptor_set.ubo_size = sizeof(detail::UniformBufferObject);
 		context_descriptor_set.uniform_buffers = uniform_buffers;
 		context_descriptor_set.image_view = texture_buffer.image_view;
 		context_descriptor_set.texture_sampler = texture_sampler;

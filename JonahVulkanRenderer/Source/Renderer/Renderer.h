@@ -33,12 +33,6 @@ public:
 
 	bool framebuffer_resized = false;
 
-	struct UniformBufferObject {
-		alignas(16) glm::mat4 model;
-		alignas(16) glm::mat4 view;
-		alignas(16) glm::mat4 proj;
-	};
-
 private:
 
 	const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -77,6 +71,7 @@ private:
 	std::vector<VkCommandBuffer> command_buffers;
 
 	detail::GPUResource texture_buffer;
+	uint32_t object_count;
 
 	VkSampler texture_sampler;
 
@@ -90,7 +85,7 @@ private:
 
 	std::vector<VkBuffer> uniform_buffers;
 	std::vector<VkDeviceMemory> uniform_buffers_memory;
-	std::vector<void*> uniform_buffers_mapped;
+	std::vector<detail::UniformBufferObject*> uniform_buffers_mapped;
 	
 	detail::GPUResource depth_buffer;
 
