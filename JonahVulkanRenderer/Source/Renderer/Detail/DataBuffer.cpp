@@ -30,6 +30,12 @@ namespace {
 
 	renderer::detail::BufferData CreateGPULocalBuffer(const void* DataSrc, VkDeviceSize DataSize, VkBufferUsageFlags UsageFlags, VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkQueue GraphicsQueue, VkCommandPool CommandPool) {
 
+		if (DataSize == 0) {
+			renderer::detail::BufferData error_buffer;
+			error_buffer.err_code = renderer::detail::BufferData::SIZEZERO;
+			return error_buffer;
+		}
+
 		// Create temp buffer that CPU and GPU can both see and write to.
 		VkBufferUsageFlags temp_usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		VkMemoryPropertyFlags temp_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -88,42 +94,37 @@ namespace {
 // Implements all Vertex Buffer functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 	
+	template<>
+	BufferData CreateLocalBuffer<Vertex>(const BufferContext& Context, const std::vector<Vertex>& Data) {
 
-	BufferData CreateVertexBuffer(const VertexBufferContext& Context) {
-
-		const void* data_src = Context.vertices_to_render.data();
-		VkDeviceSize data_size = sizeof(Context.vertices_to_render[0]) * Context.vertices_to_render.size();
+		const void* data_src = Data.data();
+		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
 		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		BufferData created_buffer;
-
-		if (data_size != 0) {
-			created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
 				Context.physical_device, Context.graphics_queue, Context.command_pool);
-		} else {
-			created_buffer.err_code = BufferData::SIZEZERO;
-		}
-
-		return created_buffer;
 	}
 
-	BufferData CreateIndexBuffer(const IndexBufferContext& Context) {
+	template<>
+	BufferData CreateLocalBuffer<uint32_t>(const BufferContext& Context, const std::vector<uint32_t>& Data) {
 
-		const void* data_src = Context.indices.data();
-		VkDeviceSize data_size = sizeof(Context.indices[0]) * Context.indices.size();
+		const void* data_src = Data.data();
+		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
 		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-		BufferData created_buffer;
-
-		if (data_size != 0) {
-			created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
 				Context.physical_device, Context.graphics_queue, Context.command_pool);
-		} else {
-			created_buffer.err_code = BufferData::SIZEZERO;
-		}
+	}
 
-		return created_buffer;
+	template<>
+	BufferData CreateLocalBuffer<VkDrawIndexedIndirectCommand>(const BufferContext& Context, const std::vector<VkDrawIndexedIndirectCommand>& Data) {
 
+		const void* data_src = Data.data();
+		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
+		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+				Context.physical_device, Context.graphics_queue, Context.command_pool);
 	}
 
 	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context) {
@@ -185,26 +186,6 @@ namespace renderer::detail {
 		depth_buffer.image_view = CreateImageView(context_image_view);
 
 		return depth_buffer;
-	}
-
-	BufferData CreateIndirectCommandBuffer(const IndirectCommandBufferContext& Context) {
-
-		const void* data_src = Context.command_set.data();
-		VkDeviceSize data_size = sizeof(Context.command_set[0]) * Context.command_set.size();
-		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
-		BufferData created_buffer;
-
-		if (data_size != 0) {
-			created_buffer = CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
-				Context.physical_device, Context.graphics_queue, Context.command_pool);
-		}
-		else {
-			created_buffer.err_code = BufferData::SIZEZERO;
-		}
-
-		return created_buffer;
-
 	}
 
 }

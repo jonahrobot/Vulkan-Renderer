@@ -167,23 +167,15 @@ namespace renderer::detail {
 #pragma region Data Buffers
 	// Implemented in "DataBuffer.cpp"
 
-	struct VertexBufferContext {
-		std::vector<Vertex> vertices_to_render;
+	struct BufferContext {
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
 		VkQueue graphics_queue;
 		VkCommandPool command_pool;
 	};
-	BufferData CreateVertexBuffer(const VertexBufferContext& Context);
 
-	struct IndexBufferContext {
-		std::vector<uint32_t> indices;
-		VkDevice logical_device;
-		VkPhysicalDevice physical_device;
-		VkQueue graphics_queue;
-		VkCommandPool command_pool;
-	};
-	BufferData CreateIndexBuffer(const IndexBufferContext& Context);
+	template<typename T>
+	BufferData CreateLocalBuffer(const BufferContext& Context, const std::vector<T>& Data);
 
 	struct UniformBufferContext {
 		uint8_t max_frames_in_flight;
@@ -207,14 +199,6 @@ namespace renderer::detail {
 	};
 	GPUResource CreateDepthBuffer(const DepthBufferContext& Context);
 
-	struct IndirectCommandBufferContext {
-		std::vector<VkDrawIndexedIndirectCommand> command_set;
-		VkDevice logical_device;
-		VkPhysicalDevice physical_device;
-		VkQueue graphics_queue;
-		VkCommandPool command_pool;
-	};
-	BufferData CreateIndirectCommandBuffer(const IndirectCommandBufferContext& Context);
 
 #pragma endregion
 

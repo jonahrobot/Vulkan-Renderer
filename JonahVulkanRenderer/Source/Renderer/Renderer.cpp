@@ -511,61 +511,33 @@ namespace renderer {
 
 		bool no_update = false;
 
-		// Create Vertex Buffer
-		detail::VertexBufferContext context_vertexbuffer = {};
-		context_vertexbuffer.vertices_to_render = vertices_to_render;
-		context_vertexbuffer.logical_device = logical_device;
-		context_vertexbuffer.physical_device = physical_device;
-		context_vertexbuffer.graphics_queue = graphics_queue;
-		context_vertexbuffer.command_pool = command_pool;
+		// Move data to GPU
 
-		detail::BufferData vertexbuffer_info = detail::CreateVertexBuffer(context_vertexbuffer);
+		detail::BufferContext context_buffercreation = {};
+		context_buffercreation.logical_device = logical_device;
+		context_buffercreation.physical_device = physical_device;
+		context_buffercreation.graphics_queue = graphics_queue;
+		context_buffercreation.command_pool = command_pool;
+
+		detail::BufferData vertexbuffer_info = detail::CreateLocalBuffer<detail::Vertex>(context_buffercreation, vertices_to_render);
 
 		if (vertexbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			vertex_buffer = vertexbuffer_info.created_buffer;
 			vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
 		}
-		else {
-			vertex_buffer = nullptr;
-			vertex_buffer_memory = nullptr;
-		}
 
-		// Create Index Buffer
-		detail::IndexBufferContext context_indexbuffer = {};
-		context_indexbuffer.indices = indices;
-		context_indexbuffer.logical_device = logical_device;
-		context_indexbuffer.physical_device = physical_device;
-		context_indexbuffer.graphics_queue = graphics_queue;
-		context_indexbuffer.command_pool = command_pool;
-
-		detail::BufferData indexbuffer_info = detail::CreateIndexBuffer(context_indexbuffer);
+		detail::BufferData indexbuffer_info = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, indices);
 
 		if (indexbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			index_buffer = indexbuffer_info.created_buffer;
 			index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
 		}
-		else {
-			index_buffer = nullptr;
-			index_buffer_memory = nullptr;
-		}
 
-		// Create Command Buffer
-		detail::IndirectCommandBufferContext context_commandbuffer = {};
-		context_commandbuffer.command_set = indirect_commands;
-		context_commandbuffer.logical_device = logical_device;
-		context_commandbuffer.physical_device = physical_device;
-		context_commandbuffer.graphics_queue = graphics_queue;
-		context_commandbuffer.command_pool = command_pool;
-
-		detail::BufferData commandbuffer_info = detail::CreateIndirectCommandBuffer(context_commandbuffer);
+		detail::BufferData commandbuffer_info = detail::CreateLocalBuffer<VkDrawIndexedIndirectCommand>(context_buffercreation, indirect_commands);
 
 		if (commandbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			indirect_command_buffer = commandbuffer_info.created_buffer;
 			indirect_command_buffer_memory = commandbuffer_info.memory_allocated_for_buffer;
-		}
-		else {
-			indirect_command_buffer = nullptr;
-			indirect_command_buffer_memory = nullptr;
 		}
 
 		// Add textures to GPU
