@@ -157,6 +157,50 @@ namespace renderer {
 
 			return our_sampler;
 		}
+
+		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::ModelData>& NewModelSet) {
+			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
+
+			uint32_t m = 0;
+			uint32_t instance_count = 1;
+			NumberOfMeshes = 0;
+			VerticeToRender.clear();
+			Indices.clear();
+
+			for (detail::ModelData model : NewModelSet) {
+
+				bool no_data = model.vertices.size() == 0 || model.indices.size() == 0;
+				if (no_data) continue;
+
+				NumberOfMeshes += 1;
+
+				uint32_t offset = VerticeToRender.size();
+
+				for (detail::Vertex v : model.vertices) {
+					VerticeToRender.push_back(v);
+				}
+
+				uint32_t first_index = Indices.size();
+
+				for (uint32_t i : model.indices) {
+					Indices.push_back(i + offset);
+				}
+
+				// Create draw command
+				VkDrawIndexedIndirectCommand indirect_command{};
+				indirect_command.instanceCount = instance_count;
+				indirect_command.firstInstance = m * instance_count;
+				indirect_command.firstIndex = first_index;
+				indirect_command.indexCount = model.indices.size();
+
+				indirect_commands.push_back(indirect_command);
+
+				m++;
+			}
+
+			return indirect_commands;
+		}
+
 	} // namespace util
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -452,6 +496,8 @@ namespace renderer {
 
 		vkDeviceWaitIdle(logical_device);
 
+		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, number_of_meshes, NewModelSet);
+
 		if (index_buffer != NULL) {
 			vkDestroyBuffer(logical_device, index_buffer, nullptr);
 			vkFreeMemory(logical_device, index_buffer_memory, nullptr);
@@ -468,50 +514,6 @@ namespace renderer {
 		}
 
 		detail::FreeGPUResource(texture_buffer, logical_device);
-
-		// Make vertex, index and command list
-		std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
-
-		uint32_t m = 0;
-		uint32_t instance_count = 1;
-		number_of_meshes = 0;
-		vertices_to_render.clear();
-		indices.clear();
-
-		for (detail::ModelData model : NewModelSet) {
-
-			bool no_data = model.vertices.size() == 0 || model.indices.size() == 0;
-			if (no_data) continue;
-
-			number_of_meshes += 1;
-			
-			uint32_t offset = vertices_to_render.size();
-
-			for (detail::Vertex v : model.vertices) {
-				vertices_to_render.push_back(v);
-			}
-
-			uint32_t first_index = indices.size();
-
-			for (uint32_t i : model.indices) {
-				indices.push_back(i + offset);
-			}
-
-			// Create draw command
-			VkDrawIndexedIndirectCommand indirect_command{};
-			indirect_command.instanceCount = instance_count;
-			indirect_command.firstInstance = m * instance_count;
-			indirect_command.firstIndex = first_index;
-			indirect_command.indexCount = model.indices.size();
-
-			indirect_commands.push_back(indirect_command);
-
-			m++;
-		}
-
-		bool no_update = false;
-
-		// Move data to GPU
 
 		detail::BufferContext context_buffercreation = {};
 		context_buffercreation.logical_device = logical_device;
