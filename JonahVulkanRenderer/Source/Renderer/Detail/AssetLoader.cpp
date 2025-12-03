@@ -73,7 +73,7 @@ namespace {
 	}
 
 	// Function waits for a specific part of the pipeline to transfer a Image layout
-	void TransitionImageLayout(VkQueue GraphicsQueue, VkDevice LogicalDevice, VkCommandPool CommandPool, VkImage Image, VkFormat Format, VkImageLayout OldLayout, VkImageLayout NewLayout) {
+	void TransitionImageLayout(VkQueue GraphicsQueue, VkDevice LogicalDevice, VkCommandPool CommandPool, VkImage Image, VkFormat Format, VkImageLayout OldLayout, VkImageLayout NewLayout, uint32_t layer_count) {
 
 		VkCommandBuffer command_buffer = renderer::detail::BeginSingleTimeCommand(CommandPool, LogicalDevice);
 
@@ -91,7 +91,7 @@ namespace {
 		barrier.subresourceRange.baseMipLevel = 0;
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.layerCount = layer_count;
 
 		if (OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && NewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
 			barrier.srcAccessMask = 0;
@@ -116,7 +116,7 @@ namespace {
 		renderer::detail::EndSingleTimeCommand(command_buffer, CommandPool, LogicalDevice, GraphicsQueue);
 	}
 
-	void CopyBufferToImage(VkQueue GraphicsQueue, VkDevice LogicalDevice, VkCommandPool CommandPool, VkBuffer Buffer, VkImage Image, uint32_t Width, uint32_t Height) {
+	void CopyBufferToImage(VkQueue GraphicsQueue, VkDevice LogicalDevice, VkCommandPool CommandPool, VkBuffer Buffer, VkImage Image, uint32_t Width, uint32_t Height, uint32_t layer_count) {
 
 		VkCommandBuffer command_buffer = renderer::detail::BeginSingleTimeCommand(CommandPool, LogicalDevice);
 
@@ -128,7 +128,7 @@ namespace {
 		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 		region.imageSubresource.mipLevel = 0;
 		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = 1;
+		region.imageSubresource.layerCount = layer_count;
 
 		region.imageOffset = { 0,0,0 };
 		region.imageExtent = {
@@ -209,13 +209,13 @@ namespace renderer::detail {
 		// Pass Buffer data into Image
 		VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout);
+		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout, Context.model_count);
 
-		CopyBufferToImage(Context.graphics_queue, Context.logical_device, Context.command_pool, staging_buffer.created_buffer, return_image.image, Context.texture_bundle.width, Context.texture_bundle.height);
+		CopyBufferToImage(Context.graphics_queue, Context.logical_device, Context.command_pool, staging_buffer.created_buffer, return_image.image, Context.texture_bundle.width, Context.texture_bundle.height, Context.model_count);
 
 		old_layout = new_layout;
 		new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout);
+		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout, Context.model_count);
 
 		vkDestroyBuffer(Context.logical_device, staging_buffer.created_buffer, nullptr);
 		vkFreeMemory(Context.logical_device, staging_buffer.memory_allocated_for_buffer, nullptr);
@@ -228,6 +228,7 @@ namespace renderer::detail {
 		context_image_view.logical_device = Context.logical_device;
 		context_image_view.aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
 		context_image_view.view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+		context_image_view.array_layers = Context.model_count;
 
 		return_image.image_view = CreateImageView(context_image_view);
 

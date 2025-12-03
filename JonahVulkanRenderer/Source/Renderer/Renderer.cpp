@@ -113,10 +113,10 @@ namespace renderer {
 				return ubo;
 			}
 
-			static auto start_time = std::chrono::high_resolution_clock::now();
+			//static auto start_time = std::chrono::high_resolution_clock::now();
 
-			auto current_time = std::chrono::high_resolution_clock::now();
-			float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+			//auto current_time = std::chrono::high_resolution_clock::now();
+			//float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
 			detail::UniformBufferObject ubo{};
 
@@ -570,9 +570,25 @@ namespace renderer {
 			indirect_command_buffer_memory = commandbuffer_info.memory_allocated_for_buffer;
 		}
 
+		detail::TextureData merged_texture_data = {};
+		merged_texture_data.format = NewModelSet[0].texture_data.format;
+		merged_texture_data.height = NewModelSet[0].texture_data.height;
+		merged_texture_data.width = NewModelSet[0].texture_data.width;
+		merged_texture_data.image_size = NewModelSet[0].texture_data.image_size * object_count;
+		merged_texture_data.pixels = new stbi_uc[merged_texture_data.image_size];
+		uint32_t index = 0;
+		for (detail::ModelData model : NewModelSet) {
+			for (int i = 0; i < model.texture_data.image_size; i++) {
+				merged_texture_data.pixels[index] = model.texture_data.pixels[i];
+				index += 1;
+			}
+		}
+
+		std::cout << "Merge buffer is size: " << merged_texture_data.image_size << " and end index is: " << index << std::endl;
+
 		// Add textures to GPU
 		detail::TextureBufferContext context_imagebuffer = {};
-		context_imagebuffer.texture_bundle = NewModelSet[0].texture_data; // TODO: Update to include all model textures
+		context_imagebuffer.texture_bundle = merged_texture_data; // TODO: Update to include all model textures
 		context_imagebuffer.logical_device = logical_device;
 		context_imagebuffer.physical_device = physical_device;
 		context_imagebuffer.command_pool = command_pool;

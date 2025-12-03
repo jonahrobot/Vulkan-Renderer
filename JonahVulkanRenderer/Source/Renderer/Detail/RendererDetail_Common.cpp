@@ -171,7 +171,7 @@ namespace renderer::detail {
 		view_info.subresourceRange.baseMipLevel = 0;
 		view_info.subresourceRange.levelCount = 1;
 		view_info.subresourceRange.baseArrayLayer = 0;
-		view_info.subresourceRange.layerCount = 1;
+		view_info.subresourceRange.layerCount = Context.array_layers;
 
 		if (vkCreateImageView(Context.logical_device, &view_info, nullptr, &our_view) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create image view.");

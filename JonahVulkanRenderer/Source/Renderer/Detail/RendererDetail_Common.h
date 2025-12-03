@@ -136,6 +136,7 @@ namespace renderer::detail {
 		VkFormat image_format;
 		VkImageAspectFlags aspect_flags;
 		VkImageViewType view_type;
+		uint32_t array_layers = 1;
 	};
 	VkImageView CreateImageView(const ImageViewContext& Context);
 #pragma endregion
