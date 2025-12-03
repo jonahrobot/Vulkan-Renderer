@@ -186,7 +186,6 @@ namespace renderer::detail {
 	struct UniformBufferData {
 		std::vector<VkBuffer> uniform_buffers;
 		std::vector<VkDeviceMemory> uniform_buffers_memory;
-		std::vector<UniformBufferObject*> uniform_buffers_mapped;
 	};
 	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context);
 
@@ -261,6 +260,7 @@ namespace renderer::detail {
 		VkMemoryPropertyFlagBits memory_flags_required;
 		VkQueue graphics_queue;
 		VkCommandPool command_pool;
+		uint32_t model_count;
 	};
 	GPUResource CreateTextureBuffer(const TextureBufferContext& Context);
 	void FreeGPUResource(GPUResource& ImageObject, const VkDevice& LogicalDevice);

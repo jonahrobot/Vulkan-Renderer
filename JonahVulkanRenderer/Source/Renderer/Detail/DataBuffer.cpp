@@ -132,7 +132,6 @@ namespace renderer::detail {
 		UniformBufferData buffer_data = {};
 		buffer_data.uniform_buffers.resize(Context.max_frames_in_flight);
 		buffer_data.uniform_buffers_memory.resize(Context.max_frames_in_flight);
-		buffer_data.uniform_buffers_mapped.resize(Context.max_frames_in_flight);
 
 		for (size_t i = 0; i < Context.max_frames_in_flight; i++) {
 			VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -141,11 +140,6 @@ namespace renderer::detail {
 		
 			buffer_data.uniform_buffers[i] = current_buffer.created_buffer;
 			buffer_data.uniform_buffers_memory[i] = current_buffer.memory_allocated_for_buffer;
-
-			void* mapped_data;
-			vkMapMemory(Context.logical_device, buffer_data.uniform_buffers_memory[i], 0, Context.ubo_size, 0, &mapped_data);
-
-			buffer_data.uniform_buffers_mapped[i] = static_cast<UniformBufferObject*>(mapped_data);
 		}
 		return buffer_data;
 	}
@@ -184,6 +178,7 @@ namespace renderer::detail {
 		context_image_view.image = created_image.image;
 		context_image_view.logical_device = Context.logical_device;
 		context_image_view.aspect_flags = VK_IMAGE_ASPECT_DEPTH_BIT;
+		context_image_view.view_type = VK_IMAGE_VIEW_TYPE_2D;
 
 		depth_buffer.image_view = CreateImageView(context_image_view);
 

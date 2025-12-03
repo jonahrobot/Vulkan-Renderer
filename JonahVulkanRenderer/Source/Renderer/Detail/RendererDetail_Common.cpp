@@ -127,7 +127,7 @@ namespace renderer::detail {
 		image_info.extent.height = Context.height;
 		image_info.extent.depth = 1;
 		image_info.mipLevels = 1;
-		image_info.arrayLayers = 1;
+		image_info.arrayLayers = Context.array_layers;
 		image_info.format = Context.format;
 		image_info.tiling = Context.tiling;
 		image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -165,7 +165,7 @@ namespace renderer::detail {
 		VkImageViewCreateInfo view_info{};
 		view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		view_info.image = Context.image;
-		view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		view_info.viewType = Context.view_type;
 		view_info.format = Context.image_format;
 		view_info.subresourceRange.aspectMask = Context.aspect_flags;
 		view_info.subresourceRange.baseMipLevel = 0;

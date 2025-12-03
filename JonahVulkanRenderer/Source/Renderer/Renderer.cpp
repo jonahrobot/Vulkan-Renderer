@@ -104,6 +104,15 @@ namespace renderer {
 
 		detail::UniformBufferObject GetNextUBO(VkExtent2D swapchain_extent, uint32_t object_count) {
 
+			if (object_count == 0) {
+				detail::UniformBufferObject ubo{};
+				ubo.matrices.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
+				ubo.matrices.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
+
+				ubo.matrices.proj[1][1] *= -1;
+				return ubo;
+			}
+
 			static auto start_time = std::chrono::high_resolution_clock::now();
 
 			auto current_time = std::chrono::high_resolution_clock::now();
@@ -315,12 +324,11 @@ namespace renderer {
 		context_ubo.logical_device = logical_device;
 		context_ubo.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_ubo.physical_device = physical_device;
-		context_ubo.ubo_size = sizeof(detail::UniformBufferObject);
+		context_ubo.ubo_size = sizeof(detail::UniformBufferObject::matrices) + (MAX_OBJECTS * sizeof(detail::UniformInstanceData));
 
 		detail::UniformBufferData ubo_info = detail::CreateUniformBuffers(context_ubo);
 		uniform_buffers = ubo_info.uniform_buffers;
 		uniform_buffers_memory = ubo_info.uniform_buffers_memory;
-		uniform_buffers_mapped = ubo_info.uniform_buffers_mapped;
 
 		// Create Descriptor Pool
 		detail::DescriptorPoolContext context_pool = {};
@@ -425,9 +433,19 @@ namespace renderer {
 		// Get positions of objects
 		detail::UniformBufferObject current_ubo_data = GetNextUBO(extent,object_count);
 
-		memcpy(uniform_buffers_mapped[current_frame]->instance, current_ubo_data.instance, object_count * sizeof(detail::UniformInstanceData));
+		uint8_t* p_data;
+		uint32_t data_offset = sizeof(current_ubo_data.matrices);
+		uint32_t data_size = object_count * sizeof(detail::UniformInstanceData);
+		vkMapMemory(logical_device, uniform_buffers_memory[current_frame], data_offset, data_size, 0, (void**)&p_data);
+		memcpy(p_data, current_ubo_data.instance, data_size);
+		vkUnmapMemory(logical_device, uniform_buffers_memory[current_frame]);
+
 		current_ubo_data.matrices.view = CameraPosition;
-		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data.matrices, sizeof(current_ubo_data.matrices));
+
+		void* mapped;
+		vkMapMemory(logical_device, uniform_buffers_memory[current_frame], 0, sizeof(detail::UniformBufferObject), 0, &mapped);
+		memcpy(mapped, &current_ubo_data.matrices, sizeof(current_ubo_data.matrices));
+		vkUnmapMemory(logical_device, uniform_buffers_memory[current_frame]);
 
 		/// DRAW
 		detail::CommandRecordingContext command_context{};
@@ -444,7 +462,7 @@ namespace renderer {
 		command_context.index_buffer = index_buffer;
 		command_context.total_indices = static_cast<uint32_t>(indices.size());
 		command_context.indirect_command_buffer = indirect_command_buffer;
-		command_context.total_meshes = number_of_meshes;
+		command_context.total_meshes = object_count;
 
 		RecordCommandBuffer(command_context);
 
@@ -505,7 +523,8 @@ namespace renderer {
 
 		vkDeviceWaitIdle(logical_device);
 
-		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, number_of_meshes, NewModelSet);
+		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, object_count, NewModelSet);
+
 
 		if (index_buffer != NULL) {
 			vkDestroyBuffer(logical_device, index_buffer, nullptr);
@@ -561,6 +580,7 @@ namespace renderer {
 		context_imagebuffer.graphics_queue = graphics_queue;
 		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+		context_imagebuffer.model_count = object_count;
 
 		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
 		
@@ -570,7 +590,7 @@ namespace renderer {
 		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
 		context_descriptor_set.logical_device = logical_device;
 		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
-		context_descriptor_set.ubo_size = sizeof(detail::UniformBufferObject);
+		context_descriptor_set.ubo_size = sizeof(detail::UniformBufferObject::matrices) + (object_count * sizeof(detail::UniformInstanceData));
 		context_descriptor_set.uniform_buffers = uniform_buffers;
 		context_descriptor_set.image_view = texture_buffer.image_view;
 		context_descriptor_set.texture_sampler = texture_sampler;

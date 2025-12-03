@@ -122,6 +122,7 @@ namespace renderer::detail {
 		VkImageTiling tiling;
 		VkImageUsageFlags usage_flags;
 		VkMemoryPropertyFlags required_properties;
+		uint32_t array_layers = 1;
 	};
 	struct GPUImage {
 		VkImage image;
@@ -134,6 +135,7 @@ namespace renderer::detail {
 		VkImage image;
 		VkFormat image_format;
 		VkImageAspectFlags aspect_flags;
+		VkImageViewType view_type;
 	};
 	VkImageView CreateImageView(const ImageViewContext& Context);
 #pragma endregion

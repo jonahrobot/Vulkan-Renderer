@@ -200,6 +200,7 @@ namespace renderer::detail {
 		context_image.required_properties = Context.memory_flags_required;
 		context_image.tiling = Context.data_tiling_mode;
 		context_image.usage_flags = Context.usage_flags;
+		context_image.array_layers = Context.model_count;
 		GPUImage created_image = CreateImage(context_image);
 
 		return_image.image = created_image.image;
@@ -226,6 +227,7 @@ namespace renderer::detail {
 		context_image_view.image_format = Context.texture_bundle.format;
 		context_image_view.logical_device = Context.logical_device;
 		context_image_view.aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
+		context_image_view.view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 
 		return_image.image_view = CreateImageView(context_image_view);
 
