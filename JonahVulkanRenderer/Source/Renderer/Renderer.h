@@ -85,6 +85,7 @@ private:
 
 	std::vector<VkBuffer> uniform_buffers;
 	std::vector<VkDeviceMemory> uniform_buffers_memory;
+	std::vector<void*> uniform_buffers_mapped;
 
 	VkBuffer shader_storage_buffer;
 	VkDeviceMemory shader_storage_buffer_memory;

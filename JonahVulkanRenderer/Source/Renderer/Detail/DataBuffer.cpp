@@ -143,6 +143,7 @@ namespace renderer::detail {
 		UniformBufferData buffer_data = {};
 		buffer_data.uniform_buffers.resize(Context.max_frames_in_flight);
 		buffer_data.uniform_buffers_memory.resize(Context.max_frames_in_flight);
+		buffer_data.uniform_buffers_mapped.resize(Context.max_frames_in_flight);
 
 		for (size_t i = 0; i < Context.max_frames_in_flight; i++) {
 			VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -151,6 +152,8 @@ namespace renderer::detail {
 		
 			buffer_data.uniform_buffers[i] = current_buffer.created_buffer;
 			buffer_data.uniform_buffers_memory[i] = current_buffer.memory_allocated_for_buffer;
+
+			vkMapMemory(Context.logical_device, buffer_data.uniform_buffers_memory[i], 0, sizeof(detail::UniformBufferObject), 0, &buffer_data.uniform_buffers_mapped[i]);
 		}
 		return buffer_data;
 	}

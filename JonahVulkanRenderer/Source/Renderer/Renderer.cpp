@@ -325,6 +325,7 @@ namespace renderer {
 		detail::UniformBufferData ubo_info = detail::CreateUniformBuffers(context_ubo);
 		uniform_buffers = ubo_info.uniform_buffers;
 		uniform_buffers_memory = ubo_info.uniform_buffers_memory;
+		uniform_buffers_mapped = ubo_info.uniform_buffers_mapped;
 
 		// Create Descriptor Pool
 		detail::DescriptorPoolContext context_pool = {};
@@ -436,10 +437,7 @@ namespace renderer {
 		current_ubo_data.proj[1][1] *= -1;
 		current_ubo_data.view = CameraPosition;
 
-		void* mapped;
-		vkMapMemory(logical_device, uniform_buffers_memory[current_frame], 0, sizeof(detail::UniformBufferObject), 0, &mapped);
-		memcpy(mapped, &current_ubo_data, sizeof(detail::UniformBufferObject));
-		vkUnmapMemory(logical_device, uniform_buffers_memory[current_frame]);
+		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data, sizeof(detail::UniformBufferObject));
 
 		/// DRAW
 		detail::CommandRecordingContext command_context{};
