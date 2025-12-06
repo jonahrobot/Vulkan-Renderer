@@ -85,8 +85,10 @@ private:
 
 	std::vector<VkBuffer> uniform_buffers;
 	std::vector<VkDeviceMemory> uniform_buffers_memory;
-	std::vector<detail::UniformBufferObject*> uniform_buffers_mapped;
-	
+
+	VkBuffer shader_storage_buffer;
+	VkDeviceMemory shader_storage_buffer_memory;
+
 	detail::GPUResource depth_buffer;
 
 	std::vector<VkSemaphore> image_available_semaphores;

@@ -27,7 +27,14 @@ namespace renderer::detail {
 		sampler_layout_binding.pImmutableSamplers = nullptr;
 		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { ubo_layout_binding, sampler_layout_binding };
+		VkDescriptorSetLayoutBinding instance_data_layout_binding{};
+		instance_data_layout_binding.binding = 2;
+		instance_data_layout_binding.descriptorCount = 1;
+		instance_data_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		instance_data_layout_binding.pImmutableSamplers = nullptr;
+		instance_data_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		std::array<VkDescriptorSetLayoutBinding, 3> bindings = { ubo_layout_binding, sampler_layout_binding, instance_data_layout_binding };
 
 		VkDescriptorSetLayoutCreateInfo layout_info{};
 		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -45,13 +52,16 @@ namespace renderer::detail {
 
 		VkDescriptorPool new_pool;
 
-		std::array<VkDescriptorPoolSize,2> pool_sizes{};
+		std::array<VkDescriptorPoolSize,3> pool_sizes{};
 
 		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		pool_sizes[0].descriptorCount = static_cast<uint32_t>(Context.max_frames_in_flight);
 
 		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		pool_sizes[1].descriptorCount = static_cast<uint32_t>(Context.max_frames_in_flight);
+
+		pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		pool_sizes[2].descriptorCount = static_cast<uint32_t>(Context.max_frames_in_flight);
 
 		VkDescriptorPoolCreateInfo pool_info{};
 		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -95,7 +105,12 @@ namespace renderer::detail {
 			image_info.imageView = Context.image_view;
 			image_info.sampler = Context.texture_sampler;
 
-			std::array<VkWriteDescriptorSet, 2> descriptor_writes{};
+			VkDescriptorBufferInfo instance_buffer_info{};
+			instance_buffer_info.buffer = Context.instance_buffer;
+			instance_buffer_info.offset = 0;
+			instance_buffer_info.range = Context.instance_buffer_size;
+
+			std::array<VkWriteDescriptorSet, 3> descriptor_writes{};
 
 			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[0].dstSet = descriptor_sets[i];
@@ -112,6 +127,14 @@ namespace renderer::detail {
 			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptor_writes[1].descriptorCount = 1;
 			descriptor_writes[1].pImageInfo = &image_info;
+
+			descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[2].dstSet = descriptor_sets[i];
+			descriptor_writes[2].dstBinding = 2;
+			descriptor_writes[2].dstArrayElement = 0;
+			descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptor_writes[2].descriptorCount = 1;
+			descriptor_writes[2].pBufferInfo = &instance_buffer_info;
 
 			vkUpdateDescriptorSets(Context.logical_device, static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
 		}
@@ -133,7 +156,12 @@ namespace renderer::detail {
 			image_info.imageView = Context.image_view;
 			image_info.sampler = Context.texture_sampler;
 
-			std::array<VkWriteDescriptorSet, 2> descriptor_writes{};
+			VkDescriptorBufferInfo instance_buffer_info{};
+			instance_buffer_info.buffer = Context.instance_buffer;
+			instance_buffer_info.offset = 0;
+			instance_buffer_info.range = Context.instance_buffer_size;
+
+			std::array<VkWriteDescriptorSet, 3> descriptor_writes{};
 
 			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[0].dstSet = old_set[i];
@@ -150,6 +178,14 @@ namespace renderer::detail {
 			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptor_writes[1].descriptorCount = 1;
 			descriptor_writes[1].pImageInfo = &image_info;
+
+			descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[2].dstSet = old_set[i];
+			descriptor_writes[2].dstBinding = 2;
+			descriptor_writes[2].dstArrayElement = 0;
+			descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptor_writes[2].descriptorCount = 1;
+			descriptor_writes[2].pBufferInfo = &instance_buffer_info;
 
 			vkUpdateDescriptorSets(Context.logical_device, static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
 		}

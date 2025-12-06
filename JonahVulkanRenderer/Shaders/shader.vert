@@ -9,8 +9,11 @@ struct Instance
 layout(binding = 0) uniform UniformBufferObject{
     mat4 view;
     mat4 proj;
-    Instance instance[2];
 } ubo;
+
+layout(std140, binding = 2) readonly buffer InstanceData {
+    Instance instance_data[ ];
+};
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
@@ -21,7 +24,10 @@ layout(location = 1) out vec3 outUV;
 
 void main() {
     outColor = inColor;
-    outUV = vec3(inUV, ubo.instance[gl_InstanceIndex].array_index.x);
-    mat4 model_view = ubo.view * ubo.instance[gl_InstanceIndex].model;
+
+    outUV = vec3(inUV, instance_data[gl_InstanceIndex].array_index.x);
+
+    mat4 model_view = ubo.view * instance_data[gl_InstanceIndex].model;
+
     gl_Position = ubo.proj * model_view * vec4(inPosition, 1.0);
 }

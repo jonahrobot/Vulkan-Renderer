@@ -102,40 +102,36 @@ namespace renderer {
 			return render_pass;
 		}
 
-		detail::UniformBufferObject GetNextUBO(VkExtent2D swapchain_extent, uint32_t object_count) {
+		std::vector<detail::InstanceData> ProcessInstanceData(uint32_t object_count) {
 
-			if (object_count == 0) {
-				detail::UniformBufferObject ubo{};
-				ubo.matrices.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-				ubo.matrices.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
-
-				ubo.matrices.proj[1][1] *= -1;
-				return ubo;
-			}
-
-			//static auto start_time = std::chrono::high_resolution_clock::now();
-
-			//auto current_time = std::chrono::high_resolution_clock::now();
-			//float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-
-			detail::UniformBufferObject ubo{};
-
-			ubo.instance = new detail::UniformInstanceData[object_count];
-
-			float offset = -1.5f;
-			float center = (object_count * offset) / 2.0f - (offset * 0.5f);
+			std::vector<detail::InstanceData> instance_data = {};
 
 			for (uint32_t i = 0; i < object_count; i++) {
-				ubo.instance[i].model = glm::translate(glm::mat4(1.0f), glm::vec3(i * offset - center, 0.0f, 0.0f));
-				ubo.instance[i].model = glm::scale(ubo.instance[i].model, glm::vec3(0.5f));
 
-				ubo.instance[i].array_index.x = (float)i; // Instance in texture array
+				detail::InstanceData new_instance;
+
+				float offset = -1.5f;
+				float center = (object_count * offset) / 2.0f - (offset * 0.5f);
+
+				new_instance.model = glm::translate(glm::mat4(1.0f), glm::vec3(i * offset - center, 0.0f, 0.0f));
+				new_instance.model = glm::scale(new_instance.model, glm::vec3(0.5f));
+
+				new_instance.array_index.x = (float)i;
+
+				instance_data.push_back(new_instance);
 			}
 
-			ubo.matrices.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-			ubo.matrices.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
+			return instance_data;
+		}
 
-			ubo.matrices.proj[1][1] *= -1;
+		detail::UniformBufferObject GetNextUBO(VkExtent2D swapchain_extent) {
+
+			detail::UniformBufferObject ubo = {};
+
+			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
+			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
+
+			ubo.proj[1][1] *= -1;
 
 			return ubo;
 		}
@@ -324,7 +320,7 @@ namespace renderer {
 		context_ubo.logical_device = logical_device;
 		context_ubo.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_ubo.physical_device = physical_device;
-		context_ubo.ubo_size = sizeof(detail::UniformBufferObject::matrices) + (MAX_OBJECTS * sizeof(detail::UniformInstanceData));
+		context_ubo.ubo_size = sizeof(detail::UniformBufferObject);
 
 		detail::UniformBufferData ubo_info = detail::CreateUniformBuffers(context_ubo);
 		uniform_buffers = ubo_info.uniform_buffers;
@@ -399,6 +395,9 @@ namespace renderer {
 		vkDestroyBuffer(logical_device, indirect_command_buffer, nullptr);
 		vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
 
+		vkDestroyBuffer(logical_device, shader_storage_buffer, nullptr);
+		vkFreeMemory(logical_device, shader_storage_buffer_memory, nullptr);
+
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
 		vkDestroyInstance(vulkan_instance, nullptr); // Cleanup instance LAST in Vulkan Cleanup
@@ -429,22 +428,17 @@ namespace renderer {
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 
 		vkResetCommandBuffer(command_buffers[current_frame], 0);
+		
+		// Get Camera position
+		detail::UniformBufferObject current_ubo_data = {};
 
-		// Get positions of objects
-		detail::UniformBufferObject current_ubo_data = GetNextUBO(extent,object_count);
-
-		uint8_t* p_data;
-		uint32_t data_offset = sizeof(current_ubo_data.matrices);
-		uint32_t data_size = object_count * sizeof(detail::UniformInstanceData);
-		vkMapMemory(logical_device, uniform_buffers_memory[current_frame], data_offset, data_size, 0, (void**)&p_data);
-		memcpy(p_data, current_ubo_data.instance, data_size);
-		vkUnmapMemory(logical_device, uniform_buffers_memory[current_frame]);
-
-		current_ubo_data.matrices.view = CameraPosition;
+		current_ubo_data.proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.01f, 100.0f);
+		current_ubo_data.proj[1][1] *= -1;
+		current_ubo_data.view = CameraPosition;
 
 		void* mapped;
 		vkMapMemory(logical_device, uniform_buffers_memory[current_frame], 0, sizeof(detail::UniformBufferObject), 0, &mapped);
-		memcpy(mapped, &current_ubo_data.matrices, sizeof(current_ubo_data.matrices));
+		memcpy(mapped, &current_ubo_data, sizeof(detail::UniformBufferObject));
 		vkUnmapMemory(logical_device, uniform_buffers_memory[current_frame]);
 
 		/// DRAW
@@ -541,6 +535,11 @@ namespace renderer {
 			vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
 		}
 
+		if (shader_storage_buffer != NULL) {
+			vkDestroyBuffer(logical_device, shader_storage_buffer, nullptr);
+			vkFreeMemory(logical_device, shader_storage_buffer_memory, nullptr);
+		}
+
 		detail::FreeGPUResource(texture_buffer, logical_device);
 
 		detail::BufferContext context_buffercreation = {};
@@ -568,6 +567,13 @@ namespace renderer {
 		if (commandbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			indirect_command_buffer = commandbuffer_info.created_buffer;
 			indirect_command_buffer_memory = commandbuffer_info.memory_allocated_for_buffer;
+		}
+
+		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(object_count));
+
+		if (shaderbuffer_info.err_code == detail::BufferData::SUCCESS) {
+			shader_storage_buffer = shaderbuffer_info.created_buffer;
+			shader_storage_buffer_memory = shaderbuffer_info.memory_allocated_for_buffer;
 		}
 
 		detail::TextureData merged_texture_data = {};
@@ -606,10 +612,12 @@ namespace renderer {
 		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
 		context_descriptor_set.logical_device = logical_device;
 		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
-		context_descriptor_set.ubo_size = sizeof(detail::UniformBufferObject::matrices) + (object_count * sizeof(detail::UniformInstanceData));
+		context_descriptor_set.ubo_size = sizeof(detail::UniformBufferObject);
 		context_descriptor_set.uniform_buffers = uniform_buffers;
 		context_descriptor_set.image_view = texture_buffer.image_view;
 		context_descriptor_set.texture_sampler = texture_sampler;
+		context_descriptor_set.instance_buffer = shader_storage_buffer;
+		context_descriptor_set.instance_buffer_size = sizeof(detail::InstanceData) * object_count;
 
 		if(descriptor_set_initialized == false){
 			descriptor_set_initialized = true;

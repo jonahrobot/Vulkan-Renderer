@@ -224,6 +224,8 @@ namespace renderer::detail {
 		VkDevice logical_device;
 		VkImageView image_view;
 		VkSampler texture_sampler;
+		VkBuffer instance_buffer;
+		uint16_t instance_buffer_size;
 	};
 	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorSetContext& Context);
 
