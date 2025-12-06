@@ -187,13 +187,13 @@ namespace renderer {
 
 				NumberOfMeshes += 1;
 
-				uint32_t offset = VerticeToRender.size();
+				uint32_t offset = static_cast<uint32_t>(VerticeToRender.size());
 
 				for (detail::Vertex v : model.vertices) {
 					VerticeToRender.push_back(v);
 				}
 
-				uint32_t first_index = Indices.size();
+				uint32_t first_index = static_cast<uint32_t>(Indices.size());
 
 				for (uint32_t i : model.indices) {
 					Indices.push_back(i + offset);
@@ -204,7 +204,7 @@ namespace renderer {
 				indirect_command.instanceCount = instance_count;
 				indirect_command.firstInstance = m * instance_count;
 				indirect_command.firstIndex = first_index;
-				indirect_command.indexCount = model.indices.size();
+				indirect_command.indexCount = static_cast<uint32_t>(model.indices.size());
 
 				indirect_commands.push_back(indirect_command);
 

@@ -27,7 +27,7 @@ GLFWwindow* Application::Get_Window() {
 
 void Application::Update() {
 
-	float frame_time = glfwGetTime();
+	float frame_time = static_cast<float>(glfwGetTime());
 	float delta_time = frame_time  - last_frame_time;
 	last_frame_time = frame_time;
 

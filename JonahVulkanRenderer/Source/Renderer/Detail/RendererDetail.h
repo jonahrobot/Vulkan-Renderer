@@ -225,7 +225,7 @@ namespace renderer::detail {
 		VkImageView image_view;
 		VkSampler texture_sampler;
 		VkBuffer instance_buffer;
-		uint16_t instance_buffer_size;
+		uint64_t instance_buffer_size;
 	};
 	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorSetContext& Context);
 
