@@ -115,7 +115,7 @@ namespace renderer::detail {
 	struct CommandRecordingContext {
 		std::vector<VkFramebuffer> framebuffers;
 		VkBuffer indirect_command_buffer;
-		uint32_t total_meshes;
+		uint32_t number_of_draw_calls;
 		VkRenderPass render_pass;
 		VkPipeline graphics_pipeline;
 		VkPipelineLayout graphics_pipeline_layout;

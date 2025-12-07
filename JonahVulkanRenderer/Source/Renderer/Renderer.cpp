@@ -7,6 +7,8 @@
 #include "Renderer.h"
 #include "Detail/RendererDetail.h"
 
+#define OBJECT_INSTANCE_COUNT 3
+
 namespace renderer {
 
 	// Unnamed namespace to show functions below are pure Utility with no internal state. 
@@ -116,7 +118,7 @@ namespace renderer {
 				new_instance.model = glm::translate(glm::mat4(1.0f), glm::vec3(i * offset - center, 0.0f, 0.0f));
 				new_instance.model = glm::scale(new_instance.model, glm::vec3(0.5f));
 
-				new_instance.array_index.x = (float)i;
+				new_instance.array_index.x = (float)(i / OBJECT_INSTANCE_COUNT);
 
 				instance_data.push_back(new_instance);
 			}
@@ -175,7 +177,6 @@ namespace renderer {
 			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
 
 			uint32_t m = 0;
-			uint32_t instance_count = 1;
 			NumberOfMeshes = 0;
 			VerticeToRender.clear();
 			Indices.clear();
@@ -185,7 +186,7 @@ namespace renderer {
 				bool no_data = model.vertices.size() == 0 || model.indices.size() == 0;
 				if (no_data) continue;
 
-				NumberOfMeshes += 1;
+				NumberOfMeshes += OBJECT_INSTANCE_COUNT;
 
 				uint32_t offset = static_cast<uint32_t>(VerticeToRender.size());
 
@@ -201,8 +202,8 @@ namespace renderer {
 
 				// Create draw command
 				VkDrawIndexedIndirectCommand indirect_command{};
-				indirect_command.instanceCount = instance_count;
-				indirect_command.firstInstance = m * instance_count;
+				indirect_command.instanceCount = OBJECT_INSTANCE_COUNT;
+				indirect_command.firstInstance = m * OBJECT_INSTANCE_COUNT;
 				indirect_command.firstIndex = first_index;
 				indirect_command.indexCount = static_cast<uint32_t>(model.indices.size());
 
@@ -454,7 +455,7 @@ namespace renderer {
 		command_context.index_buffer = index_buffer;
 		command_context.total_indices = static_cast<uint32_t>(indices.size());
 		command_context.indirect_command_buffer = indirect_command_buffer;
-		command_context.total_meshes = object_count;
+		command_context.number_of_draw_calls = number_of_indirect_commands;
 
 		RecordCommandBuffer(command_context);
 
@@ -516,7 +517,7 @@ namespace renderer {
 		vkDeviceWaitIdle(logical_device);
 
 		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, object_count, NewModelSet);
-
+		number_of_indirect_commands = indirect_commands.size();
 
 		if (index_buffer != NULL) {
 			vkDestroyBuffer(logical_device, index_buffer, nullptr);
@@ -588,11 +589,9 @@ namespace renderer {
 			}
 		}
 
-		std::cout << "Merge buffer is size: " << merged_texture_data.image_size << " and end index is: " << index << std::endl;
-
 		// Add textures to GPU
 		detail::TextureBufferContext context_imagebuffer = {};
-		context_imagebuffer.texture_bundle = merged_texture_data; // TODO: Update to include all model textures
+		context_imagebuffer.texture_bundle = merged_texture_data;
 		context_imagebuffer.logical_device = logical_device;
 		context_imagebuffer.physical_device = physical_device;
 		context_imagebuffer.command_pool = command_pool;

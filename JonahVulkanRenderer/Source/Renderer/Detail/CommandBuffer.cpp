@@ -93,7 +93,7 @@ namespace renderer::detail {
 
 			uint32_t size_of_command = sizeof(VkDrawIndexedIndirectCommand);
 
-			for (uint32_t x = 0; x < Context.total_meshes; x++) {
+			for (uint32_t x = 0; x < Context.number_of_draw_calls; x++) {
 				vkCmdDrawIndexedIndirect(Context.command_buffer, Context.indirect_command_buffer, x * size_of_command, 1, size_of_command);
 			}
 		}
