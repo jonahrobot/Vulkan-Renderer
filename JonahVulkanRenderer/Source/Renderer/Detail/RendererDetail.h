@@ -263,7 +263,7 @@ namespace renderer::detail {
 		VkMemoryPropertyFlagBits memory_flags_required;
 		VkQueue graphics_queue;
 		VkCommandPool command_pool;
-		uint32_t model_count;
+		uint32_t number_of_textures;
 	};
 	GPUResource CreateTextureBuffer(const TextureBufferContext& Context);
 	void FreeGPUResource(GPUResource& ImageObject, const VkDevice& LogicalDevice);

@@ -517,7 +517,7 @@ namespace renderer {
 		vkDeviceWaitIdle(logical_device);
 
 		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, object_count, NewModelSet);
-		number_of_indirect_commands = indirect_commands.size();
+		number_of_indirect_commands = static_cast<uint32_t>(indirect_commands.size());
 
 		if (index_buffer != NULL) {
 			vkDestroyBuffer(logical_device, index_buffer, nullptr);
@@ -579,7 +579,7 @@ namespace renderer {
 		merged_texture_data.format = NewModelSet[0].texture_data.format;
 		merged_texture_data.height = NewModelSet[0].texture_data.height;
 		merged_texture_data.width = NewModelSet[0].texture_data.width;
-		merged_texture_data.image_size = NewModelSet[0].texture_data.image_size * object_count;
+		merged_texture_data.image_size = NewModelSet[0].texture_data.image_size * number_of_indirect_commands;
 		merged_texture_data.pixels = new stbi_uc[merged_texture_data.image_size];
 		uint32_t index = 0;
 		for (detail::ModelData model : NewModelSet) {
@@ -599,7 +599,7 @@ namespace renderer {
 		context_imagebuffer.graphics_queue = graphics_queue;
 		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		context_imagebuffer.model_count = object_count;
+		context_imagebuffer.number_of_textures = number_of_indirect_commands;
 
 		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
 		

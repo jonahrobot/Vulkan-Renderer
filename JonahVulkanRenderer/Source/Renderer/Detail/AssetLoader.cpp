@@ -200,7 +200,7 @@ namespace renderer::detail {
 		context_image.required_properties = Context.memory_flags_required;
 		context_image.tiling = Context.data_tiling_mode;
 		context_image.usage_flags = Context.usage_flags;
-		context_image.array_layers = Context.model_count;
+		context_image.array_layers = Context.number_of_textures;
 		GPUImage created_image = CreateImage(context_image);
 
 		return_image.image = created_image.image;
@@ -209,13 +209,13 @@ namespace renderer::detail {
 		// Pass Buffer data into Image
 		VkImageLayout old_layout = VK_IMAGE_LAYOUT_UNDEFINED;
 		VkImageLayout new_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout, Context.model_count);
+		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout, Context.number_of_textures);
 
-		CopyBufferToImage(Context.graphics_queue, Context.logical_device, Context.command_pool, staging_buffer.created_buffer, return_image.image, Context.texture_bundle.width, Context.texture_bundle.height, Context.model_count);
+		CopyBufferToImage(Context.graphics_queue, Context.logical_device, Context.command_pool, staging_buffer.created_buffer, return_image.image, Context.texture_bundle.width, Context.texture_bundle.height, Context.number_of_textures);
 
 		old_layout = new_layout;
 		new_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout, Context.model_count);
+		TransitionImageLayout(Context.graphics_queue, Context.logical_device, Context.command_pool, return_image.image, Context.texture_bundle.format, old_layout, new_layout, Context.number_of_textures);
 
 		vkDestroyBuffer(Context.logical_device, staging_buffer.created_buffer, nullptr);
 		vkFreeMemory(Context.logical_device, staging_buffer.memory_allocated_for_buffer, nullptr);
@@ -228,7 +228,7 @@ namespace renderer::detail {
 		context_image_view.logical_device = Context.logical_device;
 		context_image_view.aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
 		context_image_view.view_type = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
-		context_image_view.array_layers = Context.model_count;
+		context_image_view.array_layers = Context.number_of_textures;
 
 		return_image.image_view = CreateImageView(context_image_view);
 
