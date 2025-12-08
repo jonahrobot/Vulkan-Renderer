@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "../USD Loader/USDParser.h"
 
 // Unnamed namespace to show functions below are pure Utility strictly for this .cpp file.
 namespace {
@@ -9,10 +10,15 @@ namespace game {
 
 Application::Application() {
 	renderer = new renderer::Renderer();
+
+	std::vector<renderer::detail::ModelData> model_set = USD::ParseUSD("example test");
+
+	std::cout << "Number of models loaded: " << model_set.size() << std::endl;
+
 	renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/iron_golem.obj","textures/iron_golem.png");
 	renderer::detail::ModelData model_1 = renderer::detail::LoadModel("models/viking_room.obj","textures/viking_room.png");
 	renderer::detail::ModelData model_2 = renderer::detail::LoadModel("models/container.obj", "textures/container.png");
-	renderer->UpdateModelSet({ model_0, model_1, model_2, model_2, model_2 });
+	renderer->UpdateModelSet({ model_0 });
 	window = renderer->Get_Window();
 	camera = new Camera(window);
 }
