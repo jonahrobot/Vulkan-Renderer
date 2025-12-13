@@ -399,3 +399,9 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+JonahVulkanRenderer/ExternalTools/.idea/vcs.xml
+JonahVulkanRenderer/ExternalTools/.idea/modules.xml
+JonahVulkanRenderer/ExternalTools/.idea/misc.xml
+JonahVulkanRenderer/ExternalTools/.idea/inspectionProfiles/profiles_settings.xml
+JonahVulkanRenderer/ExternalTools/.idea/ExternalTools.iml
+JonahVulkanRenderer/ExternalTools/.idea/.name
