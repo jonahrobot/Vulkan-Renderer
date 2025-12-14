@@ -1,6 +1,6 @@
 # Requires usd-core Python Package.
 #"C:\map\caldera-main\map_source\prefabs\br\wz_vg\mp_wz_island\commercial\hotel_01.usd"
-from pxr import Usd, UsdGeom
+from pxr import Usd, UsdGeom, Sdf
 import argparse
 
 def parse_scene(filepath):
@@ -8,9 +8,14 @@ def parse_scene(filepath):
     # Open the USD stage from the specified file
     stage: Usd.Stage = Usd.Stage.Open(filepath)
 
+    population_mask = Usd.StagePopulationMask()
+    population_mask.Add(Sdf.Path("/world/hotel_01/geo/hotel_terrasse/misc_model_183"))
+    stage.SetPopulationMask(population_mask)
+
     # Traverse through each prim in the stage
     for prim in stage.Traverse():
-        print(prim.GetPath())
+        if(prim.IsA(UsdGeom.Mesh)):
+            print(prim.GetPath())
 
     return 0
 
