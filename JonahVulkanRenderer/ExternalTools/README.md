@@ -12,7 +12,7 @@ Source path: /world/hotel_01/geo/hotel_terrasse/...
 -------- geo (Scope)  
 ------------ barrier_wooden_fence_01_mp_LOD_0 (Mesh)  
 
-misc_model_207 (XFORM) holds rotation, scale, and translation data for the children.  
+misc_model_207 (XFORM) holds rotation, scale, and translation data for the children.
 
 barrier_wooden_fence_01_mp (XFORM) holds render metadata like (LOD of the child mesh, and if the mesh is instanceable). We could adjust a mesh's LOD here and get different vertex and index data from the child.    
 
