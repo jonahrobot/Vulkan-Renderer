@@ -1,7 +1,6 @@
 # Requires usd-core Python Package.
-#"C:\map\caldera-main\map_source\prefabs\br\wz_vg\mp_wz_island\commercial\hotel_01.usd"
+
 from pxr import Usd, UsdGeom, Sdf, Gf
-from collections import defaultdict
 import argparse
 import json
 
@@ -32,7 +31,7 @@ def parse_scene(filepath):
     stage: Usd.Stage = Usd.Stage.Open(filepath)
 
     population_mask = Usd.StagePopulationMask()
-    population_mask.Add(Sdf.Path("/world/hotel_01/geo/hotel_terrasse/misc_model_183"))
+    population_mask.Add(Sdf.Path("/world/hotel_01/geo"))
     stage.SetPopulationMask(population_mask)
 
     # Traverse through each prim in the stage
@@ -52,9 +51,7 @@ def parse_scene(filepath):
                         ]
             if model_name in scene_data["models"]:
                 scene_data["models"][model_name]["instance_count"] += 1
-                scene_data["models"][model_name]["instances"].append({
-                    transform_write
-                })
+                scene_data["models"][model_name]["instances"].append(transform_write)
             else:
 
                 points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
@@ -76,10 +73,8 @@ def parse_scene(filepath):
                     "instance_count": 1,
                     "instances": [transform_write]
                 }
-
     with open("scene.json","w") as f:
         json.dump(scene_data, f)
-
     return 0
 
 
