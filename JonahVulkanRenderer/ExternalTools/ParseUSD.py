@@ -32,7 +32,7 @@ def parse_scene(filepath):
     stage: Usd.Stage = Usd.Stage.Open(filepath)
 
     population_mask = Usd.StagePopulationMask()
-    population_mask.Add(Sdf.Path("/world/hotel_01/geo"))
+    population_mask.Add(Sdf.Path("/world/hotel_01/geo/hotel_terrasse/misc_model_183"))
     stage.SetPopulationMask(population_mask)
 
     # Traverse through each prim in the stage
@@ -43,24 +43,42 @@ def parse_scene(filepath):
             xform = UsdGeom.Xformable(prim)
             time = Usd.TimeCode.Default()
             world_transform: Gf.Matrix4d = xform.ComputeLocalToWorldTransform(time)
-            #world_translation: Gf.Vec3d = world_transform.ExtractTranslation()
-            #world_rotation: Gf.Rotation = world_transform.ExtractRotation()
 
+            transform_write = [
+                        [world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3]],
+                        [world_transform[1][0], world_transform[1][1], world_transform[1][2], world_transform[1][3]],
+                        [world_transform[2][0], world_transform[2][1], world_transform[2][2], world_transform[2][3]],
+                        [world_transform[3][0], world_transform[3][1], world_transform[3][2], world_transform[3][3]]
+                        ]
             if model_name in scene_data["models"]:
                 scene_data["models"][model_name]["instance_count"] += 1
                 scene_data["models"][model_name]["instances"].append({
-                    world_transform
+                    transform_write
                 })
             else:
+
+                points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
+                indices = UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()
+                points_float = []
+                indices_float = []
+
+                for x in points:
+                    points_float.append(x[0])
+                    points_float.append(x[1])
+                    points_float.append(x[2])
+
+                for x in indices:
+                    indices_float.append(x)
+
                 scene_data["models"][model_name] = {
-                    "vertices": list(UsdGeom.Mesh(prim).GetPointsAttr().Get()),
-                    "indices": list(UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()),
+                    "vertices": points_float,
+                    "indices": indices_float,
                     "instance_count": 1,
-                    "instances": [world_transform]
+                    "instances": [transform_write]
                 }
 
     with open("scene.json","w") as f:
-        json.dump(scene_data, f, indent=4)
+        json.dump(scene_data, f)
 
     return 0
 
