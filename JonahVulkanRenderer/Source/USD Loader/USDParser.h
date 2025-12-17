@@ -4,6 +4,6 @@
 
 namespace USD {
 
-	std::vector<renderer::detail::ModelData> ParseUSD(std::string usd_root_file_path);
+	std::vector<renderer::detail::ModelWithUsage> ParseUSD(std::string json_file_path);
 
 } // namespace USD

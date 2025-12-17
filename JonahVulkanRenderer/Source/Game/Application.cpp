@@ -11,7 +11,7 @@ namespace game {
 Application::Application() {
 	renderer = new renderer::Renderer();
 
-	std::vector<renderer::detail::ModelData> model_set = USD::ParseUSD("example test");
+	std::vector<renderer::detail::ModelWithUsage> model_set = USD::ParseUSD("ExternalTools/scene.json");
 
 	std::cout << "Number of models loaded: " << model_set.size() << std::endl;
 

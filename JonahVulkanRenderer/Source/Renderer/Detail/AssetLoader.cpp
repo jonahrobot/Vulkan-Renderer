@@ -169,6 +169,34 @@ namespace renderer::detail {
 		Model.texture_data.image_size = 0;
 	}
 
+	void PrintModelWithUsage(ModelWithUsage target) {
+		std::cout << "-- Printing " << target.model_name << "'s data --" << std::endl;
+		std::cout << "Vertices: ";
+
+		for (int i = 0; i < target.model_data.vertices.size(); i += 1) {
+			std::cout << "[" << target.model_data.vertices[i].position[0] << "," << target.model_data.vertices[i].position[1] << "," << target.model_data.vertices[i].position[2] << "], ";
+		}
+
+		std::cout << std::endl;
+
+		std::cout << "Indices: ";
+		for (auto i : target.model_data.indices)
+			std::cout << i << " ";
+
+		std::cout << std::endl;
+
+		std::cout << "Instance count: " << target.instance_count << std::endl;
+
+		std::cout << "Instance Matrices: ";
+		for (int i = 0; i < target.instance_model_matrices.size(); i += 1) {
+			glm::mat4 mat = target.instance_model_matrices[i];
+			std::cout << mat[0][0] << " " << mat[1][0] << " " << mat[2][0] << " " << mat[3][0] << std::endl; 
+			std::cout << mat[0][1] << " " << mat[1][1] << " " << mat[2][1] << " " << mat[3][1] << std::endl; 
+			std::cout << mat[0][2] << " " << mat[1][2] << " " << mat[2][2] << " " << mat[3][2] << std::endl; 
+			std::cout << mat[0][3] << " " << mat[1][3] << " " << mat[2][3] << " " << mat[3][3] << std::endl << std::endl;
+		}
+	}
+
 	bool VerifyModel(ModelData Model) {
 
 		return !(Model.texture_data.image_size == 0 || Model.texture_data.pixels == nullptr || Model.vertices.size() == 0 || Model.indices.size() == 0);
