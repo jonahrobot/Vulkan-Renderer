@@ -11,14 +11,23 @@ namespace game {
 Application::Application() {
 	renderer = new renderer::Renderer();
 
-	std::vector<renderer::detail::ModelWithUsage> model_set = USD::ParseUSD("ExternalTools/scene.json");
+	std::vector<renderer::detail::ModelWithUsage> model_set_temp = USD::ParseUSD("ExternalTools/scene.json");
 
-	std::cout << "Number of models loaded: " << model_set.size() << std::endl;
+	//std::cout << "Number of models loaded: " << model_set.size() << std::endl;
 
-	renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/iron_golem.obj","textures/iron_golem.png");
-	renderer::detail::ModelData model_1 = renderer::detail::LoadModel("models/viking_room.obj","textures/viking_room.png");
-	renderer::detail::ModelData model_2 = renderer::detail::LoadModel("models/container.obj", "textures/container.png");
-	renderer->UpdateModelSet({ model_0 });
+	//renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/iron_golem.obj","textures/iron_golem.png");
+	//renderer::detail::ModelData model_1 = renderer::detail::LoadModel("models/viking_room.obj","textures/viking_room.png");
+	//renderer::detail::ModelWithUsage model_1_wrapped;
+	//model_1_wrapped.instance_count = 1;
+	//model_1_wrapped.instance_model_matrices = { glm::mat4(1.0f) };
+	//model_1_wrapped.model_data = model_1;
+	//model_1_wrapped.model_name = "Viking Room";
+	std::vector<renderer::detail::ModelWithUsage> model_set = { model_set_temp[0]};
+
+	//renderer::detail::ModelData model_2 = renderer::detail::LoadModel("models/container.obj", "textures/container.png");
+	renderer->UpdateModelSet(model_set,true);
+
+	std::cout << "Model set updated." << std::endl;
 	window = renderer->Get_Window();
 	camera = new Camera(window);
 }
@@ -40,7 +49,7 @@ void Application::Update() {
 
 	camera->MoveCamera(window, delta_time);
 	renderer->Draw(camera->GetViewMatrix());
-
+	/*
 	if (!held_space && glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
 		renderer::detail::ModelData model_null = {};
 		held_space = true;
@@ -53,6 +62,7 @@ void Application::Update() {
 		renderer->UpdateModelSet({ model_0, model_1 });
 		held_space = false;
 	}
+	*/
 }
 
 void Application::DrawFrame() {

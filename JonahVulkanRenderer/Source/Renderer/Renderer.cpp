@@ -7,8 +7,6 @@
 #include "Renderer.h"
 #include "Detail/RendererDetail.h"
 
-#define OBJECT_INSTANCE_COUNT 3
-
 namespace renderer {
 
 	// Unnamed namespace to show functions below are pure Utility with no internal state. 
@@ -104,23 +102,21 @@ namespace renderer {
 			return render_pass;
 		}
 
-		std::vector<detail::InstanceData> ProcessInstanceData(uint32_t object_count) {
+		std::vector<detail::InstanceData> ProcessInstanceData(const std::vector<detail::ModelWithUsage>& NewModelSet) {
 
 			std::vector<detail::InstanceData> instance_data = {};
 
-			for (uint32_t i = 0; i < object_count; i++) {
+			for (detail::ModelWithUsage model_data : NewModelSet) {
 
-				detail::InstanceData new_instance;
+				for (uint32_t i = 0; i < model_data.instance_count; i++) {
 
-				float offset = -1.5f;
-				float center = (object_count * offset) / 2.0f - (offset * 0.5f);
+					detail::InstanceData new_instance;
 
-				new_instance.model = glm::translate(glm::mat4(1.0f), glm::vec3(i * offset - center, 0.0f, 0.0f));
-				new_instance.model = glm::scale(new_instance.model, glm::vec3(0.5f));
+					new_instance.model = model_data.instance_model_matrices[i];
+					new_instance.array_index.x = 0;
 
-				new_instance.array_index.x = (float)(i / OBJECT_INSTANCE_COUNT);
-
-				instance_data.push_back(new_instance);
+					instance_data.push_back(new_instance);
+				}
 			}
 
 			return instance_data;
@@ -173,7 +169,7 @@ namespace renderer {
 			return our_sampler;
 		}
 
-		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::ModelData>& NewModelSet) {
+		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::ModelWithUsage>& NewModelSet) {
 			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
 
 			uint32_t m = 0;
@@ -181,12 +177,14 @@ namespace renderer {
 			VerticeToRender.clear();
 			Indices.clear();
 
-			for (detail::ModelData model : NewModelSet) {
+			for (detail::ModelWithUsage model_usage_data : NewModelSet) {
+
+				detail::ModelData model = model_usage_data.model_data;
 
 				bool no_data = model.vertices.size() == 0 || model.indices.size() == 0;
 				if (no_data) continue;
 
-				NumberOfMeshes += OBJECT_INSTANCE_COUNT;
+				NumberOfMeshes += model_usage_data.instance_count;
 
 				uint32_t offset = static_cast<uint32_t>(VerticeToRender.size());
 
@@ -202,8 +200,8 @@ namespace renderer {
 
 				// Create draw command
 				VkDrawIndexedIndirectCommand indirect_command{};
-				indirect_command.instanceCount = OBJECT_INSTANCE_COUNT;
-				indirect_command.firstInstance = m * OBJECT_INSTANCE_COUNT;
+				indirect_command.instanceCount = model_usage_data.instance_count;
+				indirect_command.firstInstance = m * model_usage_data.instance_count;
 				indirect_command.firstIndex = first_index;
 				indirect_command.indexCount = static_cast<uint32_t>(model.indices.size());
 
@@ -506,13 +504,17 @@ namespace renderer {
 		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
-	void Renderer::UpdateModelSet(std::vector<detail::ModelData> NewModelSet) {
 
-		for (detail::ModelData model : NewModelSet) {
+	/// TODO: UPDATE this function to support ModelWithUsage Data
+	// Will still merge index and vertex data, but now will be more specific with instanced data with specific model matrices and such!
+	// This will be changes in this function, RecordIndirectCommands and ProcessInstanceData
+	void Renderer::UpdateModelSet(std::vector<detail::ModelWithUsage> NewModelSet, bool UseWhiteTexture) {
+
+		/*for (detail::ModelData model : NewModelSet) {
 			if (detail::VerifyModel(model) != true) {
 				return;
 			}
-		}
+		}*/
 
 		vkDeviceWaitIdle(logical_device);
 
@@ -568,7 +570,7 @@ namespace renderer {
 			indirect_command_buffer_memory = commandbuffer_info.memory_allocated_for_buffer;
 		}
 
-		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(object_count));
+		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet));
 
 		if (shaderbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			shader_storage_buffer = shaderbuffer_info.created_buffer;
@@ -576,16 +578,32 @@ namespace renderer {
 		}
 
 		detail::TextureData merged_texture_data = {};
-		merged_texture_data.format = NewModelSet[0].texture_data.format;
-		merged_texture_data.height = NewModelSet[0].texture_data.height;
-		merged_texture_data.width = NewModelSet[0].texture_data.width;
-		merged_texture_data.image_size = NewModelSet[0].texture_data.image_size * number_of_indirect_commands;
-		merged_texture_data.pixels = new stbi_uc[merged_texture_data.image_size];
-		uint32_t index = 0;
-		for (detail::ModelData model : NewModelSet) {
-			for (int i = 0; i < model.texture_data.image_size; i++) {
-				merged_texture_data.pixels[index] = model.texture_data.pixels[i];
-				index += 1;
+		uint64_t number_of_textures = 0;
+
+		if (UseWhiteTexture == false) {
+			number_of_textures = number_of_indirect_commands;
+			merged_texture_data.format = NewModelSet[0].model_data.texture_data.format;
+			merged_texture_data.height = NewModelSet[0].model_data.texture_data.height;
+			merged_texture_data.width = NewModelSet[0].model_data.texture_data.width;
+			merged_texture_data.image_size = NewModelSet[0].model_data.texture_data.image_size * number_of_indirect_commands;
+			merged_texture_data.pixels = new stbi_uc[merged_texture_data.image_size];
+			uint32_t index = 0;
+			for (detail::ModelWithUsage model : NewModelSet) {
+				for (int i = 0; i < model.model_data.texture_data.image_size; i++) {
+					merged_texture_data.pixels[index] = model.model_data.texture_data.pixels[i];
+					index += 1;
+				}
+			}
+		}
+		else {
+			number_of_textures = 1;
+			merged_texture_data.format = VK_FORMAT_R8G8B8A8_SRGB;
+			merged_texture_data.height = 1;
+			merged_texture_data.width = 1;
+			merged_texture_data.image_size = 4;
+			merged_texture_data.pixels = new stbi_uc[4];
+			for (int i = 0; i < 4; i++) {
+				merged_texture_data.pixels[i] = 255;
 			}
 		}
 
@@ -599,8 +617,8 @@ namespace renderer {
 		context_imagebuffer.graphics_queue = graphics_queue;
 		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		context_imagebuffer.number_of_textures = number_of_indirect_commands;
-
+		context_imagebuffer.number_of_textures = number_of_textures;
+		
 		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
 		
 		// Create or update Descriptor Sets to link new Texture data to GPU

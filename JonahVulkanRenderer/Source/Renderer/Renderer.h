@@ -28,7 +28,7 @@ public:
 
 	void Draw(glm::mat4 CameraPosition);
 
-	void UpdateModelSet(std::vector<detail::ModelData> NewModelSet);
+	void UpdateModelSet(std::vector<detail::ModelWithUsage> NewModelSet, bool UseWhiteTexture);
 
 	GLFWwindow* Get_Window();
 
