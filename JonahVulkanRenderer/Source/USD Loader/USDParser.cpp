@@ -50,10 +50,10 @@ namespace USD {
 				auto row_four = instance[3].get<std::vector<float>>();
 
 				glm::mat4 instance_matrix(
-					row_one[0], row_two[0], row_three[0], row_four[0], // Column 0
-					row_one[1], row_two[1], row_three[1], row_four[1], // Column 1
-					row_one[2], row_two[2], row_three[2], row_four[2], // Column 2
-					row_one[3], row_two[3], row_three[3], row_four[3]  // Column 3
+					row_one[0], row_one[1], row_one[2], row_one[3], // Column 0
+					row_two[0], row_two[1], row_two[2], row_two[3], // Column 1
+					row_three[0], row_three[1], row_three[2], row_three[3], // Column 2
+					row_four[0], row_four[1], row_four[2], row_four[3]  // Column 3
 				);
 
 				new_model.instance_model_matrices.push_back(instance_matrix);
