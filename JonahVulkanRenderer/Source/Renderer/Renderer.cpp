@@ -127,7 +127,7 @@ namespace renderer {
 			detail::UniformBufferObject ubo = {};
 
 			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 100.0f); // This helps us project the point to the viewport
+			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 9999999999999.0f); // This helps us project the point to the viewport
 
 			ubo.proj[1][1] *= -1;
 

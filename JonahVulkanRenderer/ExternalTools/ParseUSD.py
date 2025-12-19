@@ -56,16 +56,26 @@ def parse_scene(filepath):
 
                 points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
                 indices = UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()
+                face_counts = UsdGeom.Mesh(prim).GetFaceVertexCountsAttr().Get()
                 points_float = []
                 indices_float = []
 
                 for x in points:
-                    points_float.append(x[0])
-                    points_float.append(x[1])
-                    points_float.append(x[2])
+                    points_float.append(x[0] / 1000)
+                    points_float.append(x[1] / 1000)
+                    points_float.append(x[2] / 1000)
 
-                for x in indices:
-                    indices_float.append(x)
+                # OpenUSD models support non-tri mesh faces
+                # So to render them we must triangulate them
+                # Below is a convenient way to do so for any N-Gon! (In Counter-Clockwise Rotation)
+                counter = 0
+                for x in face_counts:
+                    for i in range(x-2):
+                        indices_float.append(indices[counter])
+                        indices_float.append(indices[counter + i + 1])
+                        indices_float.append(indices[counter + i + 2])
+
+                    counter += x
 
                 scene_data["models"][model_name] = {
                     "vertices": points_float,

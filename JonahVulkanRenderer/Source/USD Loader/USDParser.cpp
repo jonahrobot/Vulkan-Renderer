@@ -2,6 +2,7 @@
 #include <JSON/json.hpp>
 #include <fstream>
 #include <iostream>
+#include <random>
 
 namespace USD {
 
@@ -14,8 +15,13 @@ namespace USD {
 	
 		auto model_data = scene_data["models"];
 
+		std::mt19937 rng(12345);
+		std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+
 		for (auto model_set : model_data.items()) {
 			
+			glm::vec3 mesh_color = { dist(rng), dist(rng), dist(rng)};
+
 			renderer::detail::ModelWithUsage new_model;
 			new_model.model_name = model_set.key();
 			auto model = model_set.value();
@@ -24,7 +30,7 @@ namespace USD {
 			
 			for (int j = 0; j < vertices.size(); j+=3) {
 				renderer::detail::Vertex v;
-				v.color = { 1.0f, 1.0f, 1.0f };
+				v.color = mesh_color;
 				v.position = {vertices[j], vertices[j+1],vertices[j+2]};
 				v.tex_coord = { 0,0 };
 ;				new_model.model_data.vertices.push_back(v);

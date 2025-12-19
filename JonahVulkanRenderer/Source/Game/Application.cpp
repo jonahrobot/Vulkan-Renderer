@@ -11,18 +11,19 @@ namespace game {
 Application::Application() {
 	renderer = new renderer::Renderer();
 
-	std::vector<renderer::detail::ModelWithUsage> model_set_temp = USD::ParseUSD("ExternalTools/scene.json");
+	std::vector<renderer::detail::ModelWithUsage> model_set = USD::ParseUSD("ExternalTools/scene.json");
 
 	//std::cout << "Number of models loaded: " << model_set.size() << std::endl;
 
 	//renderer::detail::ModelData model_0 = renderer::detail::LoadModel("models/iron_golem.obj","textures/iron_golem.png");
 	//renderer::detail::ModelData model_1 = renderer::detail::LoadModel("models/viking_room.obj","textures/viking_room.png");
 	//renderer::detail::ModelWithUsage model_1_wrapped;
-	//model_1_wrapped.instance_count = 1;
-	//model_1_wrapped.instance_model_matrices = { glm::mat4(1.0f) };
+	//model_1_wrapped.instance_count = 2;
+	//model_1_wrapped.instance_model_matrices = { glm::mat4(1.0f), glm::translate(glm::mat4(1.0f),{3,3,3})};
 	//model_1_wrapped.model_data = model_1;
 	//model_1_wrapped.model_name = "Viking Room";
-	std::vector<renderer::detail::ModelWithUsage> model_set = { model_set_temp[0]};
+	////std::cout << "Rendering " << model_set_temp[4].model_name << " " << model_set_temp[4].instance_count << std::endl;
+	//std::vector<renderer::detail::ModelWithUsage> model_set = { model_1_wrapped };//model_set_temp[4]
 
 	//renderer::detail::ModelData model_2 = renderer::detail::LoadModel("models/container.obj", "textures/container.png");
 	renderer->UpdateModelSet(model_set,true);
