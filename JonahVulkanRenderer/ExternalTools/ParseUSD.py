@@ -46,8 +46,6 @@ def parse_scene(filepath):
             world_transform: Gf.Matrix4d = xform.ComputeLocalToWorldTransform(time)
 
             transform_write = [
-                        [world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3]],
-                        [world_transform[1][0], world_transform[1][1], world_transform[1][2], world_transform[1][3]],
             [world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3]],
             [world_transform[1][0], world_transform[1][1], world_transform[1][2], world_transform[1][3]],
             [world_transform[2][0], world_transform[2][1], world_transform[2][2], world_transform[2][3]],
