@@ -27,7 +27,7 @@ void main() {
 
     outUV = vec3(inUV, instance_data[gl_InstanceIndex].array_index.x);
 
-    mat4 model_view = ubo.view * instance_data[gl_InstanceIndex].model;
+    mat4 model = instance_data[gl_InstanceIndex].model;
 
-    gl_Position = ubo.proj * model_view * vec4(inPosition, 1.0);
+    gl_Position = ubo.proj * ubo.view * model* vec4(inPosition, 1.0);
 }

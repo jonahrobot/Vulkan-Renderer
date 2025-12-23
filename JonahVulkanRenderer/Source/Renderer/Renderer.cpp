@@ -201,13 +201,13 @@ namespace renderer {
 				// Create draw command
 				VkDrawIndexedIndirectCommand indirect_command{};
 				indirect_command.instanceCount = model_usage_data.instance_count;
-				indirect_command.firstInstance = m * model_usage_data.instance_count;
+				indirect_command.firstInstance = m;
 				indirect_command.firstIndex = first_index;
 				indirect_command.indexCount = static_cast<uint32_t>(model.indices.size());
 
 				indirect_commands.push_back(indirect_command);
 
-				m++;
+				m += model_usage_data.instance_count;
 			}
 
 			return indirect_commands;

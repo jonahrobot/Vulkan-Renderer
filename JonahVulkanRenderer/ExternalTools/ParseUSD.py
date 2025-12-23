@@ -34,8 +34,10 @@ def parse_scene(filepath):
     population_mask.Add(Sdf.Path("/world/hotel_01/geo"))
     stage.SetPopulationMask(population_mask)
 
+    scale_constant = 100
+
     # Traverse through each prim in the stage
-    for prim in stage.Traverse():
+    for prim in Usd.PrimRange(stage.GetPseudoRoot(), Usd.TraverseInstanceProxies()):
         if prim.IsA(UsdGeom.Mesh):
             model_name = prim.GetName()
 
@@ -46,9 +48,12 @@ def parse_scene(filepath):
             transform_write = [
                         [world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3]],
                         [world_transform[1][0], world_transform[1][1], world_transform[1][2], world_transform[1][3]],
-                        [world_transform[2][0], world_transform[2][1], world_transform[2][2], world_transform[2][3]],
-                        [world_transform[3][0], world_transform[3][1], world_transform[3][2], world_transform[3][3]]
-                        ]
+            [world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3]],
+            [world_transform[1][0], world_transform[1][1], world_transform[1][2], world_transform[1][3]],
+            [world_transform[2][0], world_transform[2][1], world_transform[2][2], world_transform[2][3]],
+            [world_transform[3][0] / scale_constant, world_transform[3][1] / scale_constant,
+             world_transform[3][2] / scale_constant, world_transform[3][3]]
+            ]
             if model_name in scene_data["models"]:
                 scene_data["models"][model_name]["instance_count"] += 1
                 scene_data["models"][model_name]["instances"].append(transform_write)
@@ -61,9 +66,9 @@ def parse_scene(filepath):
                 indices_float = []
 
                 for x in points:
-                    points_float.append(x[0] / 1000)
-                    points_float.append(x[1] / 1000)
-                    points_float.append(x[2] / 1000)
+                    points_float.append(x[0] / scale_constant)
+                    points_float.append(x[1] / scale_constant)
+                    points_float.append(x[2] / scale_constant)
 
                 # OpenUSD models support non-tri mesh faces
                 # So to render them we must triangulate them

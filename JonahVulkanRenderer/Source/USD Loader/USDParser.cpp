@@ -16,7 +16,9 @@ namespace USD {
 		auto model_data = scene_data["models"];
 
 		std::mt19937 rng(12345);
-		std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+		std::uniform_real_distribution<float> dist(0.2f, 1.0f);
+
+		uint64_t model_load_count = 0;
 
 		for (auto model_set : model_data.items()) {
 			
@@ -31,7 +33,7 @@ namespace USD {
 			for (int j = 0; j < vertices.size(); j+=3) {
 				renderer::detail::Vertex v;
 				v.color = mesh_color;
-				v.position = {vertices[j], vertices[j+1],vertices[j+2]};
+				v.position = {vertices[j], vertices[j+1],vertices[j+2] };
 				v.tex_coord = { 0,0 };
 ;				new_model.model_data.vertices.push_back(v);
 			}
@@ -59,14 +61,17 @@ namespace USD {
 					row_one[0], row_one[1], row_one[2], row_one[3], // Column 0
 					row_two[0], row_two[1], row_two[2], row_two[3], // Column 1
 					row_three[0], row_three[1], row_three[2], row_three[3], // Column 2
-					row_four[0], row_four[1], row_four[2], row_four[3]  // Column 3
+					row_four[0], row_four[1], row_four[2], 1// Column 3
 				);
 
 				new_model.instance_model_matrices.push_back(instance_matrix);
+				model_load_count += 1;
 			}	
 
 			output_data.push_back(new_model);
 		}
+
+		std::cout << "On load total models x instances is = " << model_load_count << std::endl;
 
 		return output_data;
 	}
