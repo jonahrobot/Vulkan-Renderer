@@ -39,8 +39,14 @@ def parse_scene(filepath):
     # Traverse through each prim in the stage
     for prim in Usd.PrimRange(stage.GetPseudoRoot(), Usd.TraverseInstanceProxies()):
         if prim.IsA(UsdGeom.Mesh):
-            model_name = prim.GetName()
+            purpose = UsdGeom.Imageable(prim).GetPurposeAttr().Get()
 
+            if purpose == "guide":
+                continue
+
+            points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
+            indices = UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()
+            model_hash = prim.GetName() + "_" + str(len(points)) + "_" + str(len(indices))
             xform = UsdGeom.Xformable(prim)
             time = Usd.TimeCode.Default()
             world_transform: Gf.Matrix4d = xform.ComputeLocalToWorldTransform(time)
@@ -52,13 +58,11 @@ def parse_scene(filepath):
             [world_transform[3][0] / scale_constant, world_transform[3][1] / scale_constant,
              world_transform[3][2] / scale_constant, world_transform[3][3]]
             ]
-            if model_name in scene_data["models"]:
-                scene_data["models"][model_name]["instance_count"] += 1
-                scene_data["models"][model_name]["instances"].append(transform_write)
+            if model_hash in scene_data["models"]:
+                scene_data["models"][model_hash]["instance_count"] += 1
+                scene_data["models"][model_hash]["instances"].append(transform_write)
             else:
 
-                points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
-                indices = UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()
                 face_counts = UsdGeom.Mesh(prim).GetFaceVertexCountsAttr().Get()
                 points_float = []
                 indices_float = []
@@ -80,7 +84,7 @@ def parse_scene(filepath):
 
                     counter += x
 
-                scene_data["models"][model_name] = {
+                scene_data["models"][model_hash] = {
                     "vertices": points_float,
                     "indices": indices_float,
                     "instance_count": 1,
