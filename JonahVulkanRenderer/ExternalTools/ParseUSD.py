@@ -31,6 +31,7 @@ def parse_scene(filepath):
            ModelNAME: {
                 vertices: [xxxxxx]
                 indices: [xxxxxx]
+                uv: [xxxxxx]
                 instance_count = 3
                 instances:{
                     Transformation Matrix (Rotation, Translation, Scale),
@@ -61,28 +62,35 @@ def parse_scene(filepath):
             if purpose == "guide":
                 continue
 
-            points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
-            indices = UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()
-
-            model_hash = prim.GetName() + "_" + str(len(points)) + "_" + str(len(indices))
-            xform = UsdGeom.Xformable(prim)
-            time = Usd.TimeCode.Default()
-            world_transform: Gf.Matrix4d = xform.ComputeLocalToWorldTransform(time)
-
             # Check if any skeleton maps to our prim
             p, has_skel = find_parent_with_skeleton(prim)
 
             if has_skel:
                 skel_root = UsdSkel.Root(p)
                 cache = UsdSkel.Cache()
-                cache.Populate(skel_root,Usd.TraverseInstanceProxies())
-                bindings = cache.ComputeSkelBindings(skel_root,Usd.TraverseInstanceProxies())
+                cache.Populate(skel_root, Usd.TraverseInstanceProxies())
+                bindings = cache.ComputeSkelBindings(skel_root, Usd.TraverseInstanceProxies())
 
                 binding, found_binding = find_binding_matching_mesh(bindings, prim)
 
                 # Currently, we do not handle bone rigged meshes, so skip importing these.
                 if found_binding:
                     continue
+
+            time = Usd.TimeCode.Default()
+
+            points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
+            indices = UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()
+            attr = prim.GetAttribute("primvars:normals")
+            normals = []
+            normal_indices = []
+            if attr and attr.IsValid():
+                normals = UsdGeom.Primvar(attr).Get(time)
+                normal_indices = UsdGeom.Primvar(attr).GetIndicesAttr().Get(time)
+
+            model_hash = prim.GetName() + "_" + str(len(points)) + "_" + str(len(indices))
+            xform = UsdGeom.Xformable(prim)
+            world_transform: Gf.Matrix4d = xform.ComputeLocalToWorldTransform(time)
 
             transform_write = [
             [world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3]],
@@ -99,11 +107,21 @@ def parse_scene(filepath):
                 face_counts = UsdGeom.Mesh(prim).GetFaceVertexCountsAttr().Get()
                 points_float = []
                 indices_float = []
+                normal_float = []
+                normal_indices_float = []
 
                 for x in points:
                     points_float.append(x[0] / scale_constant)
                     points_float.append(x[1] / scale_constant)
                     points_float.append(x[2] / scale_constant)
+
+                for x in normals:
+                    normal_float.append(x[0])
+                    normal_float.append(x[1])
+                    normal_float.append(x[2])
+
+                for x in normal_indices:
+                    normal_indices_float.append(x)
 
                 # OpenUSD models support non-tri mesh faces
                 # So to render them we must triangulate them
@@ -120,6 +138,8 @@ def parse_scene(filepath):
                 scene_data["models"][model_hash] = {
                     "vertices": points_float,
                     "indices": indices_float,
+                    "normals": normal_float,
+                    "normal_indices": normal_indices_float,
                     "instance_count": 1,
                     "instances": [transform_write]
                 }
