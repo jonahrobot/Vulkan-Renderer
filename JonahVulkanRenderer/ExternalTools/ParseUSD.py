@@ -1,8 +1,25 @@
 # Requires usd-core Python Package.
 
-from pxr import Usd, UsdGeom, Sdf, Gf
+from pxr import Usd, UsdGeom, Sdf, Gf, UsdSkel
 import argparse
 import json
+
+
+def find_parent_with_skeleton(mesh):
+    p = mesh
+    while p and p.IsValid():
+        if p.IsA(UsdSkel.Root):
+            return p, True
+        p = p.GetParent()
+    return None, False
+
+
+def find_binding_matching_mesh(bindings, mesh):
+    for b in bindings:
+        for target in b.GetSkinningTargets():
+            if target.GetPrim() == mesh:
+                return b, True
+    return None, False
 
 def parse_scene(filepath):
 
@@ -46,10 +63,26 @@ def parse_scene(filepath):
 
             points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
             indices = UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()
+
             model_hash = prim.GetName() + "_" + str(len(points)) + "_" + str(len(indices))
             xform = UsdGeom.Xformable(prim)
             time = Usd.TimeCode.Default()
             world_transform: Gf.Matrix4d = xform.ComputeLocalToWorldTransform(time)
+
+            # Check if any skeleton maps to our prim
+            p, has_skel = find_parent_with_skeleton(prim)
+
+            if has_skel:
+                skel_root = UsdSkel.Root(p)
+                cache = UsdSkel.Cache()
+                cache.Populate(skel_root,Usd.TraverseInstanceProxies())
+                bindings = cache.ComputeSkelBindings(skel_root,Usd.TraverseInstanceProxies())
+
+                binding, found_binding = find_binding_matching_mesh(bindings, prim)
+
+                # Currently, we do not handle bone rigged meshes, so skip importing these.
+                if found_binding:
+                    continue
 
             transform_write = [
             [world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3]],
