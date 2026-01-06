@@ -269,25 +269,37 @@ namespace renderer {
 		swapchain_image_views = detail::CreateSwapchainViews(swapchain_images, logical_device, swapchain_info.swapchain_image_format);
 
 		// Create queues
-		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphicsFamily.value(), 0, &graphics_queue);
-		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.presentFamily.value(), 0, &present_queue);
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &graphics_queue);
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.present_family.value(), 0, &present_queue);
+
+		// Currently not using Async compute, in future can swap compute_queue to not be equal to graphics_queue
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &compute_queue);
 
 		// Create render pass
 		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format, physical_device);
 
-		// Create descriptor set for camera UBO, used in graphics pipeline creation
-		descriptor_set_layout = detail::CreateDescriptorLayout({logical_device});
+		// Create descriptor set for graphics and compute
+		descriptor_set_layout = detail::CreateDescriptorLayout(logical_device);
 
 		// Create graphics pipeline
 		detail::GraphicsPipelineContext context_graphics_pipeline = {};
 		context_graphics_pipeline.logical_device = logical_device;
 		context_graphics_pipeline.render_pass = render_pass;
 		context_graphics_pipeline.swapchain_extent = extent;
-		context_graphics_pipeline.vertex_descriptor_set_layout = descriptor_set_layout;
+		context_graphics_pipeline.descriptor_set_layout = descriptor_set_layout;
 
-		detail::GraphicsPipelineData pipeline_info = detail::CreateGraphicsPipeline(context_graphics_pipeline);
+		detail::PipelineData pipeline_info = detail::CreateGraphicsPipeline(context_graphics_pipeline);
 		graphics_pipeline = pipeline_info.pipeline;
 		graphics_pipeline_layout = pipeline_info.layout;
+
+		// Create compute pipeline
+		detail::ComputePipelineContext context_compute_pipeline = {};
+		context_compute_pipeline.logical_device = logical_device;
+		context_compute_pipeline.descriptor_set_layout = descriptor_set_layout;
+
+		detail::PipelineData compute_pipeline_info = detail::CreateComputePipeline(context_compute_pipeline);
+		compute_pipeline = compute_pipeline_info.pipeline;
+		compute_pipeline_layout = compute_pipeline_info.layout;
 
 		// Create depth buffer
 		detail::DepthBufferContext context_depth_buffer = {};
@@ -308,7 +320,7 @@ namespace renderer {
 		framebuffers = detail::CreateFramebuffers(context_framebuffer);
 
 		// Create Command Heirarchy
-		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphicsFamily.value());
+		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
 		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
 
 		// Create Texture Sampler
@@ -327,11 +339,16 @@ namespace renderer {
 		uniform_buffers_mapped = ubo_info.uniform_buffers_mapped;
 
 		// Create Descriptor Pool
-		detail::DescriptorPoolContext context_pool = {};
-		context_pool.logical_device = logical_device;
-		context_pool.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
+		descriptor_pool = detail::CreateDescriptorPool(logical_device, MAX_FRAMES_IN_FLIGHT);
 
-		descriptor_pool = detail::CreateDescriptorPool(context_pool);
+		// Create Descriptor Sets
+		detail::DescriptorCreateContext context_descriptor_set = {};
+		context_descriptor_set.descriptor_pool = descriptor_pool;
+		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
+		context_descriptor_set.logical_device = logical_device;
+		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
+
+		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
 
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -621,26 +638,19 @@ namespace renderer {
 		
 		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
 		
-		// Create or update Descriptor Sets to link new Texture data to GPU
-		detail::DescriptorSetContext context_descriptor_set = {};
-		context_descriptor_set.descriptor_pool = descriptor_pool;
-		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
-		context_descriptor_set.logical_device = logical_device;
-		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
-		context_descriptor_set.ubo_size = sizeof(detail::UniformBufferObject);
-		context_descriptor_set.uniform_buffers = uniform_buffers;
-		context_descriptor_set.image_view = texture_buffer.image_view;
-		context_descriptor_set.texture_sampler = texture_sampler;
-		context_descriptor_set.instance_buffer = shader_storage_buffer;
-		context_descriptor_set.instance_buffer_size = sizeof(detail::InstanceData) * object_count;
+		// Update our Graphics Pipeline Descriptor Sets
 
-		if(descriptor_set_initialized == false){
-			descriptor_set_initialized = true;
-			descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
-		}
-		else {
-			descriptor_sets = detail::UpdateDescriptorSets(context_descriptor_set, descriptor_sets);
-		}
+		detail::Graphic_DescriptorContext context_graphics_update = {};
+		context_graphics_update.logical_device = logical_device;
+		context_graphics_update.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
+		context_graphics_update.ubo_size = sizeof(detail::UniformBufferObject);
+		context_graphics_update.uniform_buffers = uniform_buffers;
+		context_graphics_update.image_view = texture_buffer.image_view;
+		context_graphics_update.texture_sampler = texture_sampler;
+		context_graphics_update.instance_buffer = shader_storage_buffer;
+		context_graphics_update.instance_buffer_size = sizeof(detail::InstanceData) * object_count;
+
+		descriptor_sets = detail::UpdateDescriptorSets(context_graphics_update, descriptor_sets);
 	}
 
 	GLFWwindow* Renderer::Get_Window() {

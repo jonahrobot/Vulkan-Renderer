@@ -30,11 +30,11 @@ namespace renderer::detail {
 		std::vector<const char*> DeviceExtensionsToSupport;
 	};
 	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphicsFamily;
-		std::optional<uint32_t> presentFamily;
+		std::optional<uint32_t> graphics_compute_family;
+		std::optional<uint32_t> present_family;
 
 		bool isComplete() {
-			return graphicsFamily.has_value() && presentFamily.has_value();
+			return graphics_compute_family.has_value() && present_family.has_value();
 		}
 	};
 
@@ -149,19 +149,28 @@ namespace renderer::detail {
 	VkFence CreateVulkanFence(VkDevice LogicalDevice);
 #pragma endregion
 
-#pragma region Graphics Pipeline
-	// Implemented in "GraphicsPipeline.cpp"
+#pragma region Graphics and Compute Pipeline
+	// Implemented in "Pipelines.cpp"
+
+	struct PipelineData {
+		VkPipeline pipeline;
+		VkPipelineLayout layout;
+	};
+
 	struct GraphicsPipelineContext {
 		VkRenderPass render_pass;
 		VkDevice logical_device;
 		VkExtent2D swapchain_extent;
-		VkDescriptorSetLayout vertex_descriptor_set_layout;
+		VkDescriptorSetLayout descriptor_set_layout;
 	};
-	struct GraphicsPipelineData {
-		VkPipeline pipeline;
-		VkPipelineLayout layout;
+	PipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
+
+	struct ComputePipelineContext {
+		VkDevice logical_device;
+		VkDescriptorSetLayout descriptor_set_layout;
 	};
-	GraphicsPipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
+	PipelineData CreateComputePipeline(const ComputePipelineContext& Context);
+
 #pragma endregion
 
 #pragma region Data Buffers
@@ -205,32 +214,40 @@ namespace renderer::detail {
 #pragma region Descriptor Sets
 	// Implemented in "DescriptorSet.cpp"
 
-	struct DescriptorLayoutContext {
+	VkDescriptorPool CreateDescriptorPool(const VkDevice& LogicalDevice, uint8_t MaxFramesInFlight);
+	VkDescriptorSetLayout CreateDescriptorLayout(const VkDevice& LogicalDevice);
+	
+	struct DescriptorCreateContext {
 		VkDevice logical_device;
-	};
-	VkDescriptorSetLayout CreateDescriptorLayout(const DescriptorLayoutContext& Context);
-
-	struct DescriptorPoolContext {
-		uint8_t max_frames_in_flight;
-		VkDevice logical_device;
-	};
-	VkDescriptorPool CreateDescriptorPool(const DescriptorPoolContext& Context);
-
-	struct DescriptorSetContext {
-		std::vector<VkBuffer> uniform_buffers;
-		uint16_t ubo_size;
 		VkDescriptorSetLayout descriptor_set_layout;
 		VkDescriptorPool descriptor_pool;
 		uint8_t max_frames_in_flight;
+	};
+	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorCreateContext& Context);
+
+	struct Graphic_DescriptorContext {
 		VkDevice logical_device;
+		uint8_t max_frames_in_flight;
+		std::vector<VkBuffer> uniform_buffers;
+		uint16_t ubo_size;
 		VkImageView image_view;
 		VkSampler texture_sampler;
 		VkBuffer instance_buffer;
 		uint64_t instance_buffer_size;
 	};
-	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorSetContext& Context);
+	std::vector<VkDescriptorSet> UpdateDescriptorSets(const Graphic_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
 
-	std::vector<VkDescriptorSet> UpdateDescriptorSets(const DescriptorSetContext& Context, std::vector<VkDescriptorSet> old_set);
+	struct Compute_DescriptorContext {
+		VkDevice logical_device;
+		uint8_t max_frames_in_flight;
+		std::vector<VkBuffer> uniform_buffers;
+		uint16_t ubo_size;
+		VkBuffer instance_data_buffer;
+		uint64_t instance_data_buffer_size;
+		VkBuffer indirect_draw_buffer;
+		uint64_t indirect_draw_buffer_size;
+	};
+	std::vector<VkDescriptorSet> UpdateDescriptorSets(const Compute_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
 
 #pragma endregion
 

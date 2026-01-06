@@ -56,17 +56,23 @@ private:
 	GLFWwindow* window;
 	std::vector<VkImage> swapchain_images;
 	std::vector<VkImageView> swapchain_image_views;
-	VkQueue graphics_queue;
+
 	VkQueue present_queue;
 	VkRenderPass render_pass;
+
+	VkQueue graphics_queue;
 	VkPipeline graphics_pipeline;
+	VkPipelineLayout graphics_pipeline_layout;
+
+	VkQueue compute_queue;
+	VkPipeline compute_pipeline;
+	VkPipelineLayout compute_pipeline_layout;
 
 	VkDescriptorPool descriptor_pool;
 	std::vector<VkDescriptorSet> descriptor_sets;
 	bool descriptor_set_initialized = false;
 
 	VkDescriptorSetLayout descriptor_set_layout;
-	VkPipelineLayout graphics_pipeline_layout;
 	std::vector<VkFramebuffer> framebuffers;
 	VkCommandPool command_pool;
 	std::vector<VkCommandBuffer> command_buffers;

@@ -175,7 +175,7 @@
     <ClCompile Include="Source\Renderer\Detail\CommandBuffer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\DescriptorSet.cpp" />
     <ClCompile Include="Source\Renderer\Detail\FrameBuffer.cpp" />
-    <ClCompile Include="Source\Renderer\Detail\GraphicsPipeline.cpp" />
+    <ClCompile Include="Source\Renderer\Detail\Pipelines.cpp" />
     <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp" />
     <ClCompile Include="Source\Renderer\Detail\RendererDetail_Common.cpp" />
@@ -196,6 +196,7 @@
     <ClInclude Include="Source\USD Loader\USDParser.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shaders\cull.comp" />
     <None Include="Shaders\shader.frag" />
     <None Include="Shaders\shader.vert" />
   </ItemGroup>

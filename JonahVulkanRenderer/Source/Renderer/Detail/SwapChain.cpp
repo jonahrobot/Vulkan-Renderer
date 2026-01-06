@@ -88,11 +88,11 @@ namespace renderer::detail {
 		create_info.imageArrayLayers = 1; // Always 1 unless stereoscopic 3D.
 		create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		uint32_t queue_family_indices[] = { Context.supported_queues.graphicsFamily.value(), Context.supported_queues.presentFamily.value() };
+		uint32_t queue_family_indices[] = { Context.supported_queues.graphics_compute_family.value(), Context.supported_queues.present_family.value() };
 
 		// Must check if graphics and present queues are different.
 		// If they are, we must handle interactions concurrently.
-		if (Context.supported_queues.graphicsFamily != Context.supported_queues.presentFamily) {
+		if (Context.supported_queues.graphics_compute_family != Context.supported_queues.present_family) {
 			create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			create_info.queueFamilyIndexCount = 2;
 			create_info.pQueueFamilyIndices = queue_family_indices;

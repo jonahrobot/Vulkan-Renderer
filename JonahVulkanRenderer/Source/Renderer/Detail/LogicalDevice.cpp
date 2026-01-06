@@ -12,8 +12,8 @@ namespace renderer::detail {
 		std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
 
 		// We convert supported queues to a set for easier iteration
-		uint32_t graphics_index = Context.supported_queues.graphicsFamily.value();
-		uint32_t present_index = Context.supported_queues.presentFamily.value();
+		uint32_t graphics_index = Context.supported_queues.graphics_compute_family.value();
+		uint32_t present_index = Context.supported_queues.present_family.value();
 		std::set<uint32_t> supported_queues = { graphics_index, present_index };
 
 		float queue_priority = 1.0f;

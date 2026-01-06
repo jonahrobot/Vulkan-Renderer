@@ -36,7 +36,7 @@
     <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\GraphicsPipeline.cpp">
+    <ClCompile Include="Source\Renderer\Detail\Pipelines.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Renderer\Detail\CommandBuffer.cpp">
@@ -93,5 +93,6 @@
   <ItemGroup>
     <None Include="Shaders\shader.vert" />
     <None Include="Shaders\shader.frag" />
+    <None Include="Shaders\cull.comp" />
   </ItemGroup>
 </Project>

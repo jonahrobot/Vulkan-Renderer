@@ -21,15 +21,15 @@ namespace {
 		int index = 0;
 		for (const VkQueueFamilyProperties& queue : queues_supported_by_device) {
 
-			if (queue.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-				queues_found.graphicsFamily = index;
+			if ((queue.queueFlags & VK_QUEUE_GRAPHICS_BIT) && (queue.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+				queues_found.graphics_compute_family = index;
 			}
 
 			VkBool32 presentSupport = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(PhysicalDevice, index, CurrentSurface, &presentSupport);
 
 			if (presentSupport) {
-				queues_found.presentFamily = index;
+				queues_found.present_family = index;
 			}
 
 			if (queues_found.isComplete()) {

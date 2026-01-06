@@ -43,10 +43,54 @@ namespace {
 
 }
 
-// Implements all Vulkan Graphics Pipeline Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
+// Implements all Vulkan Pipeline Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	GraphicsPipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context) {
+	PipelineData CreateComputePipeline(const ComputePipelineContext& Context) {
+
+		// Load shader
+		auto comp_shader_code = ReadFile("shaders/comp.spv");
+		VkShaderModule comp_shader_module = CreateShaderModule(comp_shader_code, Context.logical_device);
+
+		// Create pipeline layout
+		VkPipelineLayoutCreateInfo pipeline_layout_info{};
+		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = &Context.descriptor_set_layout;
+
+		VkPipelineLayout compute_pipeline_layout;
+		if (vkCreatePipelineLayout(Context.logical_device, &pipeline_layout_info, nullptr, &compute_pipeline_layout) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create compute pipeline layout!");
+		}
+
+		// Create pipeline
+		VkPipelineShaderStageCreateInfo comp_shader_stage_info{};
+		comp_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		comp_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		comp_shader_stage_info.module = comp_shader_module;
+		comp_shader_stage_info.pName = "main";
+
+		VkComputePipelineCreateInfo pipeline_info{};
+		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipeline_info.layout = compute_pipeline_layout;
+		pipeline_info.stage = comp_shader_stage_info;
+
+		VkPipeline compute_pipeline;
+		if (vkCreateComputePipelines(Context.logical_device, VK_NULL_HANDLE, 1, &pipeline_info, nullptr, &compute_pipeline) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create compute pipeline.");
+		}
+
+		// Cleanup
+		vkDestroyShaderModule(Context.logical_device, comp_shader_module, nullptr);
+
+		PipelineData return_data{};
+		return_data.pipeline = compute_pipeline;
+		return_data.layout = compute_pipeline_layout;
+
+		return return_data;
+	}
+
+	PipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context) {
 
 		// Vertex and Fragment shaders
 		auto vert_shader_code = ReadFile("shaders/vert.spv");
@@ -149,7 +193,7 @@ namespace renderer::detail {
 		VkPipelineLayoutCreateInfo pipeline_layout_info{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &Context.vertex_descriptor_set_layout;
+		pipeline_layout_info.pSetLayouts = &Context.descriptor_set_layout;
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = 0;
 
@@ -188,7 +232,7 @@ namespace renderer::detail {
 		vkDestroyShaderModule(Context.logical_device, frag_shader_module, nullptr);
 		vkDestroyShaderModule(Context.logical_device, vert_shader_module, nullptr);
 
-		GraphicsPipelineData return_data{};
+		PipelineData return_data{};
 		return_data.pipeline = graphics_pipeline;
 		return_data.layout = layout;
 
