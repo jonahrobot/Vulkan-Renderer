@@ -54,7 +54,7 @@ namespace renderer::detail {
 		vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context.compute_pipeline);
 		vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context.compute_pipeline_layout, 0, 1, &Context.current_descriptor_set, 0, 0);
 		
-		vkCmdDispatch(Context.command_buffer, Context.instance_count / 256, 1, 1);
+		vkCmdDispatch(Context.command_buffer, Context.instance_count / 64, 1, 1);
 
 		if (vkEndCommandBuffer(Context.command_buffer) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to record command buffer.");

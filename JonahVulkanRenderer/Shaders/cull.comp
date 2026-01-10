@@ -1,0 +1,39 @@
+#version 450
+
+struct Instance
+{
+	mat4 model;
+	vec4 array_index;
+};
+
+struct IndexedIndirectCommand 
+{
+	uint indexCount;
+	uint instanceCount;
+	uint firstIndex;
+	uint vertexOffset;
+	uint firstInstance;
+};
+
+layout(binding = 0) uniform UniformBufferObject{
+    mat4 view;
+    mat4 proj;
+} ubo;
+
+layout(std140, binding = 2) readonly buffer InstanceData {
+    Instance instance_data[ ];
+};
+
+layout (binding = 3, std430) writeonly buffer IndirectDraws
+{
+	IndexedIndirectCommand indirectDraws[ ];
+};
+
+layout (local_size_x = 64) in;
+
+void main(){
+
+	uint index = gl_GlobalInvocationID.x;  
+
+	indirectDraws[index].instanceCount = 0;
+}

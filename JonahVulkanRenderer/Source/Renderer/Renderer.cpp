@@ -468,13 +468,13 @@ namespace renderer {
 
 		RecordCommandBuffer(compute_command_context);
 		
-		VkSubmitInfo submit_info{};
-		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submit_info.pCommandBuffers = &compute_command_buffers[current_frame];
-		submit_info.signalSemaphoreCount = 1;
-		submit_info.pSignalSemaphores = &compute_finished_semaphores[current_frame];
+		VkSubmitInfo submit_info_compute{};
+		submit_info_compute.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info_compute.pCommandBuffers = &compute_command_buffers[current_frame];
+		submit_info_compute.signalSemaphoreCount = 1;
+		submit_info_compute.pSignalSemaphores = &compute_finished_semaphores[current_frame];
 
-		if (vkQueueSubmit(compute_queue, 1, &submit_info, compute_in_flight_fences[current_frame]) != VK_SUCCESS) {
+		if (vkQueueSubmit(compute_queue, 1, &submit_info_compute, compute_in_flight_fences[current_frame]) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to submit compute command buffer.");
 		}
 

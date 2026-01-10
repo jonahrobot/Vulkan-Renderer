@@ -69,7 +69,7 @@ namespace renderer::detail {
 		compute_draws_binding.pImmutableSamplers = nullptr;
 		compute_draws_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 5> bindings = { ubo_layout_binding, sampler_layout_binding, instance_data_layout_binding, compute_draws_binding };
+		std::array<VkDescriptorSetLayoutBinding, 4> bindings = { ubo_layout_binding, sampler_layout_binding, instance_data_layout_binding, compute_draws_binding };
 
 		VkDescriptorSetLayoutCreateInfo layout_info{};
 		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -164,15 +164,15 @@ namespace renderer::detail {
 			indirect_draw_buffer_info.offset = 0;
 			indirect_draw_buffer_info.range = Context.indirect_draw_buffer_size;
 
-			std::array<VkWriteDescriptorSet, 3> descriptor_writes{};
+			std::array<VkWriteDescriptorSet, 1> descriptor_writes{};
 
-			descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[2].dstSet = old_set[i];
-			descriptor_writes[2].dstBinding = 3;
-			descriptor_writes[2].dstArrayElement = 0;
-			descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptor_writes[2].descriptorCount = 1;
-			descriptor_writes[2].pBufferInfo = &indirect_draw_buffer_info;
+			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptor_writes[0].dstSet = old_set[i];
+			descriptor_writes[0].dstBinding = 3;
+			descriptor_writes[0].dstArrayElement = 0;
+			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			descriptor_writes[0].descriptorCount = 1;
+			descriptor_writes[0].pBufferInfo = &indirect_draw_buffer_info;
 
 			vkUpdateDescriptorSets(Context.logical_device, static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
 		}

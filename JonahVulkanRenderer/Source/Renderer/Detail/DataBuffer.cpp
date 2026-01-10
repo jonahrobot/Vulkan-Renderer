@@ -121,7 +121,7 @@ namespace renderer::detail {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
-		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
 		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
 				Context.physical_device, Context.graphics_queue, Context.command_pool);

@@ -49,7 +49,7 @@ namespace renderer::detail {
 	PipelineData CreateComputePipeline(const ComputePipelineContext& Context) {
 
 		// Load shader
-		auto comp_shader_code = ReadFile("shaders/comp.spv");
+		auto comp_shader_code = ReadFile("shaders/cull.spv");
 		VkShaderModule comp_shader_module = CreateShaderModule(comp_shader_code, Context.logical_device);
 
 		// Create pipeline layout
