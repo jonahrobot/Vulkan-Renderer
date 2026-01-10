@@ -154,20 +154,10 @@ namespace renderer::detail {
 		return old_set;
 	}
 
-	std::vector<VkDescriptorSet> UpdateDescriptorSets(const Compute_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set) {
+	std::vector<VkDescriptorSet> UpdateComputeUniqueDescriptor(const Compute_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set) {
 
 		// Allocate our descriptor sets from the layout template and ubo information
 		for (size_t i = 0; i < Context.max_frames_in_flight; i++) {
-
-			VkDescriptorBufferInfo buffer_info{};
-			buffer_info.buffer = Context.uniform_buffers[i];
-			buffer_info.offset = 0;
-			buffer_info.range = Context.ubo_size;
-
-			VkDescriptorBufferInfo instance_buffer_info{};
-			instance_buffer_info.buffer = Context.instance_data_buffer;
-			instance_buffer_info.offset = 0;
-			instance_buffer_info.range = Context.instance_data_buffer_size;
 
 			VkDescriptorBufferInfo indirect_draw_buffer_info{};
 			indirect_draw_buffer_info.buffer = Context.indirect_draw_buffer;
@@ -175,22 +165,6 @@ namespace renderer::detail {
 			indirect_draw_buffer_info.range = Context.indirect_draw_buffer_size;
 
 			std::array<VkWriteDescriptorSet, 3> descriptor_writes{};
-
-			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[0].dstSet = old_set[i];
-			descriptor_writes[0].dstBinding = 0;
-			descriptor_writes[0].dstArrayElement = 0;
-			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptor_writes[0].descriptorCount = 1;
-			descriptor_writes[0].pBufferInfo = &buffer_info;
-
-			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[1].dstSet = old_set[i];
-			descriptor_writes[1].dstBinding = 2;
-			descriptor_writes[1].dstArrayElement = 0;
-			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptor_writes[1].descriptorCount = 1;
-			descriptor_writes[1].pBufferInfo = &instance_buffer_info;
 
 			descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[2].dstSet = old_set[i];

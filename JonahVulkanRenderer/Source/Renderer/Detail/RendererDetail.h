@@ -250,14 +250,10 @@ namespace renderer::detail {
 	struct Compute_DescriptorContext {
 		VkDevice logical_device;
 		uint8_t max_frames_in_flight;
-		std::vector<VkBuffer> uniform_buffers;
-		uint16_t ubo_size;
-		VkBuffer instance_data_buffer;
-		uint64_t instance_data_buffer_size;
 		VkBuffer indirect_draw_buffer;
 		uint64_t indirect_draw_buffer_size;
 	};
-	std::vector<VkDescriptorSet> UpdateDescriptorSets(const Compute_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
+	std::vector<VkDescriptorSet> UpdateComputeUniqueDescriptor(const Compute_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
 
 #pragma endregion
 

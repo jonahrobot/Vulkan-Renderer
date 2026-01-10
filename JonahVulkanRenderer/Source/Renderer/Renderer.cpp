@@ -694,6 +694,15 @@ namespace renderer {
 		context_graphics_update.instance_buffer_size = sizeof(detail::InstanceData) * object_count;
 
 		descriptor_sets = detail::UpdateDescriptorSets(context_graphics_update, descriptor_sets);
+
+		detail::Compute_DescriptorContext context_compute_update = {};
+		context_compute_update.logical_device = logical_device;
+		context_compute_update.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
+		context_compute_update.indirect_draw_buffer = indirect_command_buffer;
+		context_compute_update.indirect_draw_buffer_size = sizeof(VkDrawIndexedIndirectCommand) * number_of_indirect_commands;
+	
+		descriptor_sets = detail::UpdateComputeUniqueDescriptor(context_compute_update, descriptor_sets);
+
 	}
 
 	GLFWwindow* Renderer::Get_Window() {
