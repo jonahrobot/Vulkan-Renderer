@@ -326,7 +326,6 @@ namespace renderer {
 		compute_command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
 		compute_command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, compute_command_pool);
 
-
 		// Create Texture Sampler
 		texture_sampler = CreateTextureSampler(physical_device, logical_device);
 
@@ -368,8 +367,6 @@ namespace renderer {
 		for (size_t i = 0; i < swapchain_images.size(); i++) {
 			render_finished_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
 		}
-
-
 	}
 
 	Renderer::~Renderer() {
@@ -430,8 +427,8 @@ namespace renderer {
 		vkDestroyBuffer(logical_device, indirect_command_buffer, nullptr);
 		vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
 
-		vkDestroyBuffer(logical_device, shader_storage_buffer, nullptr);
-		vkFreeMemory(logical_device, shader_storage_buffer_memory, nullptr);
+		vkDestroyBuffer(logical_device, instance_data_buffer, nullptr);
+		vkFreeMemory(logical_device, instance_data_buffer_memory, nullptr);
 
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
@@ -600,9 +597,9 @@ namespace renderer {
 			vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
 		}
 
-		if (shader_storage_buffer != NULL) {
-			vkDestroyBuffer(logical_device, shader_storage_buffer, nullptr);
-			vkFreeMemory(logical_device, shader_storage_buffer_memory, nullptr);
+		if (instance_data_buffer != NULL) {
+			vkDestroyBuffer(logical_device, instance_data_buffer, nullptr);
+			vkFreeMemory(logical_device, instance_data_buffer_memory, nullptr);
 		}
 
 		detail::FreeGPUResource(texture_buffer, logical_device);
@@ -637,8 +634,8 @@ namespace renderer {
 		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet));
 
 		if (shaderbuffer_info.err_code == detail::BufferData::SUCCESS) {
-			shader_storage_buffer = shaderbuffer_info.created_buffer;
-			shader_storage_buffer_memory = shaderbuffer_info.memory_allocated_for_buffer;
+			instance_data_buffer = shaderbuffer_info.created_buffer;
+			instance_data_buffer_memory = shaderbuffer_info.memory_allocated_for_buffer;
 		}
 
 		detail::TextureData merged_texture_data = {};
@@ -693,7 +690,7 @@ namespace renderer {
 		context_graphics_update.uniform_buffers = uniform_buffers;
 		context_graphics_update.image_view = texture_buffer.image_view;
 		context_graphics_update.texture_sampler = texture_sampler;
-		context_graphics_update.instance_buffer = shader_storage_buffer;
+		context_graphics_update.instance_buffer = instance_data_buffer;
 		context_graphics_update.instance_buffer_size = sizeof(detail::InstanceData) * object_count;
 
 		descriptor_sets = detail::UpdateDescriptorSets(context_graphics_update, descriptor_sets);

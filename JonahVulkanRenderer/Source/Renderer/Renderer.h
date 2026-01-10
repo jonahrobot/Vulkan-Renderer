@@ -87,18 +87,21 @@ private:
 
 	VkBuffer vertex_buffer;
 	VkDeviceMemory vertex_buffer_memory;
+
 	VkBuffer index_buffer;
 	VkDeviceMemory index_buffer_memory;
+
 	VkBuffer indirect_command_buffer;
 	VkDeviceMemory indirect_command_buffer_memory;
+
 	uint32_t number_of_indirect_commands;
 
 	std::vector<VkBuffer> uniform_buffers;
 	std::vector<VkDeviceMemory> uniform_buffers_memory;
 	std::vector<void*> uniform_buffers_mapped;
 
-	VkBuffer shader_storage_buffer;
-	VkDeviceMemory shader_storage_buffer_memory;
+	VkBuffer instance_data_buffer;
+	VkDeviceMemory instance_data_buffer_memory;
 
 	detail::GPUResource depth_buffer;
 
