@@ -323,6 +323,10 @@ namespace renderer {
 		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
 		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
 
+		compute_command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
+		compute_command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, compute_command_pool);
+
+
 		// Create Texture Sampler
 		texture_sampler = CreateTextureSampler(physical_device, logical_device);
 
@@ -352,12 +356,20 @@ namespace renderer {
 
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			// Graphics
 			image_available_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
 			in_flight_fences.push_back(detail::CreateVulkanFence(logical_device));
+
+			// Compute
+			compute_in_flight_fences.push_back(detail::CreateVulkanFence(logical_device));
+			compute_finished_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
 		}
 		for (size_t i = 0; i < swapchain_images.size(); i++) {
 			render_finished_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
 		}
+
+
 	}
 
 	Renderer::~Renderer() {
@@ -367,6 +379,8 @@ namespace renderer {
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(logical_device, image_available_semaphores[i], nullptr);
 			vkDestroyFence(logical_device, in_flight_fences[i], nullptr);
+			vkDestroySemaphore(logical_device, compute_finished_semaphores[i], nullptr);
+			vkDestroyFence(logical_device, compute_in_flight_fences[i], nullptr);
 		}
 
 		for (size_t i = 0; i < swapchain_images.size(); i++) {
@@ -389,12 +403,16 @@ namespace renderer {
 
 		vkDestroyCommandPool(logical_device, command_pool, nullptr);
 
+		vkDestroyCommandPool(logical_device, compute_command_pool, nullptr);
+
 		for (auto framebuffer : framebuffers) {
 			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
 		}
 
 		vkDestroyPipeline(logical_device, graphics_pipeline, nullptr);
 		vkDestroyPipelineLayout(logical_device, graphics_pipeline_layout, nullptr);
+		vkDestroyPipeline(logical_device, compute_pipeline, nullptr);
+		vkDestroyPipelineLayout(logical_device, compute_pipeline_layout, nullptr);
 		vkDestroyRenderPass(logical_device, render_pass, nullptr);
 
 		for (auto view : swapchain_image_views) {
@@ -427,6 +445,44 @@ namespace renderer {
 
 		/// PREP DRAW
 
+		// COMPUTE WORKLOAD
+
+		vkWaitForFences(logical_device, 1, &compute_in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
+
+		// Get Camera position
+		detail::UniformBufferObject current_ubo_data = {};
+
+		current_ubo_data.proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.01f, 100.0f);
+		current_ubo_data.proj[1][1] *= -1;
+		current_ubo_data.view = CameraPosition;
+
+		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data, sizeof(detail::UniformBufferObject));
+
+		vkResetFences(logical_device, 1, &compute_in_flight_fences[current_frame]);
+
+		vkResetCommandBuffer(compute_command_buffers[current_frame], 0);
+
+		detail::Compute_CommandRecordingContext compute_command_context{};
+		compute_command_context.command_buffer = compute_command_buffers[current_frame];
+		compute_command_context.compute_pipeline = compute_pipeline;
+		compute_command_context.compute_pipeline_layout = compute_pipeline_layout;
+		compute_command_context.current_descriptor_set = descriptor_sets[current_frame];
+		compute_command_context.instance_count = object_count;
+
+		RecordCommandBuffer(compute_command_context);
+		
+		VkSubmitInfo submit_info{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.pCommandBuffers = &compute_command_buffers[current_frame];
+		submit_info.signalSemaphoreCount = 1;
+		submit_info.pSignalSemaphores = &compute_finished_semaphores[current_frame];
+
+		if (vkQueueSubmit(compute_queue, 1, &submit_info, compute_in_flight_fences[current_frame]) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to submit compute command buffer.");
+		}
+
+		// GRAPHICS WORKLOAD
+
 		// Ensure no frames are being drawn already
 		vkWaitForFences(logical_device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
@@ -446,15 +502,6 @@ namespace renderer {
 
 		vkResetCommandBuffer(command_buffers[current_frame], 0);
 		
-		// Get Camera position
-		detail::UniformBufferObject current_ubo_data = {};
-
-		current_ubo_data.proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.01f, 100.0f);
-		current_ubo_data.proj[1][1] *= -1;
-		current_ubo_data.view = CameraPosition;
-
-		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data, sizeof(detail::UniformBufferObject));
-
 		/// DRAW
 		detail::CommandRecordingContext command_context{};
 		command_context.framebuffers = framebuffers;
@@ -477,9 +524,9 @@ namespace renderer {
 		VkSubmitInfo submit_info{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		VkSemaphore wait_semaphores[] = { image_available_semaphores[current_frame] }; // Command wont execute until semaphore is flagged.
-		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // These stages will wait for above flag.
-		submit_info.waitSemaphoreCount = 1;
+		VkSemaphore wait_semaphores[] = { compute_finished_semaphores[current_frame], image_available_semaphores[current_frame] }; // Command wont execute until semaphores are flagged.
+		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // These stages will wait for above flag.
+		submit_info.waitSemaphoreCount = 2;
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
 
@@ -639,7 +686,6 @@ namespace renderer {
 		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
 		
 		// Update our Graphics Pipeline Descriptor Sets
-
 		detail::Graphic_DescriptorContext context_graphics_update = {};
 		context_graphics_update.logical_device = logical_device;
 		context_graphics_update.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;

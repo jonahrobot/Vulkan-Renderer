@@ -129,6 +129,16 @@ namespace renderer::detail {
 		VkDescriptorSet current_descriptor_set;
 	};
 	void RecordCommandBuffer(const CommandRecordingContext& Context);
+
+	struct Compute_CommandRecordingContext {
+		VkCommandBuffer command_buffer;
+		VkPipeline compute_pipeline;
+		VkPipelineLayout compute_pipeline_layout;
+		VkDescriptorSet current_descriptor_set;
+		uint32_t instance_count;
+	};
+	void RecordCommandBuffer(const Compute_CommandRecordingContext& Context);
+
 #pragma endregion
 
 #pragma region Frame Buffers

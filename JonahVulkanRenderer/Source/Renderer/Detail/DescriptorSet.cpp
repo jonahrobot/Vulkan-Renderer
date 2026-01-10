@@ -22,7 +22,7 @@ namespace renderer::detail {
 		pool_sizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
 
 		pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		pool_sizes[2].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight) * 3;
+		pool_sizes[2].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight) * 2;
 
 		VkDescriptorPoolCreateInfo pool_info{};
 		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -60,23 +60,16 @@ namespace renderer::detail {
 		instance_data_layout_binding.descriptorCount = 1;
 		instance_data_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		instance_data_layout_binding.pImmutableSamplers = nullptr;
-		instance_data_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		instance_data_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
-		VkDescriptorSetLayoutBinding compute_instance_layout_binding{};
-		compute_instance_layout_binding.binding = 3;
-		compute_instance_layout_binding.descriptorCount = 1;
-		compute_instance_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		compute_instance_layout_binding.pImmutableSamplers = nullptr;
-		compute_instance_layout_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		VkDescriptorSetLayoutBinding compute_draws_binding{};
+		compute_draws_binding.binding = 3;
+		compute_draws_binding.descriptorCount = 1;
+		compute_draws_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		compute_draws_binding.pImmutableSamplers = nullptr;
+		compute_draws_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-		VkDescriptorSetLayoutBinding indirect_draw_layout_binding{};
-		indirect_draw_layout_binding.binding = 4;
-		indirect_draw_layout_binding.descriptorCount = 1;
-		indirect_draw_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		indirect_draw_layout_binding.pImmutableSamplers = nullptr;
-		indirect_draw_layout_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		std::array<VkDescriptorSetLayoutBinding, 5> bindings = { ubo_layout_binding, sampler_layout_binding, instance_data_layout_binding, compute_instance_layout_binding, indirect_draw_layout_binding };
+		std::array<VkDescriptorSetLayoutBinding, 5> bindings = { ubo_layout_binding, sampler_layout_binding, instance_data_layout_binding, compute_draws_binding };
 
 		VkDescriptorSetLayoutCreateInfo layout_info{};
 		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -193,7 +186,7 @@ namespace renderer::detail {
 
 			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[1].dstSet = old_set[i];
-			descriptor_writes[1].dstBinding = 3;
+			descriptor_writes[1].dstBinding = 2;
 			descriptor_writes[1].dstArrayElement = 0;
 			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptor_writes[1].descriptorCount = 1;
@@ -201,7 +194,7 @@ namespace renderer::detail {
 
 			descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[2].dstSet = old_set[i];
-			descriptor_writes[2].dstBinding = 4;
+			descriptor_writes[2].dstBinding = 3;
 			descriptor_writes[2].dstArrayElement = 0;
 			descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptor_writes[2].descriptorCount = 1;

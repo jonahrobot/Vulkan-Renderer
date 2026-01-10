@@ -77,6 +77,9 @@ private:
 	VkCommandPool command_pool;
 	std::vector<VkCommandBuffer> command_buffers;
 
+	VkCommandPool compute_command_pool;
+	std::vector<VkCommandBuffer> compute_command_buffers;
+
 	detail::GPUResource texture_buffer;
 	uint32_t object_count;
 
@@ -102,6 +105,8 @@ private:
 	std::vector<VkSemaphore> image_available_semaphores;
 	std::vector<VkSemaphore> render_finished_semaphores;
 	std::vector<VkFence> in_flight_fences;
+	std::vector<VkFence> compute_in_flight_fences;
+	std::vector<VkSemaphore> compute_finished_semaphores;
 	
 	uint32_t current_frame = 0;
 
