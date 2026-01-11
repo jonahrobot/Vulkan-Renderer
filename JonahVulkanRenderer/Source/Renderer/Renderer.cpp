@@ -483,6 +483,7 @@ namespace renderer {
 		
 		VkSubmitInfo submit_info_compute{};
 		submit_info_compute.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info_compute.commandBufferCount = 1;
 		submit_info_compute.pCommandBuffers = &compute_command_buffers[current_frame];
 		submit_info_compute.signalSemaphoreCount = 1;
 		submit_info_compute.pSignalSemaphores = &compute_finished_semaphores[current_frame];
