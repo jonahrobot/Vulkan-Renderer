@@ -19,7 +19,7 @@ namespace renderer::detail {
 
 #pragma region Vulkan Instance
 	// Implemented in "Instance.cpp"
-	VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport);
+	VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions);
 #pragma endregion
 
 #pragma region Physical Device
@@ -127,6 +127,8 @@ namespace renderer::detail {
 		uint32_t total_indices;
 		uint32_t total_vertices;
 		VkDescriptorSet current_descriptor_set;
+		PFN_vkCmdBeginDebugUtilsLabelEXT debug_function_begin;
+		PFN_vkCmdEndDebugUtilsLabelEXT debug_function_end;
 	};
 	void RecordCommandBuffer(const CommandRecordingContext& Context);
 
@@ -136,6 +138,8 @@ namespace renderer::detail {
 		VkPipelineLayout compute_pipeline_layout;
 		VkDescriptorSet current_descriptor_set;
 		uint32_t instance_count;
+		PFN_vkCmdBeginDebugUtilsLabelEXT debug_function_begin;
+		PFN_vkCmdEndDebugUtilsLabelEXT debug_function_end;
 	};
 	void RecordCommandBuffer(const Compute_CommandRecordingContext& Context);
 

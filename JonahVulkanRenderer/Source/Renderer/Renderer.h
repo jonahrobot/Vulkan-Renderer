@@ -42,8 +42,12 @@ private:
 		"VK_LAYER_KHRONOS_validation"
 	};
 
+	std::vector<const char*> InstanceExtensionsToSupport = {
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+	};
+
 	const std::vector<const char*> DeviceExtensionsToSupport = {
-		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
 
 	VkInstance vulkan_instance;
@@ -110,6 +114,9 @@ private:
 	std::vector<VkFence> in_flight_fences;
 	std::vector<VkFence> compute_in_flight_fences;
 	std::vector<VkSemaphore> compute_finished_semaphores;
+
+	PFN_vkCmdBeginDebugUtilsLabelEXT pfn_CmdBeginDebugUtilsLabelEXT = nullptr;
+	PFN_vkCmdEndDebugUtilsLabelEXT pfn_CmdEndDebugUtilsLabelEXT = nullptr;
 	
 	uint32_t current_frame = 0;
 

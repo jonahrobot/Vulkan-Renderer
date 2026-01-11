@@ -226,8 +226,19 @@ namespace renderer {
 		glfwSetWindowUserPointer(window, this);
 		glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
 
-		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport);
+		uint32_t number_of_extentions = 0;
+		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&number_of_extentions);
+
+		for (int i = 0; i < number_of_extentions; i++) {
+			InstanceExtensionsToSupport.push_back(glfwExtensions[i]);
+		}
+
+		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport, InstanceExtensionsToSupport);
 		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
+
+		// Fetch functions
+		pfn_CmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
+		pfn_CmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
 
 		// Create Physical Device
 		detail::PhysicalDeviceContext context_physical = {};
@@ -465,6 +476,8 @@ namespace renderer {
 		compute_command_context.compute_pipeline_layout = compute_pipeline_layout;
 		compute_command_context.current_descriptor_set = descriptor_sets[current_frame];
 		compute_command_context.instance_count = object_count;
+		compute_command_context.debug_function_begin = pfn_CmdBeginDebugUtilsLabelEXT;
+		compute_command_context.debug_function_end = pfn_CmdEndDebugUtilsLabelEXT;
 
 		RecordCommandBuffer(compute_command_context);
 		
@@ -515,6 +528,8 @@ namespace renderer {
 		command_context.total_indices = static_cast<uint32_t>(indices.size());
 		command_context.indirect_command_buffer = indirect_command_buffer;
 		command_context.number_of_draw_calls = number_of_indirect_commands;
+		command_context.debug_function_begin = pfn_CmdBeginDebugUtilsLabelEXT;
+		command_context.debug_function_end = pfn_CmdEndDebugUtilsLabelEXT;
 
 		RecordCommandBuffer(command_context);
 

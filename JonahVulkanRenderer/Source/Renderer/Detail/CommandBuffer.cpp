@@ -3,6 +3,24 @@
 
 // Unnamed namespace to show functions below are pure Utility strictly for this .cpp file.
 namespace {
+
+	// From: docs.vulkan.org tutorial on Debug Utils
+	void cmd_begin_label(PFN_vkCmdBeginDebugUtilsLabelEXT Function, VkCommandBuffer Commandbuffer, const char* LabelName, std::vector<float> Color) {
+
+		VkDebugUtilsLabelEXT label = { VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT };
+		label.pLabelName = LabelName;
+		label.color[0] = Color[0];
+		label.color[1] = Color[1];
+		label.color[2] = Color[2];
+		label.color[3] = Color[3];
+		Function(Commandbuffer, &label);
+
+	}
+
+	void cmd_end_label(PFN_vkCmdEndDebugUtilsLabelEXT Function, VkCommandBuffer Commandbuffer) {
+		Function(Commandbuffer);
+	}
+
 }
 
 
@@ -51,10 +69,14 @@ namespace renderer::detail {
 			throw std::runtime_error("Failed to begin recording compute command buffer.");
 		}
 
+		cmd_begin_label(Context.debug_function_begin, Context.command_buffer, "Compute Workload", { 0.455f, 0.259f, 0.325f, 1.0f });
+
 		vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context.compute_pipeline);
 		vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context.compute_pipeline_layout, 0, 1, &Context.current_descriptor_set, 0, 0);
 		
 		vkCmdDispatch(Context.command_buffer, Context.instance_count / 64, 1, 1);
+
+		cmd_end_label(Context.debug_function_end, Context.command_buffer);
 
 		if (vkEndCommandBuffer(Context.command_buffer) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to record command buffer.");
@@ -70,6 +92,8 @@ namespace renderer::detail {
 		if (vkBeginCommandBuffer(Context.command_buffer, &begin_info) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to begin recording command buffer.");
 		}
+
+		cmd_begin_label(Context.debug_function_begin, Context.command_buffer, "Render Pass", { 0.016f, 0.565f, 1.0f, 1.0f });
 
 		VkRenderPassBeginInfo render_pass_info{};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -120,6 +144,9 @@ namespace renderer::detail {
 		}
 
 		vkCmdEndRenderPass(Context.command_buffer);
+
+		cmd_end_label(Context.debug_function_end, Context.command_buffer);
+
 		if (vkEndCommandBuffer(Context.command_buffer) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to record command buffer.");
 		}

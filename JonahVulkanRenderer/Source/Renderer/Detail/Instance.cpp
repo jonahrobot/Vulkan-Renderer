@@ -35,26 +35,23 @@ bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayer
 // Implements all Vulkan Instance creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport) {
+VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions) {
 
 	if (UseValidationLayers && CheckValidationLayerSupport(ValidationLayersToSupport) == false) {
 		throw std::runtime_error("Current device does not support all Validation Layers.");	
 	}
 
-	uint32_t GLFWNumberOfExtentions = 0;
-	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&GLFWNumberOfExtentions);
-
 	VkApplicationInfo AppInfo = {};
 	AppInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	AppInfo.pApplicationName = "Vulkan Render Test";
+	AppInfo.pApplicationName = "Vulkan Render Test";  
 	AppInfo.applicationVersion = VK_MAKE_VERSION(1, 1, 0);
 	AppInfo.apiVersion = VK_API_VERSION_1_1;
 
 	VkInstanceCreateInfo CreateInfo = {};
 	CreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	CreateInfo.pApplicationInfo = &AppInfo;
-	CreateInfo.enabledExtensionCount = GLFWNumberOfExtentions;
-	CreateInfo.ppEnabledExtensionNames = glfwExtensions;
+	CreateInfo.enabledExtensionCount = static_cast<uint32_t>(InstanceExtensions.size());
+	CreateInfo.ppEnabledExtensionNames = InstanceExtensions.data();
 
 	if (UseValidationLayers) {
 		CreateInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayersToSupport.size());
