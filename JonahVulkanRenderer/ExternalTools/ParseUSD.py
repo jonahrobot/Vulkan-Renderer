@@ -1,9 +1,7 @@
 # Requires usd-core Python Package.
 
 from pxr import Usd, UsdGeom, Sdf, Gf, UsdSkel
-import argparse
-import json
-
+import argparse, struct
 
 def find_parent_with_skeleton(mesh):
     p = mesh
@@ -22,8 +20,6 @@ def find_binding_matching_mesh(bindings, mesh):
     return None, False
 
 def parse_scene(filepath):
-
-    scene_data = {"models": {}}
 
     """
     {
@@ -44,6 +40,8 @@ def parse_scene(filepath):
         ]
     }
     """
+    scene_data = {"models": {}}
+    total_models = 0
 
     # Open the USD stage from the specified file
     stage: Usd.Stage = Usd.Stage.Open(filepath)
@@ -93,11 +91,11 @@ def parse_scene(filepath):
             world_transform: Gf.Matrix4d = xform.ComputeLocalToWorldTransform(time)
 
             transform_write = [
-            [world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3]],
-            [world_transform[1][0], world_transform[1][1], world_transform[1][2], world_transform[1][3]],
-            [world_transform[2][0], world_transform[2][1], world_transform[2][2], world_transform[2][3]],
-            [world_transform[3][0] / scale_constant, world_transform[3][1] / scale_constant,
-             world_transform[3][2] / scale_constant, world_transform[3][3]]
+                world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3],
+                world_transform[1][0], world_transform[1][1], world_transform[1][2], world_transform[1][3],
+                world_transform[2][0], world_transform[2][1], world_transform[2][2], world_transform[2][3],
+                world_transform[3][0] / scale_constant, world_transform[3][1] / scale_constant,
+                world_transform[3][2] / scale_constant, world_transform[3][3]
             ]
             if model_hash in scene_data["models"]:
                 scene_data["models"][model_hash]["instance_count"] += 1
@@ -109,16 +107,21 @@ def parse_scene(filepath):
                 indices_float = []
                 normal_float = []
                 normal_indices_float = []
+                points_count = 0
+                indices_count = 0
+                normals_count = 0
 
                 for x in points:
                     points_float.append(x[0] / scale_constant)
                     points_float.append(x[1] / scale_constant)
                     points_float.append(x[2] / scale_constant)
+                    points_count += 1
 
                 for x in normals:
                     normal_float.append(x[0])
                     normal_float.append(x[1])
                     normal_float.append(x[2])
+                    normals_count += 1
 
                 for x in normal_indices:
                     normal_indices_float.append(x)
@@ -132,19 +135,70 @@ def parse_scene(filepath):
                         indices_float.append(indices[counter])
                         indices_float.append(indices[counter + i + 1])
                         indices_float.append(indices[counter + i + 2])
+                        indices_count += 3
 
                     counter += x
 
                 scene_data["models"][model_hash] = {
                     "vertices": points_float,
+                    "vertex_count": points_count,
                     "indices": indices_float,
+                    "indices_count": indices_count,
                     "normals": normal_float,
+                    "normals_count": normals_count,
                     "normal_indices": normal_indices_float,
                     "instance_count": 1,
                     "instances": [transform_write]
                 }
-    with open("scene.json","w") as f:
-        json.dump(scene_data, f)
+
+                total_models += 1
+
+    # Pack data into buffer
+
+    with open("dev.mp", "wb") as f:
+
+        # Add object count
+        f.write(struct.pack('<I', total_models))
+        offset = 4
+
+        # Add object pointers
+        for x in scene_data["models"]:
+            f.write(struct.pack('<I', offset))
+            object_header = 16
+            vertices = 4 * 3 * scene_data["models"][x]["vertex_count"]      # float * 3 per vertex
+            indices = 2 * scene_data["models"][x]["indices_count"]          # uint16t per index
+            normals = 4 * 3 * scene_data["models"][x]["normals_count"]      # float * 3 per normal
+            instances = 4 * 16 * scene_data["models"][x]["instance_count"]  # float * 16 per matrix
+
+            offset += object_header + vertices + indices + normals + instances
+
+        # Add objects
+        for x in scene_data["models"]:
+
+            # Write object header
+            f.write(struct.pack(
+                '<4I',
+                scene_data["models"][x]["vertex_count"],
+                scene_data["models"][x]["indices_count"],
+                scene_data["models"][x]["normals_count"],
+                scene_data["models"][x]["instance_count"]))
+
+            # Write vertices
+            f.write(struct.pack(f'<{scene_data["models"][x]["vertex_count"] * 3}f',
+                                *scene_data["models"][x]["vertices"]))
+
+            # Write indices
+            f.write(struct.pack(f'<{scene_data["models"][x]["indices_count"]}H',
+                                *scene_data["models"][x]["indices"]))
+
+            # Write normals
+            f.write(struct.pack(f'<{scene_data["models"][x]["normals_count"] * 3}f',
+                                *scene_data["models"][x]["normals"]))
+
+            # Write instance matrices
+            for y in scene_data["models"][x]["instances"]:
+                f.write(struct.pack('<16f', *y))
+
     return 0
 
 
