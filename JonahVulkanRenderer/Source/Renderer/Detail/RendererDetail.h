@@ -276,8 +276,7 @@ namespace renderer::detail {
 		std::vector<uint32_t> indices;
 		TextureData texture_data;
 	};
-	struct ModelWithUsage {
-		std::string model_name;
+	struct InstanceModelData {
 		ModelData model_data;
 		uint32_t instance_count;
 		std::vector<glm::mat4> instance_model_matrices;
@@ -286,7 +285,7 @@ namespace renderer::detail {
 	ModelData LoadModel(std::string ModelPath, const char* TexturePath);
 	void FreeModel(ModelData Model);
 	bool VerifyModel(ModelData Model);
-	void PrintModelWithUsage(ModelWithUsage target);
+	void PrintModelWithUsage(InstanceModelData target);
 
 	struct TextureBufferContext {
 		TextureData texture_bundle;

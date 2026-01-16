@@ -3,15 +3,18 @@
 #include <fstream>
 #include <iostream>
 #include <random>
+#include <chrono>
 
 namespace USD {
 
-	std::vector<renderer::detail::ModelWithUsage> ParseUSD(std::string json_file_path){
+	std::vector<renderer::detail::InstanceModelData> ParseUSD(std::string json_file_path){
+
+		auto start = std::chrono::high_resolution_clock::now();
 
 		std::ifstream json_file_stream(json_file_path);
 		nlohmann::ordered_json scene_data = nlohmann::ordered_json::parse(json_file_stream);
 
-		std::vector<renderer::detail::ModelWithUsage> output_data;
+		std::vector<renderer::detail::InstanceModelData> output_data;
 	
 		auto model_data = scene_data["models"];
 
@@ -24,8 +27,7 @@ namespace USD {
 			
 			glm::vec3 mesh_color = { dist(rng), dist(rng), dist(rng)};
 
-			renderer::detail::ModelWithUsage new_model;
-			new_model.model_name = model_set.key();
+			renderer::detail::InstanceModelData new_model;
 			auto model = model_set.value();
 
 			std::vector<float> vertices = model["vertices"].get<std::vector<float>>();
@@ -72,6 +74,11 @@ namespace USD {
 		}
 
 		std::cout << "On load total models x instances is = " << model_load_count << std::endl;
+
+		auto end = std::chrono::high_resolution_clock::now();
+		auto us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+		std::cout << us / 60000000 << "m " << (us / 1000000) % 60 << "s "
+			<< (us / 1000) % 1000 << "ms " << us % 1000 << "us" << std::endl;
 
 		return output_data;
 	}

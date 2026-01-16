@@ -169,8 +169,7 @@ namespace renderer::detail {
 		Model.texture_data.image_size = 0;
 	}
 
-	void PrintModelWithUsage(ModelWithUsage target) {
-		std::cout << "-- Printing " << target.model_name << "'s data --" << std::endl;
+	void PrintModelWithUsage(InstanceModelData target) {
 		std::cout << "Vertices: ";
 
 		for (int i = 0; i < target.model_data.vertices.size(); i += 1) {

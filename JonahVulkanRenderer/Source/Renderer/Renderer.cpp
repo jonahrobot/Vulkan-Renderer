@@ -102,11 +102,11 @@ namespace renderer {
 			return render_pass;
 		}
 
-		std::vector<detail::InstanceData> ProcessInstanceData(const std::vector<detail::ModelWithUsage>& NewModelSet) {
+		std::vector<detail::InstanceData> ProcessInstanceData(const std::vector<detail::InstanceModelData>& NewModelSet) {
 
 			std::vector<detail::InstanceData> instance_data = {};
 
-			for (detail::ModelWithUsage model_data : NewModelSet) {
+			for (detail::InstanceModelData model_data : NewModelSet) {
 
 				for (uint32_t i = 0; i < model_data.instance_count; i++) {
 
@@ -169,7 +169,7 @@ namespace renderer {
 			return our_sampler;
 		}
 
-		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::ModelWithUsage>& NewModelSet) {
+		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::InstanceModelData>& NewModelSet) {
 			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
 
 			uint32_t m = 0;
@@ -177,7 +177,7 @@ namespace renderer {
 			VerticeToRender.clear();
 			Indices.clear();
 
-			for (detail::ModelWithUsage model_usage_data : NewModelSet) {
+			for (detail::InstanceModelData model_usage_data : NewModelSet) {
 
 				detail::ModelData model = model_usage_data.model_data;
 
@@ -585,7 +585,7 @@ namespace renderer {
 	/// TODO: UPDATE this function to support ModelWithUsage Data
 	// Will still merge index and vertex data, but now will be more specific with instanced data with specific model matrices and such!
 	// This will be changes in this function, RecordIndirectCommands and ProcessInstanceData
-	void Renderer::UpdateModelSet(std::vector<detail::ModelWithUsage> NewModelSet, bool UseWhiteTexture) {
+	void Renderer::UpdateModelSet(std::vector<detail::InstanceModelData> NewModelSet, bool UseWhiteTexture) {
 
 		/*for (detail::ModelData model : NewModelSet) {
 			if (detail::VerifyModel(model) != true) {
@@ -665,7 +665,7 @@ namespace renderer {
 			merged_texture_data.image_size = NewModelSet[0].model_data.texture_data.image_size * number_of_indirect_commands;
 			merged_texture_data.pixels = new stbi_uc[merged_texture_data.image_size];
 			uint32_t index = 0;
-			for (detail::ModelWithUsage model : NewModelSet) {
+			for (detail::InstanceModelData model : NewModelSet) {
 				for (int i = 0; i < model.model_data.texture_data.image_size; i++) {
 					merged_texture_data.pixels[index] = model.model_data.texture_data.pixels[i];
 					index += 1;
