@@ -1,5 +1,4 @@
 #include "USDParser.h"
-#include <JSON/json.hpp>
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -7,30 +6,58 @@
 
 namespace USD {
 
-	std::vector<renderer::detail::InstanceModelData> ParseUSD(std::string json_file_path){
+	struct obj_header {
+		uint32_t num_vertices, num_indices, num_normals, num_instances;
+	};
+
+	std::vector<renderer::detail::InstanceModelData> ParseUSD(std::string mp_file_path){
+
+		std::ifstream file(mp_file_path, std::ios::binary);
+
+		if (!file) {
+			throw std::invalid_argument("File could not open.");
+		}
 
 		auto start = std::chrono::high_resolution_clock::now();
 
-		std::ifstream json_file_stream(json_file_path);
-		nlohmann::ordered_json scene_data = nlohmann::ordered_json::parse(json_file_stream);
-
 		std::vector<renderer::detail::InstanceModelData> output_data;
-	
-		auto model_data = scene_data["models"];
-
 		std::mt19937 rng(12345);
 		std::uniform_real_distribution<float> dist(0.2f, 1.0f);
 
-		uint64_t model_load_count = 0;
+		uint64_t total_unique_objects = 0;
 
-		for (auto model_set : model_data.items()) {
-			
-			glm::vec3 mesh_color = { dist(rng), dist(rng), dist(rng)};
+		// Get header data
+		uint32_t model_count;
+		file.read(reinterpret_cast<char*>(&model_count), sizeof(uint32_t));
+
+		std::vector<uint32_t> model_pointers(model_count);
+		file.read(reinterpret_cast<char*>(model_pointers.data()), model_count * sizeof(uint32_t));
+
+		std::vector<float> vertices(0);
+		std::vector<uint16_t> indices(0);
+		std::vector<float> normals(0);
+		std::vector<float> matrices(0);
+
+		for (int i = 0; i < model_count; i++) {
 
 			renderer::detail::InstanceModelData new_model;
-			auto model = model_set.value();
 
-			std::vector<float> vertices = model["vertices"].get<std::vector<float>>();
+			obj_header header;
+			file.read(reinterpret_cast<char*>(&header), sizeof(header));
+
+			vertices.resize(header.num_vertices * 3);
+			indices.resize(header.num_indices);
+			normals.resize(header.num_normals * 3);
+			matrices.resize(header.num_instances * 16);
+
+			new_model.instance_count = header.num_instances;
+
+			file.read(reinterpret_cast<char*>(vertices.data()), header.num_vertices * 3 * sizeof(float));
+			file.read(reinterpret_cast<char*>(indices.data()), header.num_indices * sizeof(uint16_t));
+			file.read(reinterpret_cast<char*>(normals.data()), header.num_normals * 3 * sizeof(float));
+			file.read(reinterpret_cast<char*>(matrices.data()), header.num_instances * 16 * sizeof(float));
+
+			glm::vec3 mesh_color = { dist(rng), dist(rng), dist(rng) };
 			
 			for (int j = 0; j < vertices.size(); j+=3) {
 				renderer::detail::Vertex v;
@@ -40,40 +67,28 @@ namespace USD {
 ;				new_model.model_data.vertices.push_back(v);
 			}
 
-			std::vector<uint32_t> indices = model["indices"].get<std::vector<uint32_t>>();
-
 			for (int j = 0; j < indices.size(); j += 1) {
 				new_model.model_data.indices.push_back(indices[j]);
 			}
 
-			new_model.instance_count = model["instance_count"].get<uint32_t>();
-
-			auto instances = model["instances"];
-
-			for (int j = 0; j < new_model.instance_count; j++) {
+			for (int j = 0; j < matrices.size(); j += 16) {
 				// Note GLM matrices are Column-Major!
 
-				auto instance = instances[j];
-				auto row_one = instance[0].get<std::vector<float>>();
-				auto row_two = instance[1].get<std::vector<float>>();
-				auto row_three = instance[2].get<std::vector<float>>();
-				auto row_four = instance[3].get<std::vector<float>>();
-
 				glm::mat4 instance_matrix(
-					row_one[0], row_one[1], row_one[2], row_one[3], // Column 0
-					row_two[0], row_two[1], row_two[2], row_two[3], // Column 1
-					row_three[0], row_three[1], row_three[2], row_three[3], // Column 2
-					row_four[0], row_four[1], row_four[2], 1// Column 3
+					matrices[j + 0], matrices[j + 1], matrices[j + 2], matrices[j + 3],		// Column 0
+					matrices[j + 4], matrices[j + 5], matrices[j + 6], matrices[j + 7],		// Column 1
+					matrices[j + 8], matrices[j + 9], matrices[j + 10], matrices[j + 11],	// Column 2
+					matrices[j + 12], matrices[j + 13], matrices[j + 14], 1.0f				// Column 3
 				);
 
 				new_model.instance_model_matrices.push_back(instance_matrix);
-				model_load_count += 1;
+				total_unique_objects += 1;
 			}	
 
 			output_data.push_back(new_model);
 		}
 
-		std::cout << "On load total models x instances is = " << model_load_count << std::endl;
+		std::cout << "On load total models x instances is = " << total_unique_objects << std::endl;
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
