@@ -3,68 +3,108 @@
 #include <iostream>
 #include <random>
 #include <chrono>
+#include <thread>
 
 namespace USD {
 
-	struct obj_header {
-		uint32_t num_vertices, num_indices, num_normals, num_instances;
-	};
-
-	std::vector<renderer::detail::InstanceModelData> ParseUSD(std::string mp_file_path){
-
-		std::ifstream file(mp_file_path, std::ios::binary);
-
-		if (!file) {
-			throw std::invalid_argument("File could not open.");
+	uint32_t ReadUnsignedInt32(const std::vector<std::uint8_t>& ByteData, uint32_t Offset, uint32_t BufferSize)
+	{
+		const size_t byte_count = sizeof(uint32_t);
+		
+		if (Offset + byte_count > BufferSize) {
+			throw std::runtime_error("Out of bounds");
 		}
 
-		auto start = std::chrono::high_resolution_clock::now();
+		uint32_t x;
+		std::memcpy(&x, ByteData.data() + Offset, byte_count);
 
-		std::vector<renderer::detail::InstanceModelData> output_data;
+		return x;
+	}
+
+	template <class T>
+	std::vector<T> ReadArray(const std::vector<std::uint8_t>& ByteData, uint32_t Offset, uint32_t BufferSize, uint32_t OutputArraySize) {
+
+		const size_t byte_count = OutputArraySize * sizeof(T);
+
+		if (Offset + byte_count > BufferSize) {
+			throw std::runtime_error("Out of bounds");
+		}
+
+		std::vector<T> x(OutputArraySize);
+		std::memcpy(x.data(), ByteData.data() + Offset, byte_count);
+
+		return x;
+	}
+
+	inline std::vector<float> ReadFloatArray(const std::vector<std::uint8_t>& ByteData, uint32_t Offset, uint32_t BufferSize, uint32_t OutputArraySize) {
+		return ReadArray<float>(ByteData, Offset, BufferSize, OutputArraySize);
+	}
+
+	inline std::vector<uint16_t> ReadUnsignedInt16Array(const std::vector<std::uint8_t>& ByteData, uint32_t Offset, uint32_t BufferSize, uint32_t OutputArraySize) {
+		return ReadArray<uint16_t>(ByteData, Offset, BufferSize, OutputArraySize);
+	}
+
+	void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::detail::InstanceModelData>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize) {
+
+		uint32_t start = ChunkSize * TID;
+		uint32_t end = std::min(start + ChunkSize, BufferSize);
+
 		std::mt19937 rng(12345);
 		std::uniform_real_distribution<float> dist(0.2f, 1.0f);
-
-		uint64_t total_unique_objects = 0;
-
-		// Get header data
-		uint32_t model_count;
-		file.read(reinterpret_cast<char*>(&model_count), sizeof(uint32_t));
-
-		std::vector<uint32_t> model_pointers(model_count);
-		file.read(reinterpret_cast<char*>(model_pointers.data()), model_count * sizeof(uint32_t));
 
 		std::vector<float> vertices(0);
 		std::vector<uint16_t> indices(0);
 		std::vector<float> normals(0);
 		std::vector<float> matrices(0);
 
-		for (int i = 0; i < model_count; i++) {
+		std::vector<renderer::detail::InstanceModelData> local_model_data;
 
+		for (int i = start; i < end; i++) {
+
+			// Get Object start byte
+			uint32_t object_pointer = ObjectPointers[i];
+			uint32_t byte_offset = object_pointer;
+	
+			// Parse object header
+			uint32_t vertex_count = ReadUnsignedInt32(Buffer, byte_offset, BufferSize);
+			byte_offset += sizeof(uint32_t);
+			uint32_t index_count = ReadUnsignedInt32(Buffer, byte_offset, BufferSize);
+			byte_offset += sizeof(uint32_t);
+			uint32_t normal_count = ReadUnsignedInt32(Buffer, byte_offset, BufferSize);
+			byte_offset += sizeof(uint32_t);
+			uint32_t instance_count = ReadUnsignedInt32(Buffer, byte_offset, BufferSize);
+			byte_offset += sizeof(uint32_t);
+
+			// Parse object data
+			vertices.resize(vertex_count * 3);
+			indices.resize(index_count * 3);
+			normals.resize(normal_count);
+			matrices.resize(instance_count * 16);
+
+			vertices = ReadFloatArray(Buffer, byte_offset, BufferSize, vertex_count * 3);
+			byte_offset += vertex_count * 3 * sizeof(float);
+			
+			indices = ReadUnsignedInt16Array(Buffer, byte_offset, BufferSize, index_count);
+			byte_offset += index_count * sizeof(uint16_t);
+
+			normals = ReadFloatArray(Buffer, byte_offset, BufferSize, normal_count * 3);
+			byte_offset += normal_count * 3 * sizeof(float);
+
+			matrices = ReadFloatArray(Buffer, byte_offset, BufferSize, instance_count * 16);
+			
+			// Create model object
 			renderer::detail::InstanceModelData new_model;
-
-			obj_header header;
-			file.read(reinterpret_cast<char*>(&header), sizeof(header));
-
-			vertices.resize(header.num_vertices * 3);
-			indices.resize(header.num_indices);
-			normals.resize(header.num_normals * 3);
-			matrices.resize(header.num_instances * 16);
-
-			new_model.instance_count = header.num_instances;
-
-			file.read(reinterpret_cast<char*>(vertices.data()), header.num_vertices * 3 * sizeof(float));
-			file.read(reinterpret_cast<char*>(indices.data()), header.num_indices * sizeof(uint16_t));
-			file.read(reinterpret_cast<char*>(normals.data()), header.num_normals * 3 * sizeof(float));
-			file.read(reinterpret_cast<char*>(matrices.data()), header.num_instances * 16 * sizeof(float));
+			new_model.instance_count = instance_count;
 
 			glm::vec3 mesh_color = { dist(rng), dist(rng), dist(rng) };
-			
-			for (int j = 0; j < vertices.size(); j+=3) {
+
+			for (int j = 0; j < vertices.size(); j += 3) {
 				renderer::detail::Vertex v;
 				v.color = mesh_color;
-				v.position = {vertices[j], vertices[j+1],vertices[j+2] };
+				v.position = { vertices[j], vertices[j + 1],vertices[j + 2] };
 				v.tex_coord = { 0,0 };
-;				new_model.model_data.vertices.push_back(v);
+
+				new_model.model_data.vertices.push_back(v);
 			}
 
 			for (int j = 0; j < indices.size(); j += 1) {
@@ -82,20 +122,92 @@ namespace USD {
 				);
 
 				new_model.instance_model_matrices.push_back(instance_matrix);
-				total_unique_objects += 1;
-			}	
+			}
 
-			output_data.push_back(new_model);
+			local_model_data.push_back(new_model);
 		}
 
-		std::cout << "On load total models x instances is = " << total_unique_objects << std::endl;
+		OutputData = std::move(local_model_data);
+	}
+
+	std::vector<std::uint8_t> ReadRest(std::ifstream& File) {
+
+		// Get remaining size leftover
+		std::streampos file_mark_current = File.tellg();
+		File.seekg(0, std::ios::end);
+		std::streampos file_mark_end = File.tellg();
+		File.seekg(file_mark_current, std::ios::beg);
+		std::size_t remaining_file_size = static_cast<std::size_t>(file_mark_end - file_mark_current);
+
+		// Create byte array
+		std::vector<std::uint8_t> remaining_bytes(remaining_file_size);
+
+		// Read data
+		File.read(reinterpret_cast<char*>(remaining_bytes.data()), remaining_file_size);
+
+		return remaining_bytes;
+	}
+
+	std::vector<renderer::detail::InstanceModelData> ParseUSD(std::string MP_FilePath){
+
+		std::ifstream file(MP_FilePath, std::ios::binary);
+
+		if (!file) {
+			throw std::invalid_argument("File could not open.");
+		}
+
+		auto start = std::chrono::high_resolution_clock::now();
+
+		uint64_t total_unique_objects = 0;
+
+		// Get header data
+		uint32_t model_count;
+		file.read(reinterpret_cast<char*>(&model_count), sizeof(uint32_t));
+
+		std::vector<uint32_t> model_pointers(model_count);
+		file.read(reinterpret_cast<char*>(model_pointers.data()), model_count * sizeof(uint32_t));
+
+		// Get rest of object data as byte array
+		std::vector<std::uint8_t> remaining_bytes = ReadRest(file);
+		uint32_t data_size = static_cast<uint32_t>(remaining_bytes.size());
+
+		// Prepare for thread launch
+		uint32_t max_thread_count = std::thread::hardware_concurrency();
+		uint8_t thread_count = static_cast<uint8_t>(std::min(max_thread_count, model_count));
+		uint32_t chunk_size = (model_count + (thread_count - 1)) / thread_count;
+
+		// Launch threads
+		std::vector<std::thread> threads;
+		threads.reserve(thread_count);
+
+		std::vector<std::vector<renderer::detail::InstanceModelData>> output_data(thread_count);
+		
+		for (int i = 0; i < thread_count; i++) {
+			//void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::detail::InstanceModelData>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize) {
+			threads.emplace_back(ReadModelData, std::cref(remaining_bytes), std::cref(model_pointers), std::ref(output_data[i]), chunk_size, i, data_size);
+		}
+
+		// Wait for threads to join
+		for (std::thread& t : threads) {
+			if (t.joinable()) {
+				t.join();
+			}
+		}
+
+		// Threads complete merge workload
+		std::vector<renderer::detail::InstanceModelData> merged_object_data;
+		for (auto& vector : output_data) {
+			merged_object_data.insert(merged_object_data.end(),
+				std::make_move_iterator(vector.begin()),
+				std::make_move_iterator(vector.end()));
+		}
 
 		auto end = std::chrono::high_resolution_clock::now();
 		auto us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 		std::cout << us / 60000000 << "m " << (us / 1000000) % 60 << "s "
 			<< (us / 1000) % 1000 << "ms " << us % 1000 << "us" << std::endl;
 
-		return output_data;
+		return merged_object_data;
 	}
 
 } // namespace USD

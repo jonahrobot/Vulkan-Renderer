@@ -159,9 +159,10 @@ def parse_scene(filepath):
 
         # Add object count
         f.write(struct.pack('<I', total_models))
-        offset = 4
 
         # Add object pointers
+        offset = 0
+
         for x in scene_data["models"]:
             f.write(struct.pack('<I', offset))
             object_header = 16
