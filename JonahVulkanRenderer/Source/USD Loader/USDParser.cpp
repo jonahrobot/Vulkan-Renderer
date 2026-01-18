@@ -44,10 +44,10 @@ namespace USD {
 		return ReadArray<uint16_t>(ByteData, Offset, BufferSize, OutputArraySize);
 	}
 
-	void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::detail::InstanceModelData>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize) {
+	void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::detail::InstanceModelData>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize, uint32_t ModelCount) {
 
 		uint32_t start = ChunkSize * TID;
-		uint32_t end = std::min(start + ChunkSize, BufferSize);
+		uint32_t end = std::min(start + ChunkSize, ModelCount);
 
 		std::mt19937 rng(12345);
 		std::uniform_real_distribution<float> dist(0.2f, 1.0f);
@@ -182,9 +182,11 @@ namespace USD {
 
 		std::vector<std::vector<renderer::detail::InstanceModelData>> output_data(thread_count);
 		
+		std::cout << "Launched: " << thread_count << " threads with a chunk size of " << chunk_size << "." << std::endl;
+
 		for (int i = 0; i < thread_count; i++) {
 			//void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::detail::InstanceModelData>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize) {
-			threads.emplace_back(ReadModelData, std::cref(remaining_bytes), std::cref(model_pointers), std::ref(output_data[i]), chunk_size, i, data_size);
+			threads.emplace_back(ReadModelData, std::cref(remaining_bytes), std::cref(model_pointers), std::ref(output_data[i]), chunk_size, i, data_size, model_count);
 		}
 
 		// Wait for threads to join
