@@ -2,6 +2,7 @@
 
 from pxr import Usd, UsdGeom, Sdf, Gf, UsdSkel
 import argparse, struct
+from tqdm import tqdm
 
 def find_parent_with_skeleton(mesh):
     p = mesh
@@ -46,11 +47,33 @@ def parse_scene(filepath):
     # Open the USD stage from the specified file
     stage: Usd.Stage = Usd.Stage.Open(filepath)
 
-    population_mask = Usd.StagePopulationMask()
-    population_mask.Add(Sdf.Path("/world/hotel_01/geo"))
-    stage.SetPopulationMask(population_mask)
+    #population_mask = Usd.StagePopulationMask()
+    #population_mask.Add(Sdf.Path("/world/hotel_01/geo"))
+    #stage.SetPopulationMask(population_mask)
 
     scale_constant = 100
+
+    total_prims = 0
+    print("Finding prim count...")
+
+    for prim in Usd.PrimRange(stage.GetPseudoRoot(), Usd.TraverseInstanceProxies()):
+
+        if not prim.IsA(UsdGeom.Mesh):
+            continue
+
+        purpose = UsdGeom.Imageable(prim).GetPurposeAttr().Get()
+        if purpose == "guide":
+            continue
+
+        total_prims += 1
+
+    pbar = tqdm(
+        total=total_prims,
+        desc="Parsing primitives.",
+        unit="primitives parsed"
+    )
+
+    current_index = 0
 
     # Traverse through each prim in the stage
     for prim in Usd.PrimRange(stage.GetPseudoRoot(), Usd.TraverseInstanceProxies()):
@@ -100,6 +123,7 @@ def parse_scene(filepath):
             if model_hash in scene_data["models"]:
                 scene_data["models"][model_hash]["instance_count"] += 1
                 scene_data["models"][model_hash]["instances"].append(transform_write)
+                current_index += 1
             else:
 
                 face_counts = UsdGeom.Mesh(prim).GetFaceVertexCountsAttr().Get()
@@ -152,6 +176,10 @@ def parse_scene(filepath):
                 }
 
                 total_models += 1
+                current_index += 1
+
+            pbar.update(1)
+            pbar.set_postfix_str(f"current model: {current_index}")
 
     # Pack data into buffer
 
