@@ -454,7 +454,7 @@ namespace renderer {
 		/// PREP DRAW
 
 		// COMPUTE WORKLOAD
-
+		vkWaitForFences(logical_device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 		vkWaitForFences(logical_device, 1, &compute_in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
 		// Get Camera position
@@ -494,9 +494,6 @@ namespace renderer {
 
 		// GRAPHICS WORKLOAD
 
-		// Ensure no frames are being drawn already
-		vkWaitForFences(logical_device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
-
 		uint32_t image_index;
 		VkResult result = vkAcquireNextImageKHR(logical_device, swapchain, UINT64_MAX, image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
 
@@ -508,7 +505,6 @@ namespace renderer {
 			throw std::runtime_error("Failed to acquire swapchain image.");
 		} 
 
-		// Only reset fence if we are continuing work
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 
 		vkResetCommandBuffer(command_buffers[current_frame], 0);

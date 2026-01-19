@@ -182,7 +182,7 @@ namespace USD {
 
 		std::vector<std::vector<renderer::detail::InstanceModelData>> output_data(thread_count);
 		
-		std::cout << "Launched: " << thread_count << " threads with a chunk size of " << chunk_size << "." << std::endl;
+		std::cout << "Launched: " << static_cast<int>(thread_count) << " threads with a chunk size of " << chunk_size << "." << std::endl;
 
 		for (int i = 0; i < thread_count; i++) {
 			//void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::detail::InstanceModelData>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize) {
