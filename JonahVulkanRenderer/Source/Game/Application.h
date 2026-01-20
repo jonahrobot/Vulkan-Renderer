@@ -21,8 +21,6 @@ private:
 
 	float last_frame_time;
 	bool held_space = false;
-
-	void DrawFrame();
 };
 
 } // namespace game

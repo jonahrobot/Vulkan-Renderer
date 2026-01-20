@@ -5,12 +5,12 @@
 #include <chrono>
 #include <thread>
 
-namespace USD {
+namespace {
 
 	uint32_t ReadUnsignedInt32(const std::vector<std::uint8_t>& ByteData, uint32_t Offset, uint32_t BufferSize)
 	{
 		const size_t byte_count = sizeof(uint32_t);
-		
+
 		if (Offset + byte_count > BufferSize) {
 			throw std::runtime_error("Out of bounds");
 		}
@@ -64,7 +64,7 @@ namespace USD {
 			// Get Object start byte
 			uint32_t object_pointer = ObjectPointers[i];
 			uint32_t byte_offset = object_pointer;
-	
+
 			// Parse object header
 			uint32_t vertex_count = ReadUnsignedInt32(Buffer, byte_offset, BufferSize);
 			byte_offset += sizeof(uint32_t);
@@ -83,7 +83,7 @@ namespace USD {
 
 			vertices = ReadFloatArray(Buffer, byte_offset, BufferSize, vertex_count * 3);
 			byte_offset += vertex_count * 3 * sizeof(float);
-			
+
 			indices = ReadUnsignedInt16Array(Buffer, byte_offset, BufferSize, index_count);
 			byte_offset += index_count * sizeof(uint16_t);
 
@@ -91,7 +91,7 @@ namespace USD {
 			byte_offset += normal_count * 3 * sizeof(float);
 
 			matrices = ReadFloatArray(Buffer, byte_offset, BufferSize, instance_count * 16);
-			
+
 			// Create model object
 			renderer::detail::InstanceModelData new_model;
 			new_model.instance_count = instance_count;
@@ -148,15 +148,12 @@ namespace USD {
 		return remaining_bytes;
 	}
 
-	std::vector<renderer::detail::InstanceModelData> ParseUSD(std::string MP_FilePath){
-
+	std::vector<renderer::detail::InstanceModelData> Run_ParseUSD(std::string MP_FilePath) {
 		std::ifstream file(MP_FilePath, std::ios::binary);
 
 		if (!file) {
 			throw std::invalid_argument("File could not open.");
 		}
-
-		auto start = std::chrono::high_resolution_clock::now();
 
 		uint64_t total_unique_objects = 0;
 
@@ -181,7 +178,7 @@ namespace USD {
 		threads.reserve(thread_count);
 
 		std::vector<std::vector<renderer::detail::InstanceModelData>> output_data(thread_count);
-		
+
 		std::cout << "Launched: " << static_cast<int>(thread_count) << " threads with a chunk size of " << chunk_size << "." << std::endl;
 
 		for (int i = 0; i < thread_count; i++) {
@@ -204,12 +201,37 @@ namespace USD {
 				std::make_move_iterator(vector.end()));
 		}
 
-		auto end = std::chrono::high_resolution_clock::now();
-		auto us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-		std::cout << us / 60000000 << "m " << (us / 1000000) % 60 << "s "
-			<< (us / 1000) % 1000 << "ms " << us % 1000 << "us" << std::endl;
-
 		return merged_object_data;
+	}
+} // namespace unnamed
+
+namespace USD {
+
+	std::vector<renderer::detail::InstanceModelData> ParseUSD(std::string MP_FilePath, bool BenchmarkMode){
+		
+		if (BenchmarkMode == false) {
+			return Run_ParseUSD(MP_FilePath);
+		}
+
+		int run_count = 10;
+		long long total = 0;
+
+		for (int i = 0; i < run_count; i++) {
+			auto start = std::chrono::high_resolution_clock::now();
+
+			Run_ParseUSD(MP_FilePath);
+
+			auto end = std::chrono::high_resolution_clock::now();
+			auto execution_time_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+			total += execution_time_us;
+		}
+
+		auto average_time = total / static_cast<long long>(run_count);
+
+		std::cout << "Average time over " << run_count << " executions: ";
+		std::cout << average_time / 60000000 << "m " << (average_time / 1000000) % 60 << "s " << (average_time / 1000) % 1000 << "ms " << average_time % 1000 << "us" << std::endl;
+	
+		return Run_ParseUSD(MP_FilePath);
 	}
 
 } // namespace USD
