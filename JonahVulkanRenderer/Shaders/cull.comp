@@ -35,5 +35,5 @@ void main(){
 
 	uint index = gl_GlobalInvocationID.x;  
 
-	//indirectDraws[index].instanceCount = 0;
+	indirectDraws[index].instanceCount = 0;
 }

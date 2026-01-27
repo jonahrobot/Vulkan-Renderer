@@ -6,7 +6,7 @@ namespace game {
 	Camera::Camera(GLFWwindow* window) {
 		glfwGetFramebufferSize(window, &render_width, &render_height);
 
-		position = glm::vec3(100, -500, 10);
+		position = glm::vec3(468.63433837890625, 640.0449829101562, -12.011690139770508);
 	}
 
 	void Camera::MoveCamera(GLFWwindow* window, float delta_time) {

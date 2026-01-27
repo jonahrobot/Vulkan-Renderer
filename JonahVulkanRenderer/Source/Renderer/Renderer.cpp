@@ -435,8 +435,10 @@ namespace renderer {
 		vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
 		vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
 
-		vkDestroyBuffer(logical_device, indirect_command_buffer, nullptr);
-		vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			vkDestroyBuffer(logical_device, indirect_command_buffers[i], nullptr);
+			vkFreeMemory(logical_device, indirect_command_buffer_memorys[i], nullptr);
+		}
 
 		vkDestroyBuffer(logical_device, instance_data_buffer, nullptr);
 		vkFreeMemory(logical_device, instance_data_buffer_memory, nullptr);
@@ -523,7 +525,7 @@ namespace renderer {
 		command_context.total_vertices = static_cast<uint32_t>(vertices_to_render.size());
 		command_context.index_buffer = index_buffer;
 		command_context.total_indices = static_cast<uint32_t>(indices.size());
-		command_context.indirect_command_buffer = indirect_command_buffer;
+		command_context.indirect_command_buffer = indirect_command_buffers[current_frame];
 		command_context.number_of_draw_calls = number_of_indirect_commands;
 		command_context.debug_function_begin = pfn_CmdBeginDebugUtilsLabelEXT;
 		command_context.debug_function_end = pfn_CmdEndDebugUtilsLabelEXT;
@@ -534,7 +536,7 @@ namespace renderer {
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 		VkSemaphore wait_semaphores[] = { compute_finished_semaphores[current_frame], image_available_semaphores[current_frame] }; // Command wont execute until semaphores are flagged.
-		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // These stages will wait for above flag.
+		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // These stages will wait for above flag.
 		submit_info.waitSemaphoreCount = 2;
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
@@ -603,10 +605,12 @@ namespace renderer {
 			vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
 			vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
 		}
-
-		if (indirect_command_buffer != NULL) {
-			vkDestroyBuffer(logical_device, indirect_command_buffer, nullptr);
-			vkFreeMemory(logical_device, indirect_command_buffer_memory, nullptr);
+	
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			if (indirect_command_buffers[i] != NULL) {
+				vkDestroyBuffer(logical_device, indirect_command_buffers[i], nullptr);
+				vkFreeMemory(logical_device, indirect_command_buffer_memorys[i], nullptr);
+			}
 		}
 
 		if (instance_data_buffer != NULL) {
@@ -636,11 +640,16 @@ namespace renderer {
 			index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
 		}
 
-		detail::BufferData commandbuffer_info = detail::CreateLocalBuffer<VkDrawIndexedIndirectCommand>(context_buffercreation, indirect_commands);
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			detail::BufferData commandbuffer_info = detail::CreateLocalBuffer<VkDrawIndexedIndirectCommand>(context_buffercreation, indirect_commands);
 
-		if (commandbuffer_info.err_code == detail::BufferData::SUCCESS) {
-			indirect_command_buffer = commandbuffer_info.created_buffer;
-			indirect_command_buffer_memory = commandbuffer_info.memory_allocated_for_buffer;
+			if (commandbuffer_info.err_code == detail::BufferData::SUCCESS) {
+				indirect_command_buffers[i] = commandbuffer_info.created_buffer;
+				indirect_command_buffer_memorys[i] = commandbuffer_info.memory_allocated_for_buffer;
+			}
+			else {
+				throw std::runtime_error("Failed to create indirect command buffer.");
+			}
 		}
 
 		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet));
@@ -710,7 +719,7 @@ namespace renderer {
 		detail::Compute_DescriptorContext context_compute_update = {};
 		context_compute_update.logical_device = logical_device;
 		context_compute_update.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
-		context_compute_update.indirect_draw_buffer = indirect_command_buffer;
+		context_compute_update.indirect_draw_buffers = indirect_command_buffers;
 		context_compute_update.indirect_draw_buffer_size = sizeof(VkDrawIndexedIndirectCommand) * number_of_indirect_commands;
 	
 		descriptor_sets = detail::UpdateComputeUniqueDescriptor(context_compute_update, descriptor_sets);

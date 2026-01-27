@@ -36,8 +36,6 @@ public:
 
 private:
 
-	const int MAX_FRAMES_IN_FLIGHT = 2;
-
 	const std::vector<const char*> ValidationLayersToSupport = {
 		"VK_LAYER_KHRONOS_validation"
 	};
@@ -95,8 +93,8 @@ private:
 	VkBuffer index_buffer;
 	VkDeviceMemory index_buffer_memory;
 
-	VkBuffer indirect_command_buffer;
-	VkDeviceMemory indirect_command_buffer_memory;
+	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> indirect_command_buffers;
+	std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> indirect_command_buffer_memorys;
 
 	uint32_t number_of_indirect_commands;
 

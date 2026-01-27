@@ -12,6 +12,8 @@
 #include <glm/gtx/hash.hpp>
 #include <array>
 
+#define MAX_FRAMES_IN_FLIGHT 2
+
 namespace renderer::detail {
 
 #pragma region Uniform and Instance Data

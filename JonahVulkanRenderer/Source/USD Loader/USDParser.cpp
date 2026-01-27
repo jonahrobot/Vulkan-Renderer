@@ -182,7 +182,6 @@ namespace {
 		std::cout << "Launched: " << static_cast<int>(thread_count) << " threads with a chunk size of " << chunk_size << "." << std::endl;
 
 		for (int i = 0; i < thread_count; i++) {
-			//void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::detail::InstanceModelData>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize) {
 			threads.emplace_back(ReadModelData, std::cref(remaining_bytes), std::cref(model_pointers), std::ref(output_data[i]), chunk_size, i, data_size, model_count);
 		}
 

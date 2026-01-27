@@ -160,7 +160,7 @@ namespace renderer::detail {
 		for (size_t i = 0; i < Context.max_frames_in_flight; i++) {
 
 			VkDescriptorBufferInfo indirect_draw_buffer_info{};
-			indirect_draw_buffer_info.buffer = Context.indirect_draw_buffer;
+			indirect_draw_buffer_info.buffer = Context.indirect_draw_buffers[i];
 			indirect_draw_buffer_info.offset = 0;
 			indirect_draw_buffer_info.range = Context.indirect_draw_buffer_size;
 
