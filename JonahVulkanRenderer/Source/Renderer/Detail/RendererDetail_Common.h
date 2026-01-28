@@ -26,6 +26,7 @@ namespace renderer::detail {
 	struct UniformBufferObject {
 		alignas(16) glm::mat4 view;
 		alignas(16) glm::mat4 proj;
+		alignas(16) glm::vec4 frustum_planes[6];
 	};
 
 #pragma endregion

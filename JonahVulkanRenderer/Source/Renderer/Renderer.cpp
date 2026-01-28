@@ -122,14 +122,47 @@ namespace renderer {
 			return instance_data;
 		}
 
-		detail::UniformBufferObject GetNextUBO(VkExtent2D swapchain_extent) {
+		detail::UniformBufferObject GetNextUBO(VkExtent2D Extent, glm::mat4 CameraPosition) {
 
 			detail::UniformBufferObject ubo = {};
 
-			ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)); // This tells us the cameras position
-			ubo.proj = glm::perspective(glm::radians(45.0f), swapchain_extent.width / (float)swapchain_extent.height, 0.01f, 9999999999999.0f); // This helps us project the point to the viewport
-
+			ubo.proj = glm::perspective(glm::radians(45.0f), Extent.width / (float)Extent.height, 0.01f, 100.0f);
 			ubo.proj[1][1] *= -1;
+			ubo.view = CameraPosition;
+
+			glm::mat4 matrix = ubo.proj * ubo.view;
+
+			enum side { LEFT = 0, RIGHT = 1, TOP = 2, BOTTOM = 3, BACK = 4, FRONT = 5 };
+
+			ubo.frustum_planes[LEFT].x = matrix[0].w + matrix[0].x;
+			ubo.frustum_planes[LEFT].y = matrix[1].w + matrix[1].x;
+			ubo.frustum_planes[LEFT].z = matrix[2].w + matrix[2].x;
+			ubo.frustum_planes[LEFT].w = matrix[3].w + matrix[3].x;
+
+			ubo.frustum_planes[RIGHT].x = matrix[0].w - matrix[0].x;
+			ubo.frustum_planes[RIGHT].y = matrix[1].w - matrix[1].x;
+			ubo.frustum_planes[RIGHT].z = matrix[2].w - matrix[2].x;
+			ubo.frustum_planes[RIGHT].w = matrix[3].w - matrix[3].x;
+
+			ubo.frustum_planes[TOP].x = matrix[0].w - matrix[0].y;
+			ubo.frustum_planes[TOP].y = matrix[1].w - matrix[1].y;
+			ubo.frustum_planes[TOP].z = matrix[2].w - matrix[2].y;
+			ubo.frustum_planes[TOP].w = matrix[3].w - matrix[3].y;
+
+			ubo.frustum_planes[BOTTOM].x = matrix[0].w + matrix[0].y;
+			ubo.frustum_planes[BOTTOM].y = matrix[1].w + matrix[1].y;
+			ubo.frustum_planes[BOTTOM].z = matrix[2].w + matrix[2].y;
+			ubo.frustum_planes[BOTTOM].w = matrix[3].w + matrix[3].y;
+
+			ubo.frustum_planes[BACK].x = matrix[0].w + matrix[0].z;
+			ubo.frustum_planes[BACK].y = matrix[1].w + matrix[1].z;
+			ubo.frustum_planes[BACK].z = matrix[2].w + matrix[2].z;
+			ubo.frustum_planes[BACK].w = matrix[3].w + matrix[3].z;
+
+			ubo.frustum_planes[FRONT].x = matrix[0].w - matrix[0].z;
+			ubo.frustum_planes[FRONT].y = matrix[1].w - matrix[1].z;
+			ubo.frustum_planes[FRONT].z = matrix[2].w - matrix[2].z;
+			ubo.frustum_planes[FRONT].w = matrix[3].w - matrix[3].z;
 
 			return ubo;
 		}
@@ -460,11 +493,7 @@ namespace renderer {
 		vkWaitForFences(logical_device, 1, &compute_in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
 		// Get Camera position
-		detail::UniformBufferObject current_ubo_data = {};
-
-		current_ubo_data.proj = glm::perspective(glm::radians(45.0f), extent.width / (float)extent.height, 0.01f, 100.0f);
-		current_ubo_data.proj[1][1] *= -1;
-		current_ubo_data.view = CameraPosition;
+		detail::UniformBufferObject current_ubo_data = GetNextUBO(extent, CameraPosition);
 
 		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data, sizeof(detail::UniformBufferObject));
 
