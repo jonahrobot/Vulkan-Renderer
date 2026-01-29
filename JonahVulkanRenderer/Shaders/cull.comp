@@ -1,11 +1,5 @@
 #version 450
 
-struct Instance
-{
-	mat4 model;
-	vec4 array_index;
-};
-
 struct IndexedIndirectCommand 
 {
 	uint indexCount;
@@ -21,8 +15,8 @@ layout(binding = 0) uniform UniformBufferObject{
 	vec4 frustumPlanes[6];
 } ubo;
 
-layout(std140, binding = 2) readonly buffer InstanceData {
-    Instance instance_data[ ];
+layout(std140, binding = 4) readonly buffer InstanceData {
+    vec4 center_point[ ];
 };
 
 layout (binding = 3, std430) writeonly buffer IndirectDraws
@@ -32,9 +26,28 @@ layout (binding = 3, std430) writeonly buffer IndirectDraws
 
 layout (local_size_x = 64) in;
 
+// Frustum cull logic partially from Sacha Willems Vulkan ComputeCull example.
+bool frustum_check(vec4 pos, float radius){
+
+	for (int i = 0; i < 6; i++) 
+	{
+		if (dot(pos, ubo.frustumPlanes[i]) + radius < 0.0)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 void main(){
 
-	uint index = gl_GlobalInvocationID.x;  
+	uint index = gl_GlobalInvocationID.x; 
 
-	indirectDraws[index].instanceCount = 0;
+	vec4 pos = center_point[index];
+
+	if(frustum_check(pos, 1.0)){
+		indirectDraws[index].instanceCount = 1;
+	}else{
+		indirectDraws[index].instanceCount = 0;
+	}
 }

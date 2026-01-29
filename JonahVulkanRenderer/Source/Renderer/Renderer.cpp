@@ -131,38 +131,22 @@ namespace renderer {
 			ubo.view = CameraPosition;
 
 			glm::mat4 matrix = ubo.proj * ubo.view;
+			matrix = glm::transpose(matrix);
 
-			enum side { LEFT = 0, RIGHT = 1, TOP = 2, BOTTOM = 3, BACK = 4, FRONT = 5 };
+			enum side { LEFT = 0, RIGHT = 1, TOP = 2, BOTTOM = 3, NEAR_ = 4, FAR_ = 5 };
 
-			ubo.frustum_planes[LEFT].x = matrix[0].w + matrix[0].x;
-			ubo.frustum_planes[LEFT].y = matrix[1].w + matrix[1].x;
-			ubo.frustum_planes[LEFT].z = matrix[2].w + matrix[2].x;
-			ubo.frustum_planes[LEFT].w = matrix[3].w + matrix[3].x;
+			ubo.frustum_planes[LEFT] = matrix[3] + matrix[0];
+			ubo.frustum_planes[RIGHT] = matrix[3] - matrix[0];
+			ubo.frustum_planes[TOP] = matrix[3] - matrix[1];
+			ubo.frustum_planes[BOTTOM] = matrix[3] + matrix[1];
+			ubo.frustum_planes[NEAR_] = matrix[2];
+			ubo.frustum_planes[FAR_] = matrix[3] - matrix[2];
 
-			ubo.frustum_planes[RIGHT].x = matrix[0].w - matrix[0].x;
-			ubo.frustum_planes[RIGHT].y = matrix[1].w - matrix[1].x;
-			ubo.frustum_planes[RIGHT].z = matrix[2].w - matrix[2].x;
-			ubo.frustum_planes[RIGHT].w = matrix[3].w - matrix[3].x;
-
-			ubo.frustum_planes[TOP].x = matrix[0].w - matrix[0].y;
-			ubo.frustum_planes[TOP].y = matrix[1].w - matrix[1].y;
-			ubo.frustum_planes[TOP].z = matrix[2].w - matrix[2].y;
-			ubo.frustum_planes[TOP].w = matrix[3].w - matrix[3].y;
-
-			ubo.frustum_planes[BOTTOM].x = matrix[0].w + matrix[0].y;
-			ubo.frustum_planes[BOTTOM].y = matrix[1].w + matrix[1].y;
-			ubo.frustum_planes[BOTTOM].z = matrix[2].w + matrix[2].y;
-			ubo.frustum_planes[BOTTOM].w = matrix[3].w + matrix[3].y;
-
-			ubo.frustum_planes[BACK].x = matrix[0].w + matrix[0].z;
-			ubo.frustum_planes[BACK].y = matrix[1].w + matrix[1].z;
-			ubo.frustum_planes[BACK].z = matrix[2].w + matrix[2].z;
-			ubo.frustum_planes[BACK].w = matrix[3].w + matrix[3].z;
-
-			ubo.frustum_planes[FRONT].x = matrix[0].w - matrix[0].z;
-			ubo.frustum_planes[FRONT].y = matrix[1].w - matrix[1].z;
-			ubo.frustum_planes[FRONT].z = matrix[2].w - matrix[2].z;
-			ubo.frustum_planes[FRONT].w = matrix[3].w - matrix[3].z;
+			for (auto i = 0; i < 6; i++)
+			{
+				float length = glm::length(glm::vec3(ubo.frustum_planes[i]));
+				ubo.frustum_planes[i] /= length;
+			}
 
 			return ubo;
 		}
@@ -438,6 +422,9 @@ namespace renderer {
 			vkFreeMemory(logical_device, uniform_buffers_memory[i], nullptr);
 		}
 
+		vkDestroyBuffer(logical_device, instance_centers_buffer, nullptr);
+		vkFreeMemory(logical_device, instance_centers_buffer_memory, nullptr);
+
 		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
 
 		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr); 
@@ -634,6 +621,11 @@ namespace renderer {
 			vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
 			vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
 		}
+
+		if (instance_centers_buffer != NULL) {
+			vkDestroyBuffer(logical_device, instance_centers_buffer, nullptr);
+			vkFreeMemory(logical_device, instance_centers_buffer_memory, nullptr);
+		}
 	
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			if (indirect_command_buffers[i] != NULL) {
@@ -718,6 +710,36 @@ namespace renderer {
 			}
 		}
 
+		// Instance Centers Buffer
+		std::vector<glm::vec4> instance_centers{};
+
+		for (const detail::InstanceModelData& unique_model : NewModelSet) {
+			
+			// Get bounding sphere center
+			glm::vec3 sum = glm::vec3(0);
+			for (const detail::Vertex& vertex : unique_model.model_data.vertices) {
+				sum += vertex.position;
+			}
+
+			float length = unique_model.model_data.vertices.size();
+			glm::vec4 model_center_point = glm::vec4(sum.x / length, sum.y / length, sum.z / length, 1);
+
+			// Apply Model offsets then add centers
+			for (const glm::mat4& instance_model_matrix : unique_model.instance_model_matrices) {
+
+				glm::vec4 center_with_offset = instance_model_matrix[3] + model_center_point;
+				center_with_offset.w = 1;
+
+				instance_centers.push_back(center_with_offset);
+			}
+		}
+
+		detail::BufferData instance_centers_info = detail::CreateLocalBuffer<glm::vec4>(context_buffercreation, instance_centers);
+		if (instance_centers_info.err_code == detail::BufferData::SUCCESS) {
+			instance_centers_buffer = instance_centers_info.created_buffer;
+			instance_centers_buffer_memory = instance_centers_info.memory_allocated_for_buffer;
+		}
+
 		// Add textures to GPU
 		detail::TextureBufferContext context_imagebuffer = {};
 		context_imagebuffer.texture_bundle = merged_texture_data;
@@ -750,6 +772,8 @@ namespace renderer {
 		context_compute_update.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_compute_update.indirect_draw_buffers = indirect_command_buffers;
 		context_compute_update.indirect_draw_buffer_size = sizeof(VkDrawIndexedIndirectCommand) * number_of_indirect_commands;
+		context_compute_update.instance_centers_buffer = instance_centers_buffer;
+		context_compute_update.instance_centers_buffer_size = sizeof(glm::vec4) * object_count;
 	
 		descriptor_sets = detail::UpdateComputeUniqueDescriptor(context_compute_update, descriptor_sets);
 

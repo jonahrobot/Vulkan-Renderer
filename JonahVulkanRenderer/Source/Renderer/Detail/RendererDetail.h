@@ -256,6 +256,8 @@ namespace renderer::detail {
 		uint8_t max_frames_in_flight;
 		std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> indirect_draw_buffers;
 		uint64_t indirect_draw_buffer_size;
+		VkBuffer instance_centers_buffer;
+		uint64_t instance_centers_buffer_size;
 	};
 	std::vector<VkDescriptorSet> UpdateComputeUniqueDescriptor(const Compute_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
 

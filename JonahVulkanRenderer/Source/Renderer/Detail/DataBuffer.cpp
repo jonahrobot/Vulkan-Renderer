@@ -138,6 +138,17 @@ namespace renderer::detail {
 			Context.physical_device, Context.graphics_queue, Context.command_pool);
 	}
 
+	template<>
+	BufferData CreateLocalBuffer<glm::vec4>(const BufferContext& Context, const std::vector<glm::vec4>& Data) {
+
+		const void* data_src = Data.data();
+		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
+		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+			Context.physical_device, Context.graphics_queue, Context.command_pool);
+	}
+
 	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context) {
 
 		UniformBufferData buffer_data = {};

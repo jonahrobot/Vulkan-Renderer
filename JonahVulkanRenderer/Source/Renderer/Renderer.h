@@ -95,8 +95,10 @@ private:
 
 	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> indirect_command_buffers;
 	std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> indirect_command_buffer_memorys;
-
 	uint32_t number_of_indirect_commands;
+
+	VkBuffer instance_centers_buffer;
+	VkDeviceMemory instance_centers_buffer_memory;
 
 	std::vector<VkBuffer> uniform_buffers;
 	std::vector<VkDeviceMemory> uniform_buffers_memory;
