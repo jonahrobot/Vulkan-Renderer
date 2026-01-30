@@ -21,6 +21,8 @@ private:
 
 	float last_frame_time;
 	bool held_space = false;
+
+	bool frustum_cull = true;
 };
 
 } // namespace game

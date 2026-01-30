@@ -198,10 +198,10 @@ namespace renderer::detail {
 	};
 
 	template<typename T>
-	BufferData CreateLocalBuffer(const BufferContext& Context, const std::vector<T>& Data);
+	BufferData CreateLocalBuffer(const BufferContext& Context, const std::vector<T>& Data, VkBufferUsageFlags UsageFlags);
 
 	struct UniformBufferContext {
-		uint8_t max_frames_in_flight;
+		uint8_t max_frames_in_flight;       
 		uint16_t ubo_size;
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
@@ -248,6 +248,8 @@ namespace renderer::detail {
 		VkSampler texture_sampler;
 		VkBuffer instance_buffer;
 		uint64_t instance_buffer_size;
+		std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> should_draw_flags_buffer;
+		uint64_t should_draw_flags_buffer_size;
 	};
 	std::vector<VkDescriptorSet> UpdateDescriptorSets(const Graphic_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
 

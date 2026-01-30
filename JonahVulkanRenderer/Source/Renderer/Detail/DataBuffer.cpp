@@ -95,57 +95,52 @@ namespace {
 namespace renderer::detail {
 	
 	template<>
-	BufferData CreateLocalBuffer<Vertex>(const BufferContext& Context, const std::vector<Vertex>& Data) {
+	BufferData CreateLocalBuffer<Vertex>(const BufferContext& Context, const std::vector<Vertex>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
-		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+		return CreateGPULocalBuffer(data_src, data_size, UsageFlags, Context.logical_device,
 				Context.physical_device, Context.graphics_queue, Context.command_pool);
 	}
 
 	template<>
-	BufferData CreateLocalBuffer<uint32_t>(const BufferContext& Context, const std::vector<uint32_t>& Data) {
+	BufferData CreateLocalBuffer<uint32_t>(const BufferContext& Context, const std::vector<uint32_t>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
-		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+		return CreateGPULocalBuffer(data_src, data_size, UsageFlags, Context.logical_device,
 				Context.physical_device, Context.graphics_queue, Context.command_pool);
 	}
 
 	template<>
-	BufferData CreateLocalBuffer<VkDrawIndexedIndirectCommand>(const BufferContext& Context, const std::vector<VkDrawIndexedIndirectCommand>& Data) {
+	BufferData CreateLocalBuffer<VkDrawIndexedIndirectCommand>(const BufferContext& Context, const std::vector<VkDrawIndexedIndirectCommand>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
-		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+		return CreateGPULocalBuffer(data_src, data_size, UsageFlags, Context.logical_device,
 				Context.physical_device, Context.graphics_queue, Context.command_pool);
 	}
 
 	template<>
-	BufferData CreateLocalBuffer<InstanceData>(const BufferContext& Context, const std::vector<InstanceData>& Data) {
+	BufferData CreateLocalBuffer<InstanceData>(const BufferContext& Context, const std::vector<InstanceData>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
-		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+		return CreateGPULocalBuffer(data_src, data_size, UsageFlags, Context.logical_device,
 			Context.physical_device, Context.graphics_queue, Context.command_pool);
 	}
 
 	template<>
-	BufferData CreateLocalBuffer<glm::vec4>(const BufferContext& Context, const std::vector<glm::vec4>& Data) {
+	BufferData CreateLocalBuffer<glm::vec4>(const BufferContext& Context, const std::vector<glm::vec4>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
-		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-		return CreateGPULocalBuffer(data_src, data_size, usage_flags, Context.logical_device,
+		return CreateGPULocalBuffer(data_src, data_size, UsageFlags, Context.logical_device,
 			Context.physical_device, Context.graphics_queue, Context.command_pool);
 	}
 

@@ -31,12 +31,23 @@ GLFWwindow* Application::Get_Window() {
 
 void Application::Update() {
 
+	if(glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+		if (frustum_cull) {
+			frustum_cull = false;
+		}
+	}
+	else {
+		if (frustum_cull == false) {
+			frustum_cull = true;
+		}
+	}
+
 	float frame_time = static_cast<float>(glfwGetTime());
 	float delta_time = frame_time  - last_frame_time;
 	last_frame_time = frame_time;
 
 	camera->MoveCamera(window, delta_time);
-	renderer->Draw(camera->GetViewMatrix());
+	renderer->Draw(camera->GetViewMatrix(), frustum_cull);
 
 }
 

@@ -15,8 +15,12 @@ layout(binding = 0) uniform UniformBufferObject{
 	vec4 frustumPlanes[6];
 } ubo;
 
-layout(std140, binding = 4) readonly buffer InstanceData {
+layout(std430, binding = 4) readonly buffer InstanceData {
     vec4 center_point[ ];
+};
+
+layout(std430, binding = 5) writeonly buffer ShouldDraw {
+    uint should_draw[ ];
 };
 
 layout (binding = 3, std430) writeonly buffer IndirectDraws
@@ -45,9 +49,9 @@ void main(){
 
 	vec4 pos = center_point[index];
 
-	if(frustum_check(pos, 1.0)){
-		indirectDraws[index].instanceCount = 1;
+	if(frustum_check(pos, 1.0)){ 
+		should_draw[index] = 1;
 	}else{
-		indirectDraws[index].instanceCount = 0;
+		should_draw[index] = 0;
 	}
 }

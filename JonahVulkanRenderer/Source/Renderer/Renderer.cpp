@@ -458,10 +458,14 @@ namespace renderer {
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(logical_device, indirect_command_buffers[i], nullptr);
 			vkFreeMemory(logical_device, indirect_command_buffer_memorys[i], nullptr);
+
+			vkDestroyBuffer(logical_device, should_draw_buffers[i], nullptr);
+			vkFreeMemory(logical_device, should_draw_buffer_memorys[i], nullptr);
 		}
 
 		vkDestroyBuffer(logical_device, instance_data_buffer, nullptr);
 		vkFreeMemory(logical_device, instance_data_buffer_memory, nullptr);
+
 
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
@@ -471,7 +475,7 @@ namespace renderer {
 		glfwTerminate();
 	}
 
-	void Renderer::Draw(glm::mat4 CameraPosition) {
+	void Renderer::Draw(glm::mat4 CameraPosition, bool FrustumCull) {
 
 		/// PREP DRAW
 
@@ -493,7 +497,12 @@ namespace renderer {
 		compute_command_context.compute_pipeline = compute_pipeline;
 		compute_command_context.compute_pipeline_layout = compute_pipeline_layout;
 		compute_command_context.current_descriptor_set = descriptor_sets[current_frame];
-		compute_command_context.instance_count = object_count;
+		if (FrustumCull) {
+			compute_command_context.instance_count = object_count;
+		}
+		else {
+			compute_command_context.instance_count = 0;
+		}
 		compute_command_context.debug_function_begin = pfn_CmdBeginDebugUtilsLabelEXT;
 		compute_command_context.debug_function_end = pfn_CmdEndDebugUtilsLabelEXT;
 
@@ -632,6 +641,10 @@ namespace renderer {
 				vkDestroyBuffer(logical_device, indirect_command_buffers[i], nullptr);
 				vkFreeMemory(logical_device, indirect_command_buffer_memorys[i], nullptr);
 			}
+			if (should_draw_buffers[i] != NULL) {
+				vkDestroyBuffer(logical_device, should_draw_buffers[i], nullptr);
+				vkFreeMemory(logical_device, should_draw_buffer_memorys[i], nullptr);
+			}
 		}
 
 		if (instance_data_buffer != NULL) {
@@ -647,22 +660,24 @@ namespace renderer {
 		context_buffercreation.graphics_queue = graphics_queue;
 		context_buffercreation.command_pool = command_pool;
 
-		detail::BufferData vertexbuffer_info = detail::CreateLocalBuffer<detail::Vertex>(context_buffercreation, vertices_to_render);
+		detail::BufferData vertexbuffer_info = detail::CreateLocalBuffer<detail::Vertex>(context_buffercreation, vertices_to_render, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 
 		if (vertexbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			vertex_buffer = vertexbuffer_info.created_buffer;
 			vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
 		}
 
-		detail::BufferData indexbuffer_info = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, indices);
+		detail::BufferData indexbuffer_info = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, indices, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
 		if (indexbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			index_buffer = indexbuffer_info.created_buffer;
 			index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
 		}
 
+		VkBufferUsageFlags commandbuffer_usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			detail::BufferData commandbuffer_info = detail::CreateLocalBuffer<VkDrawIndexedIndirectCommand>(context_buffercreation, indirect_commands);
+			detail::BufferData commandbuffer_info = detail::CreateLocalBuffer<VkDrawIndexedIndirectCommand>(context_buffercreation, indirect_commands, commandbuffer_usage_flags);
 
 			if (commandbuffer_info.err_code == detail::BufferData::SUCCESS) {
 				indirect_command_buffers[i] = commandbuffer_info.created_buffer;
@@ -673,7 +688,25 @@ namespace renderer {
 			}
 		}
 
-		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet));
+		std::vector<uint32_t> should_draw_flags(object_count, 0);
+
+		std::cout << "Should draw flags size is: " << should_draw_flags.size() << std::endl;
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			detail::BufferData should_draw_info = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, should_draw_flags, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+			if (should_draw_info.err_code == detail::BufferData::SUCCESS) {
+				should_draw_buffers[i] = should_draw_info.created_buffer;
+				should_draw_buffer_memorys[i] = should_draw_info.memory_allocated_for_buffer;
+			}
+			else {
+				throw std::runtime_error("Failed to create should_draw flags buffer.");
+			}
+
+		}
+
+		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
 		if (shaderbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			instance_data_buffer = shaderbuffer_info.created_buffer;
@@ -734,7 +767,7 @@ namespace renderer {
 			}
 		}
 
-		detail::BufferData instance_centers_info = detail::CreateLocalBuffer<glm::vec4>(context_buffercreation, instance_centers);
+		detail::BufferData instance_centers_info = detail::CreateLocalBuffer<glm::vec4>(context_buffercreation, instance_centers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		if (instance_centers_info.err_code == detail::BufferData::SUCCESS) {
 			instance_centers_buffer = instance_centers_info.created_buffer;
 			instance_centers_buffer_memory = instance_centers_info.memory_allocated_for_buffer;
@@ -764,6 +797,8 @@ namespace renderer {
 		context_graphics_update.texture_sampler = texture_sampler;
 		context_graphics_update.instance_buffer = instance_data_buffer;
 		context_graphics_update.instance_buffer_size = sizeof(detail::InstanceData) * object_count;
+		context_graphics_update.should_draw_flags_buffer = should_draw_buffers;
+		context_graphics_update.should_draw_flags_buffer_size = sizeof(uint32_t) * object_count;
 
 		descriptor_sets = detail::UpdateDescriptorSets(context_graphics_update, descriptor_sets);
 

@@ -26,7 +26,7 @@ public:
 	Renderer();
 	~Renderer();
 
-	void Draw(glm::mat4 CameraPosition);
+	void Draw(glm::mat4 CameraPosition, bool FrustumCull);
 
 	void UpdateModelSet(std::vector<detail::InstanceModelData> NewModelSet, bool UseWhiteTexture);
 
@@ -89,6 +89,9 @@ private:
 
 	VkBuffer vertex_buffer;
 	VkDeviceMemory vertex_buffer_memory;
+
+	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> should_draw_buffers;
+	std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> should_draw_buffer_memorys;
 
 	VkBuffer index_buffer;
 	VkDeviceMemory index_buffer_memory;
