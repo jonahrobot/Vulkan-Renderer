@@ -244,8 +244,6 @@ namespace renderer::detail {
 		uint8_t max_frames_in_flight;
 		std::vector<VkBuffer> uniform_buffers;
 		uint16_t ubo_size;
-		VkImageView image_view;
-		VkSampler texture_sampler;
 		VkBuffer instance_buffer;
 		uint64_t instance_buffer_size;
 		std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> should_draw_flags_buffer;
@@ -268,42 +266,15 @@ namespace renderer::detail {
 #pragma region Asset Loading
 	// Implemented in "AssetLoader.cpp"
 
-	struct TextureData {
-		stbi_uc* pixels;
-		VkDeviceSize image_size;
-		int width;
-		int height;
-		VkFormat format;
-	};
 	struct ModelData {
 		std::vector<detail::Vertex> vertices;
 		std::vector<uint32_t> indices;
-		TextureData texture_data;
 	};
 	struct InstanceModelData {
 		ModelData model_data;
 		uint32_t instance_count;
 		std::vector<glm::mat4> instance_model_matrices;
 	};
-
-	ModelData LoadModel(std::string ModelPath, const char* TexturePath);
-	void FreeModel(ModelData Model);
-	bool VerifyModel(ModelData Model);
-	void PrintModelWithUsage(InstanceModelData target);
-
-	struct TextureBufferContext {
-		TextureData texture_bundle;
-		VkDevice logical_device;
-		VkPhysicalDevice physical_device;
-		VkImageTiling data_tiling_mode;
-		VkImageUsageFlags usage_flags;
-		VkMemoryPropertyFlagBits memory_flags_required;
-		VkQueue graphics_queue;
-		VkCommandPool command_pool;
-		uint32_t number_of_textures;
-	};
-	GPUResource CreateTextureBuffer(const TextureBufferContext& Context);
-	void FreeGPUResource(GPUResource& ImageObject, const VkDevice& LogicalDevice);
 
 #pragma endregion
 

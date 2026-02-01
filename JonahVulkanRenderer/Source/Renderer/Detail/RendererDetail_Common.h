@@ -35,7 +35,6 @@ namespace renderer::detail {
 	struct Vertex {
 		glm::vec3 position;
 		glm::vec3 color;
-		glm::vec2 tex_coord;
 
 		static VkVertexInputBindingDescription GetBindingDescription() {
 			VkVertexInputBindingDescription binding_description{};
@@ -45,8 +44,8 @@ namespace renderer::detail {
 			return binding_description;
 		}
 
-		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescription() {
-			std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions = {};
+		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescription() {
+			std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions = {};
 
 			// Position
 			attribute_descriptions[0].binding = 0;
@@ -60,17 +59,11 @@ namespace renderer::detail {
 			attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
 			attribute_descriptions[1].offset = offsetof(Vertex, color);
 
-			// Texture Coordinates
-			attribute_descriptions[2].binding = 0;
-			attribute_descriptions[2].location = 2;
-			attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT; // Vec2
-			attribute_descriptions[2].offset = offsetof(Vertex, tex_coord);
-
 			return attribute_descriptions;
 		}
 
 		bool operator==(const Vertex& other) const {
-			return position == other.position && color == other.color && tex_coord == other.tex_coord;
+			return position == other.position && color == other.color;
 		}
 	};
 
@@ -147,8 +140,7 @@ namespace std {
 	template<> struct hash<renderer::detail::Vertex> {
 		size_t operator()(renderer::detail::Vertex const& vertex) const {
 			return ((hash<glm::vec3>()(vertex.position) ^
-				(hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-				(hash<glm::vec2>()(vertex.tex_coord) << 1);
+				(hash<glm::vec3>()(vertex.color) << 1)) >> 1);
 		}
 	};
 }

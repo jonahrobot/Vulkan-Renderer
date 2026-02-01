@@ -171,7 +171,6 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Application.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
-    <ClCompile Include="Source\Renderer\Detail\AssetLoader.cpp" />
     <ClCompile Include="Source\Renderer\Detail\CommandBuffer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\DescriptorSet.cpp" />
     <ClCompile Include="Source\Renderer\Detail\FrameBuffer.cpp" />
@@ -182,7 +181,6 @@
     <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp" />
     <ClCompile Include="Source\Renderer\Detail\SyncPrimatives.cpp" />
     <ClCompile Include="Source\Renderer\Detail\DataBuffer.cpp" />
-    <ClCompile Include="Source\Renderer\Implementation.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
     <ClCompile Include="Source\USD Loader\USDParser.cpp" />

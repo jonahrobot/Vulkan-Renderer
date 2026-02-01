@@ -82,10 +82,7 @@ private:
 	VkCommandPool compute_command_pool;
 	std::vector<VkCommandBuffer> compute_command_buffers;
 
-	detail::GPUResource texture_buffer;
 	uint32_t object_count;
-
-	VkSampler texture_sampler;
 
 	VkBuffer vertex_buffer;
 	VkDeviceMemory vertex_buffer_memory;

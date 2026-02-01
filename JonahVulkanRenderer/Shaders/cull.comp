@@ -15,15 +15,15 @@ layout(binding = 0) uniform UniformBufferObject{
 	vec4 frustumPlanes[6];
 } ubo;
 
-layout(std430, binding = 4) readonly buffer InstanceData {
+layout(std430, binding = 3) readonly buffer InstanceData {
     vec4 center_point[ ];
 };
 
-layout(std430, binding = 5) writeonly buffer ShouldDraw {
+layout(std430, binding = 4) writeonly buffer ShouldDraw {
     uint should_draw[ ];
 };
 
-layout (binding = 3, std430) writeonly buffer IndirectDraws
+layout (binding = 2, std430) writeonly buffer IndirectDraws
 {
 	IndexedIndirectCommand indirectDraws[ ];
 };

@@ -102,7 +102,6 @@ namespace {
 				renderer::detail::Vertex v;
 				v.color = mesh_color;
 				v.position = { vertices[j], vertices[j + 1],vertices[j + 2] };
-				v.tex_coord = { 0,0 };
 
 				new_model.model_data.vertices.push_back(v);
 			}

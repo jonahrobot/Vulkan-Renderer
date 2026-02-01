@@ -13,16 +13,13 @@ namespace renderer::detail {
 
 		VkDescriptorPool new_pool;
 
-		std::array<VkDescriptorPoolSize, 3> pool_sizes{};
+		std::array<VkDescriptorPoolSize, 2> pool_sizes{};
 
 		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		pool_sizes[0].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
 
-		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		pool_sizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight);
-
-		pool_sizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		pool_sizes[2].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight) * 4;
+		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		pool_sizes[1].descriptorCount = static_cast<uint32_t>(MaxFramesInFlight) * 4;
 
 		VkDescriptorPoolCreateInfo pool_info{};
 		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -48,42 +45,35 @@ namespace renderer::detail {
 		ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 		ubo_layout_binding.pImmutableSamplers = nullptr;
 
-		VkDescriptorSetLayoutBinding sampler_layout_binding{};
-		sampler_layout_binding.binding = 1;
-		sampler_layout_binding.descriptorCount = 1;
-		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		sampler_layout_binding.pImmutableSamplers = nullptr;
-		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
 		VkDescriptorSetLayoutBinding instance_data_layout_binding{};
-		instance_data_layout_binding.binding = 2;
+		instance_data_layout_binding.binding = 1;
 		instance_data_layout_binding.descriptorCount = 1;
 		instance_data_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		instance_data_layout_binding.pImmutableSamplers = nullptr;
 		instance_data_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 		VkDescriptorSetLayoutBinding compute_draws_binding{};
-		compute_draws_binding.binding = 3;
+		compute_draws_binding.binding = 2;
 		compute_draws_binding.descriptorCount = 1;
 		compute_draws_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		compute_draws_binding.pImmutableSamplers = nullptr;
 		compute_draws_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 		VkDescriptorSetLayoutBinding instance_centers_layout_binding{};
-		instance_centers_layout_binding.binding = 4;
+		instance_centers_layout_binding.binding = 3;
 		instance_centers_layout_binding.descriptorCount = 1;
 		instance_centers_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		instance_centers_layout_binding.pImmutableSamplers = nullptr;
 		instance_centers_layout_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 		VkDescriptorSetLayoutBinding should_draw_flags_binding{};
-		should_draw_flags_binding.binding = 5;
+		should_draw_flags_binding.binding = 4;
 		should_draw_flags_binding.descriptorCount = 1;
 		should_draw_flags_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 		should_draw_flags_binding.pImmutableSamplers = nullptr;
 		should_draw_flags_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 6> bindings = { ubo_layout_binding, sampler_layout_binding, instance_data_layout_binding, compute_draws_binding, instance_centers_layout_binding, should_draw_flags_binding };
+		std::array<VkDescriptorSetLayoutBinding, 5> bindings = { ubo_layout_binding, instance_data_layout_binding, compute_draws_binding, instance_centers_layout_binding, should_draw_flags_binding };
 
 		VkDescriptorSetLayoutCreateInfo layout_info{};
 		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -126,11 +116,6 @@ namespace renderer::detail {
 			buffer_info.offset = 0;
 			buffer_info.range = Context.ubo_size;
 
-			VkDescriptorImageInfo image_info{};
-			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			image_info.imageView = Context.image_view;
-			image_info.sampler = Context.texture_sampler;
-
 			VkDescriptorBufferInfo instance_buffer_info{};
 			instance_buffer_info.buffer = Context.instance_buffer;
 			instance_buffer_info.offset = 0;
@@ -141,7 +126,7 @@ namespace renderer::detail {
 			should_draw_flags_info.offset = 0;
 			should_draw_flags_info.range = Context.should_draw_flags_buffer_size;
 
-			std::array<VkWriteDescriptorSet, 4> descriptor_writes{};
+			std::array<VkWriteDescriptorSet, 3> descriptor_writes{};
 
 			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[0].dstSet = old_set[i];
@@ -155,25 +140,17 @@ namespace renderer::detail {
 			descriptor_writes[1].dstSet = old_set[i];
 			descriptor_writes[1].dstBinding = 1;
 			descriptor_writes[1].dstArrayElement = 0;
-			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptor_writes[1].descriptorCount = 1;
-			descriptor_writes[1].pImageInfo = &image_info;
+			descriptor_writes[1].pBufferInfo = &instance_buffer_info;
 
 			descriptor_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[2].dstSet = old_set[i];
-			descriptor_writes[2].dstBinding = 2;
+			descriptor_writes[2].dstBinding = 4;
 			descriptor_writes[2].dstArrayElement = 0;
 			descriptor_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptor_writes[2].descriptorCount = 1;
-			descriptor_writes[2].pBufferInfo = &instance_buffer_info;
-
-			descriptor_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[3].dstSet = old_set[i];
-			descriptor_writes[3].dstBinding = 5;
-			descriptor_writes[3].dstArrayElement = 0;
-			descriptor_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			descriptor_writes[3].descriptorCount = 1;
-			descriptor_writes[3].pBufferInfo = &should_draw_flags_info;
+			descriptor_writes[2].pBufferInfo = &should_draw_flags_info;
 
 			vkUpdateDescriptorSets(Context.logical_device, static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
 		}
@@ -195,7 +172,7 @@ namespace renderer::detail {
 
 			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[0].dstSet = old_set[i];
-			descriptor_writes[0].dstBinding = 3;
+			descriptor_writes[0].dstBinding = 2;
 			descriptor_writes[0].dstArrayElement = 0;
 			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptor_writes[0].descriptorCount = 1;
@@ -208,7 +185,7 @@ namespace renderer::detail {
 
 			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptor_writes[1].dstSet = old_set[i];
-			descriptor_writes[1].dstBinding = 4;
+			descriptor_writes[1].dstBinding = 3;
 			descriptor_writes[1].dstArrayElement = 0;
 			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			descriptor_writes[1].descriptorCount = 1;

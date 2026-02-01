@@ -151,41 +151,6 @@ namespace renderer {
 			return ubo;
 		}
 
-		VkSampler CreateTextureSampler(const VkPhysicalDevice& PhysicalDevice, const VkDevice& LogicalDevice) {
-
-			VkSampler our_sampler;
-
-			VkSamplerCreateInfo sampler_info{};
-			sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-			sampler_info.magFilter = VK_FILTER_LINEAR;
-			sampler_info.minFilter = VK_FILTER_LINEAR;
-
-			sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-			sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-			sampler_info.anisotropyEnable = VK_TRUE;
-
-			VkPhysicalDeviceProperties properties{};
-			vkGetPhysicalDeviceProperties(PhysicalDevice, &properties);
-
-			sampler_info.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-			sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-			sampler_info.unnormalizedCoordinates = VK_FALSE;
-			sampler_info.compareEnable = VK_FALSE;
-			sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-			sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-			sampler_info.mipLodBias = 0.0f;
-			sampler_info.minLod = 0.0f;
-			sampler_info.maxLod = 0.0f;
-
-			if (vkCreateSampler(LogicalDevice, &sampler_info, nullptr, &our_sampler) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to create texture sample.");
-			}
-
-			return our_sampler;
-		}
-
 		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::InstanceModelData>& NewModelSet) {
 			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
 
@@ -354,9 +319,6 @@ namespace renderer {
 		compute_command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
 		compute_command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, compute_command_pool);
 
-		// Create Texture Sampler
-		texture_sampler = CreateTextureSampler(physical_device, logical_device);
-
 		// Create UBO for Vertex
 		detail::UniformBufferContext context_ubo = {};
 		context_ubo.logical_device = logical_device;
@@ -412,10 +374,9 @@ namespace renderer {
 			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
 
-		vkDestroySampler(logical_device, texture_sampler, nullptr);
-
-		detail::FreeGPUResource(texture_buffer, logical_device);
-		detail::FreeGPUResource(depth_buffer, logical_device);
+		vkDestroyImageView(logical_device, depth_buffer.image_view, nullptr);
+		vkDestroyImage(logical_device, depth_buffer.image, nullptr);
+		vkFreeMemory(logical_device, depth_buffer.image_memory, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroyBuffer(logical_device, uniform_buffers[i], nullptr);
@@ -610,12 +571,6 @@ namespace renderer {
 	// This will be changes in this function, RecordIndirectCommands and ProcessInstanceData
 	void Renderer::UpdateModelSet(std::vector<detail::InstanceModelData> NewModelSet, bool UseWhiteTexture) {
 
-		/*for (detail::ModelData model : NewModelSet) {
-			if (detail::VerifyModel(model) != true) {
-				return;
-			}
-		}*/
-
 		vkDeviceWaitIdle(logical_device);
 
 		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, object_count, NewModelSet);
@@ -651,8 +606,6 @@ namespace renderer {
 			vkDestroyBuffer(logical_device, instance_data_buffer, nullptr);
 			vkFreeMemory(logical_device, instance_data_buffer_memory, nullptr);
 		}
-
-		detail::FreeGPUResource(texture_buffer, logical_device);
 
 		detail::BufferContext context_buffercreation = {};
 		context_buffercreation.logical_device = logical_device;
@@ -690,8 +643,6 @@ namespace renderer {
 
 		std::vector<uint32_t> should_draw_flags(object_count, 0);
 
-		std::cout << "Should draw flags size is: " << should_draw_flags.size() << std::endl;
-
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
 			detail::BufferData should_draw_info = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, should_draw_flags, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -703,7 +654,6 @@ namespace renderer {
 			else {
 				throw std::runtime_error("Failed to create should_draw flags buffer.");
 			}
-
 		}
 
 		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -711,36 +661,6 @@ namespace renderer {
 		if (shaderbuffer_info.err_code == detail::BufferData::SUCCESS) {
 			instance_data_buffer = shaderbuffer_info.created_buffer;
 			instance_data_buffer_memory = shaderbuffer_info.memory_allocated_for_buffer;
-		}
-
-		detail::TextureData merged_texture_data = {};
-		uint64_t number_of_textures = 0;
-
-		if (UseWhiteTexture == false) {
-			number_of_textures = number_of_indirect_commands;
-			merged_texture_data.format = NewModelSet[0].model_data.texture_data.format;
-			merged_texture_data.height = NewModelSet[0].model_data.texture_data.height;
-			merged_texture_data.width = NewModelSet[0].model_data.texture_data.width;
-			merged_texture_data.image_size = NewModelSet[0].model_data.texture_data.image_size * number_of_indirect_commands;
-			merged_texture_data.pixels = new stbi_uc[merged_texture_data.image_size];
-			uint32_t index = 0;
-			for (detail::InstanceModelData model : NewModelSet) {
-				for (int i = 0; i < model.model_data.texture_data.image_size; i++) {
-					merged_texture_data.pixels[index] = model.model_data.texture_data.pixels[i];
-					index += 1;
-				}
-			}
-		}
-		else {
-			number_of_textures = 1;
-			merged_texture_data.format = VK_FORMAT_R8G8B8A8_SRGB;
-			merged_texture_data.height = 1;
-			merged_texture_data.width = 1;
-			merged_texture_data.image_size = 4;
-			merged_texture_data.pixels = new stbi_uc[4];
-			for (int i = 0; i < 4; i++) {
-				merged_texture_data.pixels[i] = 255;
-			}
 		}
 
 		// Instance Centers Buffer
@@ -772,20 +692,6 @@ namespace renderer {
 			instance_centers_buffer = instance_centers_info.created_buffer;
 			instance_centers_buffer_memory = instance_centers_info.memory_allocated_for_buffer;
 		}
-
-		// Add textures to GPU
-		detail::TextureBufferContext context_imagebuffer = {};
-		context_imagebuffer.texture_bundle = merged_texture_data;
-		context_imagebuffer.logical_device = logical_device;
-		context_imagebuffer.physical_device = physical_device;
-		context_imagebuffer.command_pool = command_pool;
-		context_imagebuffer.data_tiling_mode = VK_IMAGE_TILING_OPTIMAL;
-		context_imagebuffer.graphics_queue = graphics_queue;
-		context_imagebuffer.memory_flags_required = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		context_imagebuffer.usage_flags = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		context_imagebuffer.number_of_textures = number_of_textures;
-		
-		texture_buffer = detail::CreateTextureBuffer(context_imagebuffer);
 		
 		// Update our Graphics Pipeline Descriptor Sets
 		detail::Graphic_DescriptorContext context_graphics_update = {};
@@ -793,8 +699,6 @@ namespace renderer {
 		context_graphics_update.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_graphics_update.ubo_size = sizeof(detail::UniformBufferObject);
 		context_graphics_update.uniform_buffers = uniform_buffers;
-		context_graphics_update.image_view = texture_buffer.image_view;
-		context_graphics_update.texture_sampler = texture_sampler;
 		context_graphics_update.instance_buffer = instance_data_buffer;
 		context_graphics_update.instance_buffer_size = sizeof(detail::InstanceData) * object_count;
 		context_graphics_update.should_draw_flags_buffer = should_draw_buffers;

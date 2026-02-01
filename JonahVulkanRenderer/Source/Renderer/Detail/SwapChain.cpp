@@ -188,7 +188,9 @@ namespace renderer::detail {
 
 		// Cleanup old swapchain data
 
-		FreeGPUResource(Context.OLD_depth_buffer, logical_device);
+		vkDestroyImageView(logical_device, Context.OLD_depth_buffer.image_view, nullptr);
+		vkDestroyImage(logical_device, Context.OLD_depth_buffer.image, nullptr);
+		vkFreeMemory(logical_device, Context.OLD_depth_buffer.image_memory, nullptr);
 
 		for (auto framebuffer : Context.OLD_framebuffers) {
 			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
