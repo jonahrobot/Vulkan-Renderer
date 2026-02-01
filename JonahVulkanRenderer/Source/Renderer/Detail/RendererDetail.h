@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stb_master/stb_image.h>
-#include <tiny_obj_loader/tiny_obj_loader.h>
 #include <optional>
 #include <vector>
 
@@ -17,6 +15,40 @@ namespace renderer::detail {
 
 	// All below functions construct parts of the Vulkan Renderer used in "Renderer.cpp"
 
+#pragma region Shared Structs
+	struct Pipeline {
+		VkPipeline pipeline;
+		VkPipelineLayout layout;
+	};
+
+	struct QueueFamilyIndices {
+		std::optional<uint32_t> graphics_compute_family;
+		std::optional<uint32_t> present_family;
+	};
+
+	struct Buffer {
+		VkBuffer buffer;
+		VkDeviceMemory memory;
+		uint64_t byte_size;
+	};
+
+	struct BufferMapped {
+		Buffer buffer;
+		void* buffer_mapped;
+	};
+
+	struct Mesh {
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
+	};
+
+	struct MeshInstances {
+		Mesh model_data;
+		uint32_t instance_count;
+		std::vector<glm::mat4> instance_model_matrices;
+	};
+#pragma endregion
+
 #pragma region Vulkan Instance
 	// Implemented in "Instance.cpp"
 	VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions);
@@ -29,15 +61,6 @@ namespace renderer::detail {
 		VkSurfaceKHR vulkan_surface;
 		std::vector<const char*> DeviceExtensionsToSupport;
 	};
-	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphics_compute_family;
-		std::optional<uint32_t> present_family;
-
-		bool isComplete() {
-			return graphics_compute_family.has_value() && present_family.has_value();
-		}
-	};
-
 	struct PhysicalDeviceData {
 		VkPhysicalDevice physical_device;
 		QueueFamilyIndices queues_supported;
@@ -113,19 +136,16 @@ namespace renderer::detail {
 	std::vector<VkCommandBuffer> CreateCommandBuffers(const int TotalFrames, const VkDevice LogicalDevice, const VkCommandPool CommandPool);
 
 	struct CommandRecordingContext {
+		uint64_t unique_mesh_count;
 		std::vector<VkFramebuffer> framebuffers;
-		VkBuffer indirect_command_buffer;
-		uint32_t number_of_draw_calls;
+		Buffer indirect_command_buffer;
+		Buffer vertex_buffer;
+		Buffer index_buffer;
 		VkRenderPass render_pass;
-		VkPipeline graphics_pipeline;
-		VkPipelineLayout graphics_pipeline_layout;
+		Pipeline graphics_pipeline;
 		VkCommandBuffer command_buffer;
 		uint32_t image_write_index;
 		VkExtent2D swapchain_extent;
-		VkBuffer vertex_buffer;
-		VkBuffer index_buffer;
-		uint32_t total_indices;
-		uint32_t total_vertices;
 		VkDescriptorSet current_descriptor_set;
 		PFN_vkCmdBeginDebugUtilsLabelEXT debug_function_begin;
 		PFN_vkCmdEndDebugUtilsLabelEXT debug_function_end;
@@ -134,8 +154,7 @@ namespace renderer::detail {
 
 	struct Compute_CommandRecordingContext {
 		VkCommandBuffer command_buffer;
-		VkPipeline compute_pipeline;
-		VkPipelineLayout compute_pipeline_layout;
+		Pipeline compute_pipeline;
 		VkDescriptorSet current_descriptor_set;
 		uint32_t instance_count;
 		PFN_vkCmdBeginDebugUtilsLabelEXT debug_function_begin;
@@ -166,24 +185,21 @@ namespace renderer::detail {
 #pragma region Graphics and Compute Pipeline
 	// Implemented in "Pipelines.cpp"
 
-	struct PipelineData {
-		VkPipeline pipeline;
-		VkPipelineLayout layout;
-	};
-
 	struct GraphicsPipelineContext {
 		VkRenderPass render_pass;
 		VkDevice logical_device;
 		VkExtent2D swapchain_extent;
 		VkDescriptorSetLayout descriptor_set_layout;
 	};
-	PipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
+	Pipeline CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
 
 	struct ComputePipelineContext {
 		VkDevice logical_device;
 		VkDescriptorSetLayout descriptor_set_layout;
 	};
-	PipelineData CreateComputePipeline(const ComputePipelineContext& Context);
+	Pipeline CreateComputePipeline(const ComputePipelineContext& Context);
+
+	void DestroyPipeline(const VkDevice& LogicalDevice, Pipeline& Target);
 
 #pragma endregion
 
@@ -198,20 +214,18 @@ namespace renderer::detail {
 	};
 
 	template<typename T>
-	BufferData CreateLocalBuffer(const BufferContext& Context, const std::vector<T>& Data, VkBufferUsageFlags UsageFlags);
+	Buffer CreateLocalBuffer(const BufferContext& Context, const std::vector<T>& Data, VkBufferUsageFlags UsageFlags);
 
-	struct UniformBufferContext {
-		uint8_t max_frames_in_flight;       
-		uint16_t ubo_size;
+	void DestroyBuffer(VkDevice LogicalDevice, Buffer& Buffer);
+	void DestroyBuffer(VkDevice LogicalDevice, BufferMapped& Buffer);
+
+	struct MappedBufferContext {
+		uint16_t buffer_size;
 		VkDevice logical_device;
 		VkPhysicalDevice physical_device;
 	};
-	struct UniformBufferData {
-		std::vector<VkBuffer> uniform_buffers;
-		std::vector<VkDeviceMemory> uniform_buffers_memory;
-		std::vector<void*> uniform_buffers_mapped;
-	};
-	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context);
+
+	BufferMapped CreateMappedBuffer(const MappedBufferContext& Context);
 
 	VkFormat FindDepthFormat(VkPhysicalDevice PhysicalDevice);
 
@@ -235,29 +249,21 @@ namespace renderer::detail {
 		VkDevice logical_device;
 		VkDescriptorSetLayout descriptor_set_layout;
 		VkDescriptorPool descriptor_pool;
-		uint8_t max_frames_in_flight;
 	};
 	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorCreateContext& Context);
 
 	struct Graphic_DescriptorContext {
 		VkDevice logical_device;
-		uint8_t max_frames_in_flight;
-		std::vector<VkBuffer> uniform_buffers;
-		uint16_t ubo_size;
-		VkBuffer instance_buffer;
-		uint64_t instance_buffer_size;
-		std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> should_draw_flags_buffer;
-		uint64_t should_draw_flags_buffer_size;
+		Buffer instance_buffer;
+		std::array<BufferMapped, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
+		std::array<Buffer, MAX_FRAMES_IN_FLIGHT> should_draw_flags_buffer;
 	};
 	std::vector<VkDescriptorSet> UpdateDescriptorSets(const Graphic_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
 
 	struct Compute_DescriptorContext {
 		VkDevice logical_device;
-		uint8_t max_frames_in_flight;
-		std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> indirect_draw_buffers;
-		uint64_t indirect_draw_buffer_size;
-		VkBuffer instance_centers_buffer;
-		uint64_t instance_centers_buffer_size;
+		std::array<Buffer, MAX_FRAMES_IN_FLIGHT> indirect_draw_buffers;
+		Buffer instance_centers;
 	};
 	std::vector<VkDescriptorSet> UpdateComputeUniqueDescriptor(const Compute_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
 
@@ -266,15 +272,7 @@ namespace renderer::detail {
 #pragma region Asset Loading
 	// Implemented in "AssetLoader.cpp"
 
-	struct ModelData {
-		std::vector<detail::Vertex> vertices;
-		std::vector<uint32_t> indices;
-	};
-	struct InstanceModelData {
-		ModelData model_data;
-		uint32_t instance_count;
-		std::vector<glm::mat4> instance_model_matrices;
-	};
+
 
 #pragma endregion
 

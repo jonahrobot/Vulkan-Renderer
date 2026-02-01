@@ -4,6 +4,6 @@
 
 namespace USD {
 
-	std::vector<renderer::detail::InstanceModelData> ParseUSD(std::string json_file_path, bool BenchmarkMode = false);
+	std::vector<renderer::detail::MeshInstances> ParseUSD(std::string json_file_path, bool BenchmarkMode = false);
 
 } // namespace USD

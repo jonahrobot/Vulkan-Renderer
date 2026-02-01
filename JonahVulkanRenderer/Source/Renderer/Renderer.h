@@ -1,13 +1,11 @@
 #pragma once
 
 #include <memory>
-#include <algorithm>
 #include <vector>
-#include <iostream>
 #include <array>
 #include <string>
 
-#include "../Renderer/Detail/RendererDetail.h"
+#include "Detail/RendererDetail.h"
 
 #ifdef NDEBUG
 const bool UseValidationLayers = false;
@@ -19,7 +17,6 @@ namespace renderer {
 
 #define WIDTH 800
 #define HEIGHT 600
-#define MAX_OBJECTS 8
 
 class Renderer {
 public:
@@ -28,13 +25,15 @@ public:
 
 	void Draw(glm::mat4 CameraPosition, bool FrustumCull);
 
-	void UpdateModelSet(std::vector<detail::InstanceModelData> NewModelSet, bool UseWhiteTexture);
+	void UpdateModelSet(std::vector<detail::MeshInstances> NewModelSet, bool UseWhiteTexture);
 
 	GLFWwindow* Get_Window();
 
 	bool framebuffer_resized = false;
 
 private:
+
+	// GOOD - No refactor needed
 
 	const std::vector<const char*> ValidationLayersToSupport = {
 		"VK_LAYER_KHRONOS_validation"
@@ -48,31 +47,49 @@ private:
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
 
+	GLFWwindow* window;
+
+	uint32_t mesh_count;
+	uint32_t unique_mesh_count;
+
 	VkInstance vulkan_instance;
 	VkSurfaceKHR vulkan_surface;
 	VkSwapchainKHR swapchain;
-	detail::SwapchainContext swapchain_creation_data;
-	VkExtent2D extent;
 	VkPhysicalDevice physical_device;
 	VkDevice logical_device;
-	GLFWwindow* window;
-	std::vector<VkImage> swapchain_images;
-	std::vector<VkImageView> swapchain_image_views;
-
+	VkQueue graphics_queue;
+	VkQueue compute_queue;
 	VkQueue present_queue;
 	VkRenderPass render_pass;
 
-	VkQueue graphics_queue;
-	VkPipeline graphics_pipeline;
-	VkPipelineLayout graphics_pipeline_layout;
+	detail::Buffer vertex_buffer;
+	detail::Buffer index_buffer;
+	detail::Buffer instance_centers_buffer;
+	detail::Buffer instance_data_buffer;
 
-	VkQueue compute_queue;
-	VkPipeline compute_pipeline;
-	VkPipelineLayout compute_pipeline_layout;
+	std::array<detail::Buffer, MAX_FRAMES_IN_FLIGHT> should_draw_buffers;
+	std::array<detail::Buffer, MAX_FRAMES_IN_FLIGHT> indirect_command_buffers;
+	std::array<detail::BufferMapped, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
+
+	std::vector<VkSemaphore> image_available_semaphores;
+	std::vector<VkSemaphore> render_finished_semaphores;
+	std::vector<VkFence> in_flight_fences;
+	std::vector<VkFence> compute_in_flight_fences;
+	std::vector<VkSemaphore> compute_finished_semaphores;
+
+	detail::Pipeline graphics_pipeline;
+	detail::Pipeline compute_pipeline;
+
+	// BAD - Needs refactoring
+
+	detail::SwapchainContext swapchain_creation_data;
+	VkExtent2D extent;
+
+	std::vector<VkImage> swapchain_images;
+	std::vector<VkImageView> swapchain_image_views;
 
 	VkDescriptorPool descriptor_pool;
 	std::vector<VkDescriptorSet> descriptor_sets;
-	bool descriptor_set_initialized = false;
 
 	VkDescriptorSetLayout descriptor_set_layout;
 	std::vector<VkFramebuffer> framebuffers;
@@ -82,38 +99,9 @@ private:
 	VkCommandPool compute_command_pool;
 	std::vector<VkCommandBuffer> compute_command_buffers;
 
-	uint32_t object_count;
 
-	VkBuffer vertex_buffer;
-	VkDeviceMemory vertex_buffer_memory;
-
-	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> should_draw_buffers;
-	std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> should_draw_buffer_memorys;
-
-	VkBuffer index_buffer;
-	VkDeviceMemory index_buffer_memory;
-
-	std::array<VkBuffer, MAX_FRAMES_IN_FLIGHT> indirect_command_buffers;
-	std::array<VkDeviceMemory, MAX_FRAMES_IN_FLIGHT> indirect_command_buffer_memorys;
-	uint32_t number_of_indirect_commands;
-
-	VkBuffer instance_centers_buffer;
-	VkDeviceMemory instance_centers_buffer_memory;
-
-	std::vector<VkBuffer> uniform_buffers;
-	std::vector<VkDeviceMemory> uniform_buffers_memory;
-	std::vector<void*> uniform_buffers_mapped;
-
-	VkBuffer instance_data_buffer;
-	VkDeviceMemory instance_data_buffer_memory;
 
 	detail::GPUResource depth_buffer;
-
-	std::vector<VkSemaphore> image_available_semaphores;
-	std::vector<VkSemaphore> render_finished_semaphores;
-	std::vector<VkFence> in_flight_fences;
-	std::vector<VkFence> compute_in_flight_fences;
-	std::vector<VkSemaphore> compute_finished_semaphores;
 
 	PFN_vkCmdBeginDebugUtilsLabelEXT pfn_CmdBeginDebugUtilsLabelEXT = nullptr;
 	PFN_vkCmdEndDebugUtilsLabelEXT pfn_CmdEndDebugUtilsLabelEXT = nullptr;
@@ -121,8 +109,5 @@ private:
 	uint32_t current_frame = 0;
 
 	void RecreateSwapchainHelper();
-
-	std::vector<detail::Vertex> vertices_to_render;
-	std::vector<uint32_t>indices;
 };
 } // namespace renderer

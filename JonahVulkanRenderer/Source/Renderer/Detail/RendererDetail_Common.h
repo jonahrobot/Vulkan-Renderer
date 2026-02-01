@@ -75,21 +75,6 @@ namespace renderer::detail {
 	MergedIndexVertexBuffer MergeIndexVertexBuffer(const std::vector<Vertex>& V1, const std::vector<uint32_t>& I1, const std::vector<Vertex>& V2, const std::vector<uint32_t>& I2);
 #pragma endregion
 
-
-#pragma region Buffer Creation
-	struct BufferData {
-		VkBuffer created_buffer;
-		VkDeviceMemory memory_allocated_for_buffer;
-		
-		enum BufferCreationErrors{SUCCESS, SIZEZERO};
-		BufferCreationErrors err_code;
-	};
-	BufferData CreateDataBuffer(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkDeviceSize BufferSize, VkBufferUsageFlags UsageFlags, VkMemoryPropertyFlags PropertyFlags);
-
-	uint32_t FindMemoryType(VkPhysicalDevice PhysicalDevice, uint32_t TypeFilter, VkMemoryPropertyFlags properties);
-
-#pragma endregion
-
 #pragma region Command Buffer Recording
 
 	VkCommandBuffer BeginSingleTimeCommand(VkCommandPool CommandPool, VkDevice LogicalDevice);
@@ -131,6 +116,7 @@ namespace renderer::detail {
 		uint32_t array_layers = 1;
 	};
 	VkImageView CreateImageView(const ImageViewContext& Context);
+	uint32_t FindMemoryType(VkPhysicalDevice PhysicalDevice, uint32_t TypeFilter, VkMemoryPropertyFlags properties);
 #pragma endregion
 
 }

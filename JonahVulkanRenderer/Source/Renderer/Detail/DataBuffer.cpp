@@ -4,6 +4,50 @@
 // Unnamed namespace to show functions below are pure Utility strictly for this .cpp file.
 namespace {
 
+	renderer::detail::Buffer CreateDataBuffer(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkDeviceSize BufferSize, VkBufferUsageFlags UsageFlags, VkMemoryPropertyFlags PropertyFlags) {
+
+		VkBuffer buffer;
+
+		if (BufferSize == 0) {
+			throw std::runtime_error("Failed to create Data Buffer, no data provided.");
+		}
+
+		// Create buffer
+		VkBufferCreateInfo buffer_info{};
+		buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		buffer_info.size = BufferSize;
+		buffer_info.usage = UsageFlags;
+		buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(LogicalDevice, &buffer_info, nullptr, &buffer) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create vertex buffer.");
+		}
+
+		// Allocate buffer memory
+		VkDeviceMemory buffer_memory;
+
+		VkMemoryRequirements memory_requirements;
+		vkGetBufferMemoryRequirements(LogicalDevice, buffer, &memory_requirements);
+
+		VkMemoryAllocateInfo allocate_info{};
+		allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocate_info.allocationSize = memory_requirements.size;
+		allocate_info.memoryTypeIndex = renderer::detail::FindMemoryType(PhysicalDevice, memory_requirements.memoryTypeBits, PropertyFlags);
+
+		if (vkAllocateMemory(LogicalDevice, &allocate_info, nullptr, &buffer_memory) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to allocate vertex buffer memory.");
+		}
+
+		vkBindBufferMemory(LogicalDevice, buffer, buffer_memory, 0);
+
+		renderer::detail::Buffer return_data{};
+		return_data.buffer = buffer;
+		return_data.memory = buffer_memory;
+		return_data.byte_size = BufferSize;
+
+		return return_data;
+	}
+
 	// Copy two buffers on the GPU through GPU commands.
 	void CopyBuffer(VkQueue GraphicsQueue, VkDevice LogicalDevice, VkCommandPool CommandPool, VkBuffer SrcBuffer, VkBuffer DstBuffer, VkDeviceSize size) {
 		
@@ -28,21 +72,19 @@ namespace {
 	 * This allows us to end with a buffer only on the GPU. Reducing read times as CPU coherency is not required.
 	 */
 
-	renderer::detail::BufferData CreateGPULocalBuffer(const void* DataSrc, VkDeviceSize DataSize, VkBufferUsageFlags UsageFlags, VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkQueue GraphicsQueue, VkCommandPool CommandPool) {
+	renderer::detail::Buffer CreateGPULocalBuffer(const void* DataSrc, VkDeviceSize DataSize, VkBufferUsageFlags UsageFlags, VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkQueue GraphicsQueue, VkCommandPool CommandPool) {
 
 		if (DataSize == 0) {
-			renderer::detail::BufferData error_buffer;
-			error_buffer.err_code = renderer::detail::BufferData::SIZEZERO;
-			return error_buffer;
+			throw std::runtime_error("Failed to create GPU local buffer, no data provided.");
 		}
 
 		// Create temp buffer that CPU and GPU can both see and write to.
 		VkBufferUsageFlags temp_usage_flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 		VkMemoryPropertyFlags temp_property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-		renderer::detail::BufferData temp_buffer_data = renderer::detail::CreateDataBuffer(LogicalDevice, PhysicalDevice, DataSize, temp_usage_flags, temp_property_flags);
-		VkBuffer temp_buffer = temp_buffer_data.created_buffer;
-		VkDeviceMemory temp_buffer_memory = temp_buffer_data.memory_allocated_for_buffer;
+		renderer::detail::Buffer temp_buffer_data = CreateDataBuffer(LogicalDevice, PhysicalDevice, DataSize, temp_usage_flags, temp_property_flags);
+		VkBuffer temp_buffer = temp_buffer_data.buffer;
+		VkDeviceMemory temp_buffer_memory = temp_buffer_data.memory;
 
 		void* data;
 		vkMapMemory(LogicalDevice, temp_buffer_memory, 0, DataSize, 0, &data);
@@ -53,10 +95,10 @@ namespace {
 		VkBufferUsageFlags usage_flags = UsageFlags;
 		VkMemoryPropertyFlags property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-		renderer::detail::BufferData created_buffer_data = renderer::detail::CreateDataBuffer(LogicalDevice, PhysicalDevice, DataSize, usage_flags, property_flags);
+		renderer::detail::Buffer created_buffer_data = CreateDataBuffer(LogicalDevice, PhysicalDevice, DataSize, usage_flags, property_flags);
 
 		// Copy temp buffer data into GPU only buffer
-		CopyBuffer(GraphicsQueue, LogicalDevice, CommandPool, temp_buffer, created_buffer_data.created_buffer, DataSize);
+		CopyBuffer(GraphicsQueue, LogicalDevice, CommandPool, temp_buffer, created_buffer_data.buffer, DataSize);
 
 		// Destroy temp
 		vkDestroyBuffer(LogicalDevice, temp_buffer, nullptr);
@@ -95,7 +137,7 @@ namespace {
 namespace renderer::detail {
 	
 	template<>
-	BufferData CreateLocalBuffer<Vertex>(const BufferContext& Context, const std::vector<Vertex>& Data, VkBufferUsageFlags UsageFlags) {
+	Buffer CreateLocalBuffer<Vertex>(const BufferContext& Context, const std::vector<Vertex>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
@@ -105,7 +147,7 @@ namespace renderer::detail {
 	}
 
 	template<>
-	BufferData CreateLocalBuffer<uint32_t>(const BufferContext& Context, const std::vector<uint32_t>& Data, VkBufferUsageFlags UsageFlags) {
+	Buffer CreateLocalBuffer<uint32_t>(const BufferContext& Context, const std::vector<uint32_t>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
@@ -115,7 +157,7 @@ namespace renderer::detail {
 	}
 
 	template<>
-	BufferData CreateLocalBuffer<VkDrawIndexedIndirectCommand>(const BufferContext& Context, const std::vector<VkDrawIndexedIndirectCommand>& Data, VkBufferUsageFlags UsageFlags) {
+	Buffer CreateLocalBuffer<VkDrawIndexedIndirectCommand>(const BufferContext& Context, const std::vector<VkDrawIndexedIndirectCommand>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
@@ -125,7 +167,7 @@ namespace renderer::detail {
 	}
 
 	template<>
-	BufferData CreateLocalBuffer<InstanceData>(const BufferContext& Context, const std::vector<InstanceData>& Data, VkBufferUsageFlags UsageFlags) {
+	Buffer CreateLocalBuffer<InstanceData>(const BufferContext& Context, const std::vector<InstanceData>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
@@ -135,7 +177,7 @@ namespace renderer::detail {
 	}
 
 	template<>
-	BufferData CreateLocalBuffer<glm::vec4>(const BufferContext& Context, const std::vector<glm::vec4>& Data, VkBufferUsageFlags UsageFlags) {
+	Buffer CreateLocalBuffer<glm::vec4>(const BufferContext& Context, const std::vector<glm::vec4>& Data, VkBufferUsageFlags UsageFlags) {
 
 		const void* data_src = Data.data();
 		VkDeviceSize data_size = sizeof(Data[0]) * Data.size();
@@ -144,24 +186,30 @@ namespace renderer::detail {
 			Context.physical_device, Context.graphics_queue, Context.command_pool);
 	}
 
-	UniformBufferData CreateUniformBuffers(const UniformBufferContext& Context) {
+	void DestroyBuffer(VkDevice LogicalDevice, BufferMapped& Buffer) {
+		DestroyBuffer(LogicalDevice, Buffer.buffer);
+	}
 
-		UniformBufferData buffer_data = {};
-		buffer_data.uniform_buffers.resize(Context.max_frames_in_flight);
-		buffer_data.uniform_buffers_memory.resize(Context.max_frames_in_flight);
-		buffer_data.uniform_buffers_mapped.resize(Context.max_frames_in_flight);
-
-		for (size_t i = 0; i < Context.max_frames_in_flight; i++) {
-			VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-			VkMemoryPropertyFlags property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-			BufferData current_buffer = CreateDataBuffer(Context.logical_device, Context.physical_device, Context.ubo_size, usage_flags, property_flags);
-		
-			buffer_data.uniform_buffers[i] = current_buffer.created_buffer;
-			buffer_data.uniform_buffers_memory[i] = current_buffer.memory_allocated_for_buffer;
-
-			vkMapMemory(Context.logical_device, buffer_data.uniform_buffers_memory[i], 0, sizeof(detail::UniformBufferObject), 0, &buffer_data.uniform_buffers_mapped[i]);
+	void DestroyBuffer(VkDevice LogicalDevice, Buffer& Buffer) {
+		if (Buffer.buffer != NULL) {
+			vkDestroyBuffer(LogicalDevice, Buffer.buffer, nullptr);
+			vkFreeMemory(LogicalDevice, Buffer.memory, nullptr);
+			Buffer.buffer = NULL;
+			Buffer.memory = NULL;
 		}
-		return buffer_data;
+	}
+
+	BufferMapped CreateMappedBuffer(const MappedBufferContext& Context) {
+
+		BufferMapped buffer_wrapper;
+
+		VkBufferUsageFlags usage_flags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+		VkMemoryPropertyFlags property_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+		buffer_wrapper.buffer = CreateDataBuffer(Context.logical_device, Context.physical_device, Context.buffer_size, usage_flags, property_flags);
+
+		vkMapMemory(Context.logical_device, buffer_wrapper.buffer.memory, 0, Context.buffer_size, 0, &buffer_wrapper.buffer_mapped);
+		
+		return buffer_wrapper;
 	}
 
 	// Depth formats are ways we can store depth data, along with a possible stencil buffer

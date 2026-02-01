@@ -1,17 +1,14 @@
 #include "Application.h"
 #include "../USD Loader/USDParser.h"
 
-// Unnamed namespace to show functions below are pure Utility strictly for this .cpp file.
-namespace {
-}
+#include <iostream>
 
 namespace game {
-
 
 Application::Application() {
 	renderer = new renderer::Renderer();
 
-	std::vector<renderer::detail::InstanceModelData> model_set = USD::ParseUSD("ExternalTools/dev.mp", false);
+	std::vector<renderer::detail::MeshInstances> model_set = USD::ParseUSD("ExternalTools/dev.mp", false);
 
 	renderer->UpdateModelSet(model_set,true);
 

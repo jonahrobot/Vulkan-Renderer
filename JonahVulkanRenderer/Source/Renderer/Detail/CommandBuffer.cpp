@@ -71,8 +71,8 @@ namespace renderer::detail {
 
 		cmd_begin_label(Context.debug_function_begin, Context.command_buffer, "Compute Workload", { 0.455f, 0.259f, 0.325f, 1.0f });
 
-		vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context.compute_pipeline);
-		vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context.compute_pipeline_layout, 0, 1, &Context.current_descriptor_set, 0, 0);
+		vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context.compute_pipeline.pipeline);
+		vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, Context.compute_pipeline.layout, 0, 1, &Context.current_descriptor_set, 0, 0);
 		
 		vkCmdDispatch(Context.command_buffer, Context.instance_count / 64, 1, 1);
 
@@ -110,7 +110,7 @@ namespace renderer::detail {
 		render_pass_info.pClearValues = clear_values.data();
 
 		vkCmdBeginRenderPass(Context.command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-		vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context.graphics_pipeline);
+		vkCmdBindPipeline(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, Context.graphics_pipeline.pipeline);
 
 		VkViewport viewport{};
 		viewport.x = 0.0f;
@@ -126,20 +126,20 @@ namespace renderer::detail {
 		scissor.extent = Context.swapchain_extent;
 		vkCmdSetScissor(Context.command_buffer, 0, 1, &scissor);
 
-		if (Context.total_vertices != 0) {
-			VkBuffer vertex_buffers[] = { Context.vertex_buffer };
+		if (Context.vertex_buffer.byte_size != 0) {
+			VkBuffer vertex_buffers[] = { Context.vertex_buffer.buffer };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(Context.command_buffer, 0, 1, vertex_buffers, offsets);
 
-			vkCmdBindIndexBuffer(Context.command_buffer, Context.index_buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(Context.command_buffer, Context.index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
 			vkCmdBindDescriptorSets(Context.command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				Context.graphics_pipeline_layout, 0, 1, &Context.current_descriptor_set, 0, nullptr);
+				Context.graphics_pipeline.layout, 0, 1, &Context.current_descriptor_set, 0, nullptr);
 
 			uint32_t size_of_command = sizeof(VkDrawIndexedIndirectCommand);
 
-			for (uint32_t x = 0; x < Context.number_of_draw_calls; x++) {
-				vkCmdDrawIndexedIndirect(Context.command_buffer, Context.indirect_command_buffer, x * size_of_command, 1, size_of_command);
+			for (uint32_t x = 0; x < Context.unique_mesh_count; x++) {
+				vkCmdDrawIndexedIndirect(Context.command_buffer, Context.indirect_command_buffer.buffer, x * size_of_command, 1, size_of_command);
 			}
 		}
 

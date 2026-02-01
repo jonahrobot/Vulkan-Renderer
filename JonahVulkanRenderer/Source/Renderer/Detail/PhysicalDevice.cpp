@@ -32,7 +32,7 @@ namespace {
 				queues_found.present_family = index;
 			}
 
-			if (queues_found.isComplete()) {
+			if (queues_found.graphics_compute_family.has_value() && queues_found.present_family.has_value()) {
 				break;
 			}
 
@@ -78,7 +78,9 @@ namespace {
 		VkPhysicalDeviceFeatures supported_features{};
 		vkGetPhysicalDeviceFeatures(PhysicalDevice, &supported_features);
 
-		return queues_found.isComplete() && all_extensions_supported && swap_chain_capable && supported_features.samplerAnisotropy;
+		bool all_queues_found = queues_found.graphics_compute_family.has_value() && queues_found.present_family.has_value();
+
+		return all_queues_found && all_extensions_supported && swap_chain_capable && supported_features.samplerAnisotropy;
 	}
 
 }

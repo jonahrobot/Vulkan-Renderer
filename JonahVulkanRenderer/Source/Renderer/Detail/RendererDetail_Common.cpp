@@ -38,51 +38,6 @@ namespace renderer::detail {
 		throw std::runtime_error("Failed to find suitable memory type.");
 	}
 
-	BufferData CreateDataBuffer(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkDeviceSize BufferSize, VkBufferUsageFlags UsageFlags, VkMemoryPropertyFlags PropertyFlags) {
-
-		VkBuffer buffer;
-
-		if (BufferSize == 0) {
-			BufferData failed{};
-			failed.err_code = BufferData::SIZEZERO;
-			return failed;
-		}
-
-		// Create buffer
-		VkBufferCreateInfo buffer_info{};
-		buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		buffer_info.size = BufferSize;
-		buffer_info.usage = UsageFlags;
-		buffer_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(LogicalDevice, &buffer_info, nullptr, &buffer) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create vertex buffer.");
-		}
-
-		// Allocate buffer memory
-		VkDeviceMemory buffer_memory;
-
-		VkMemoryRequirements memory_requirements;
-		vkGetBufferMemoryRequirements(LogicalDevice, buffer, &memory_requirements);
-
-		VkMemoryAllocateInfo allocate_info{};
-		allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocate_info.allocationSize = memory_requirements.size;
-		allocate_info.memoryTypeIndex = FindMemoryType(PhysicalDevice, memory_requirements.memoryTypeBits, PropertyFlags);
-
-		if (vkAllocateMemory(LogicalDevice, &allocate_info, nullptr, &buffer_memory) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to allocate vertex buffer memory.");
-		}
-
-		vkBindBufferMemory(LogicalDevice, buffer, buffer_memory, 0);
-
-		BufferData return_data{};
-		return_data.created_buffer = buffer;
-		return_data.memory_allocated_for_buffer = buffer_memory;
-
-		return return_data;
-	}
-
 	VkCommandBuffer BeginSingleTimeCommand(VkCommandPool CommandPool, VkDevice LogicalDevice) {
 		VkCommandBufferAllocateInfo alloc_info{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

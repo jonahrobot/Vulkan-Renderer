@@ -102,11 +102,11 @@ namespace renderer {
 			return render_pass;
 		}
 
-		std::vector<detail::InstanceData> ProcessInstanceData(const std::vector<detail::InstanceModelData>& NewModelSet) {
+		std::vector<detail::InstanceData> ProcessInstanceData(const std::vector<detail::MeshInstances>& NewModelSet) {
 
 			std::vector<detail::InstanceData> instance_data = {};
 
-			for (detail::InstanceModelData model_data : NewModelSet) {
+			for (detail::MeshInstances model_data : NewModelSet) {
 
 				for (uint32_t i = 0; i < model_data.instance_count; i++) {
 
@@ -151,7 +151,7 @@ namespace renderer {
 			return ubo;
 		}
 
-		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::InstanceModelData>& NewModelSet) {
+		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::MeshInstances>& NewModelSet) {
 			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
 
 			uint32_t m = 0;
@@ -159,9 +159,9 @@ namespace renderer {
 			VerticeToRender.clear();
 			Indices.clear();
 
-			for (detail::InstanceModelData model_usage_data : NewModelSet) {
+			for (detail::MeshInstances model_usage_data : NewModelSet) {
 
-				detail::ModelData model = model_usage_data.model_data;
+				detail::Mesh model = model_usage_data.model_data;
 
 				bool no_data = model.vertices.size() == 0 || model.indices.size() == 0;
 				if (no_data) continue;
@@ -281,18 +281,14 @@ namespace renderer {
 		context_graphics_pipeline.swapchain_extent = extent;
 		context_graphics_pipeline.descriptor_set_layout = descriptor_set_layout;
 
-		detail::PipelineData pipeline_info = detail::CreateGraphicsPipeline(context_graphics_pipeline);
-		graphics_pipeline = pipeline_info.pipeline;
-		graphics_pipeline_layout = pipeline_info.layout;
+		graphics_pipeline = detail::CreateGraphicsPipeline(context_graphics_pipeline);
 
 		// Create compute pipeline
 		detail::ComputePipelineContext context_compute_pipeline = {};
 		context_compute_pipeline.logical_device = logical_device;
 		context_compute_pipeline.descriptor_set_layout = descriptor_set_layout;
 
-		detail::PipelineData compute_pipeline_info = detail::CreateComputePipeline(context_compute_pipeline);
-		compute_pipeline = compute_pipeline_info.pipeline;
-		compute_pipeline_layout = compute_pipeline_info.layout;
+		compute_pipeline = detail::CreateComputePipeline(context_compute_pipeline);
 
 		// Create depth buffer
 		detail::DepthBufferContext context_depth_buffer = {};
@@ -319,17 +315,15 @@ namespace renderer {
 		compute_command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
 		compute_command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, compute_command_pool);
 
-		// Create UBO for Vertex
-		detail::UniformBufferContext context_ubo = {};
+		// Create UBOs
+		detail::MappedBufferContext context_ubo = {};
 		context_ubo.logical_device = logical_device;
-		context_ubo.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_ubo.physical_device = physical_device;
-		context_ubo.ubo_size = sizeof(detail::UniformBufferObject);
-
-		detail::UniformBufferData ubo_info = detail::CreateUniformBuffers(context_ubo);
-		uniform_buffers = ubo_info.uniform_buffers;
-		uniform_buffers_memory = ubo_info.uniform_buffers_memory;
-		uniform_buffers_mapped = ubo_info.uniform_buffers_mapped;
+		context_ubo.buffer_size = sizeof(detail::UniformBufferObject);
+		
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			uniform_buffers[i] = detail::CreateMappedBuffer(context_ubo);
+		}
 
 		// Create Descriptor Pool
 		descriptor_pool = detail::CreateDescriptorPool(logical_device, MAX_FRAMES_IN_FLIGHT);
@@ -339,7 +333,6 @@ namespace renderer {
 		context_descriptor_set.descriptor_pool = descriptor_pool;
 		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
 		context_descriptor_set.logical_device = logical_device;
-		context_descriptor_set.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 
 		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
 
@@ -378,14 +371,6 @@ namespace renderer {
 		vkDestroyImage(logical_device, depth_buffer.image, nullptr);
 		vkFreeMemory(logical_device, depth_buffer.image_memory, nullptr);
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			vkDestroyBuffer(logical_device, uniform_buffers[i], nullptr);
-			vkFreeMemory(logical_device, uniform_buffers_memory[i], nullptr);
-		}
-
-		vkDestroyBuffer(logical_device, instance_centers_buffer, nullptr);
-		vkFreeMemory(logical_device, instance_centers_buffer_memory, nullptr);
-
 		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
 
 		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr); 
@@ -398,10 +383,9 @@ namespace renderer {
 			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
 		}
 
-		vkDestroyPipeline(logical_device, graphics_pipeline, nullptr);
-		vkDestroyPipelineLayout(logical_device, graphics_pipeline_layout, nullptr);
-		vkDestroyPipeline(logical_device, compute_pipeline, nullptr);
-		vkDestroyPipelineLayout(logical_device, compute_pipeline_layout, nullptr);
+		DestroyPipeline(logical_device, graphics_pipeline);
+		DestroyPipeline(logical_device, compute_pipeline);
+
 		vkDestroyRenderPass(logical_device, render_pass, nullptr);
 
 		for (auto view : swapchain_image_views) {
@@ -410,23 +394,16 @@ namespace renderer {
 
 		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
 
-		vkDestroyBuffer(logical_device, index_buffer, nullptr);
-		vkFreeMemory(logical_device, index_buffer_memory, nullptr);
-
-		vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
-		vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
+		DestroyBuffer(logical_device, vertex_buffer);
+		DestroyBuffer(logical_device, index_buffer);
+		DestroyBuffer(logical_device, instance_centers_buffer);
+		DestroyBuffer(logical_device, instance_data_buffer);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			vkDestroyBuffer(logical_device, indirect_command_buffers[i], nullptr);
-			vkFreeMemory(logical_device, indirect_command_buffer_memorys[i], nullptr);
-
-			vkDestroyBuffer(logical_device, should_draw_buffers[i], nullptr);
-			vkFreeMemory(logical_device, should_draw_buffer_memorys[i], nullptr);
+			DestroyBuffer(logical_device, indirect_command_buffers[i]);
+			DestroyBuffer(logical_device, should_draw_buffers[i]);
+			DestroyBuffer(logical_device, uniform_buffers[i]);
 		}
-
-		vkDestroyBuffer(logical_device, instance_data_buffer, nullptr);
-		vkFreeMemory(logical_device, instance_data_buffer_memory, nullptr);
-
 
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
@@ -447,7 +424,7 @@ namespace renderer {
 		// Get Camera position
 		detail::UniformBufferObject current_ubo_data = GetNextUBO(extent, CameraPosition);
 
-		memcpy(uniform_buffers_mapped[current_frame], &current_ubo_data, sizeof(detail::UniformBufferObject));
+		memcpy(uniform_buffers[current_frame].buffer_mapped, &current_ubo_data, sizeof(detail::UniformBufferObject));
 
 		vkResetFences(logical_device, 1, &compute_in_flight_fences[current_frame]);
 
@@ -456,10 +433,9 @@ namespace renderer {
 		detail::Compute_CommandRecordingContext compute_command_context{};
 		compute_command_context.command_buffer = compute_command_buffers[current_frame];
 		compute_command_context.compute_pipeline = compute_pipeline;
-		compute_command_context.compute_pipeline_layout = compute_pipeline_layout;
 		compute_command_context.current_descriptor_set = descriptor_sets[current_frame];
 		if (FrustumCull) {
-			compute_command_context.instance_count = object_count;
+			compute_command_context.instance_count = mesh_count;
 		}
 		else {
 			compute_command_context.instance_count = 0;
@@ -502,17 +478,14 @@ namespace renderer {
 		command_context.framebuffers = framebuffers;
 		command_context.render_pass = render_pass;
 		command_context.graphics_pipeline = graphics_pipeline;
-		command_context.graphics_pipeline_layout = graphics_pipeline_layout;
 		command_context.command_buffer = command_buffers[current_frame];
 		command_context.current_descriptor_set = descriptor_sets[current_frame];
 		command_context.image_write_index = image_index;
 		command_context.swapchain_extent = extent;
 		command_context.vertex_buffer = vertex_buffer;
-		command_context.total_vertices = static_cast<uint32_t>(vertices_to_render.size());
 		command_context.index_buffer = index_buffer;
-		command_context.total_indices = static_cast<uint32_t>(indices.size());
+		command_context.unique_mesh_count = unique_mesh_count;
 		command_context.indirect_command_buffer = indirect_command_buffers[current_frame];
-		command_context.number_of_draw_calls = number_of_indirect_commands;
 		command_context.debug_function_begin = pfn_CmdBeginDebugUtilsLabelEXT;
 		command_context.debug_function_end = pfn_CmdEndDebugUtilsLabelEXT;
 
@@ -569,43 +542,27 @@ namespace renderer {
 	/// TODO: UPDATE this function to support ModelWithUsage Data
 	// Will still merge index and vertex data, but now will be more specific with instanced data with specific model matrices and such!
 	// This will be changes in this function, RecordIndirectCommands and ProcessInstanceData
-	void Renderer::UpdateModelSet(std::vector<detail::InstanceModelData> NewModelSet, bool UseWhiteTexture) {
+	void Renderer::UpdateModelSet(std::vector<detail::MeshInstances> NewModelSet, bool UseWhiteTexture) {
 
 		vkDeviceWaitIdle(logical_device);
 
-		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, object_count, NewModelSet);
-		number_of_indirect_commands = static_cast<uint32_t>(indirect_commands.size());
-
-		if (index_buffer != NULL) {
-			vkDestroyBuffer(logical_device, index_buffer, nullptr);
-			vkFreeMemory(logical_device, index_buffer_memory, nullptr);
-		}
-
-		if (vertex_buffer != NULL) {
-			vkDestroyBuffer(logical_device, vertex_buffer, nullptr);
-			vkFreeMemory(logical_device, vertex_buffer_memory, nullptr);
-		}
-
-		if (instance_centers_buffer != NULL) {
-			vkDestroyBuffer(logical_device, instance_centers_buffer, nullptr);
-			vkFreeMemory(logical_device, instance_centers_buffer_memory, nullptr);
-		}
+		DestroyBuffer(logical_device, vertex_buffer);
+		DestroyBuffer(logical_device, index_buffer);
+		DestroyBuffer(logical_device, instance_centers_buffer);
+		DestroyBuffer(logical_device, instance_data_buffer);
 	
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			if (indirect_command_buffers[i] != NULL) {
-				vkDestroyBuffer(logical_device, indirect_command_buffers[i], nullptr);
-				vkFreeMemory(logical_device, indirect_command_buffer_memorys[i], nullptr);
-			}
-			if (should_draw_buffers[i] != NULL) {
-				vkDestroyBuffer(logical_device, should_draw_buffers[i], nullptr);
-				vkFreeMemory(logical_device, should_draw_buffer_memorys[i], nullptr);
-			}
+			DestroyBuffer(logical_device, indirect_command_buffers[i]);
+			DestroyBuffer(logical_device, should_draw_buffers[i]);
 		}
 
-		if (instance_data_buffer != NULL) {
-			vkDestroyBuffer(logical_device, instance_data_buffer, nullptr);
-			vkFreeMemory(logical_device, instance_data_buffer_memory, nullptr);
-		}
+		std::vector<detail::Vertex> vertices_to_render;
+		std::vector<uint32_t>indices;
+
+		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, mesh_count, NewModelSet);
+		unique_mesh_count = indirect_commands.size();
+
+		// Create buffers
 
 		detail::BufferContext context_buffercreation = {};
 		context_buffercreation.logical_device = logical_device;
@@ -613,60 +570,27 @@ namespace renderer {
 		context_buffercreation.graphics_queue = graphics_queue;
 		context_buffercreation.command_pool = command_pool;
 
-		detail::BufferData vertexbuffer_info = detail::CreateLocalBuffer<detail::Vertex>(context_buffercreation, vertices_to_render, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-
-		if (vertexbuffer_info.err_code == detail::BufferData::SUCCESS) {
-			vertex_buffer = vertexbuffer_info.created_buffer;
-			vertex_buffer_memory = vertexbuffer_info.memory_allocated_for_buffer;
-		}
-
-		detail::BufferData indexbuffer_info = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, indices, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-
-		if (indexbuffer_info.err_code == detail::BufferData::SUCCESS) {
-			index_buffer = indexbuffer_info.created_buffer;
-			index_buffer_memory = indexbuffer_info.memory_allocated_for_buffer;
-		}
+		vertex_buffer = detail::CreateLocalBuffer<detail::Vertex>(context_buffercreation, vertices_to_render, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+		index_buffer = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, indices, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
 		VkBufferUsageFlags commandbuffer_usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			detail::BufferData commandbuffer_info = detail::CreateLocalBuffer<VkDrawIndexedIndirectCommand>(context_buffercreation, indirect_commands, commandbuffer_usage_flags);
-
-			if (commandbuffer_info.err_code == detail::BufferData::SUCCESS) {
-				indirect_command_buffers[i] = commandbuffer_info.created_buffer;
-				indirect_command_buffer_memorys[i] = commandbuffer_info.memory_allocated_for_buffer;
-			}
-			else {
-				throw std::runtime_error("Failed to create indirect command buffer.");
-			}
+			indirect_command_buffers[i] = detail::CreateLocalBuffer<VkDrawIndexedIndirectCommand>(context_buffercreation, indirect_commands, commandbuffer_usage_flags);
 		}
 
-		std::vector<uint32_t> should_draw_flags(object_count, 0);
-
+		std::vector<uint32_t> should_draw_flags(mesh_count, 0);
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-			detail::BufferData should_draw_info = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, should_draw_flags, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-
-			if (should_draw_info.err_code == detail::BufferData::SUCCESS) {
-				should_draw_buffers[i] = should_draw_info.created_buffer;
-				should_draw_buffer_memorys[i] = should_draw_info.memory_allocated_for_buffer;
-			}
-			else {
-				throw std::runtime_error("Failed to create should_draw flags buffer.");
-			}
+			should_draw_buffers[i] = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, should_draw_flags, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 		}
 
-		detail::BufferData shaderbuffer_info = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+		instance_data_buffer = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
 
-		if (shaderbuffer_info.err_code == detail::BufferData::SUCCESS) {
-			instance_data_buffer = shaderbuffer_info.created_buffer;
-			instance_data_buffer_memory = shaderbuffer_info.memory_allocated_for_buffer;
-		}
 
 		// Instance Centers Buffer
 		std::vector<glm::vec4> instance_centers{};
 
-		for (const detail::InstanceModelData& unique_model : NewModelSet) {
+		for (const detail::MeshInstances& unique_model : NewModelSet) {
 			
 			// Get bounding sphere center
 			glm::vec3 sum = glm::vec3(0);
@@ -687,35 +611,23 @@ namespace renderer {
 			}
 		}
 
-		detail::BufferData instance_centers_info = detail::CreateLocalBuffer<glm::vec4>(context_buffercreation, instance_centers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-		if (instance_centers_info.err_code == detail::BufferData::SUCCESS) {
-			instance_centers_buffer = instance_centers_info.created_buffer;
-			instance_centers_buffer_memory = instance_centers_info.memory_allocated_for_buffer;
-		}
-		
+		instance_centers_buffer = detail::CreateLocalBuffer<glm::vec4>(context_buffercreation, instance_centers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
 		// Update our Graphics Pipeline Descriptor Sets
 		detail::Graphic_DescriptorContext context_graphics_update = {};
 		context_graphics_update.logical_device = logical_device;
-		context_graphics_update.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
-		context_graphics_update.ubo_size = sizeof(detail::UniformBufferObject);
 		context_graphics_update.uniform_buffers = uniform_buffers;
 		context_graphics_update.instance_buffer = instance_data_buffer;
-		context_graphics_update.instance_buffer_size = sizeof(detail::InstanceData) * object_count;
 		context_graphics_update.should_draw_flags_buffer = should_draw_buffers;
-		context_graphics_update.should_draw_flags_buffer_size = sizeof(uint32_t) * object_count;
 
 		descriptor_sets = detail::UpdateDescriptorSets(context_graphics_update, descriptor_sets);
 
 		detail::Compute_DescriptorContext context_compute_update = {};
 		context_compute_update.logical_device = logical_device;
-		context_compute_update.max_frames_in_flight = MAX_FRAMES_IN_FLIGHT;
 		context_compute_update.indirect_draw_buffers = indirect_command_buffers;
-		context_compute_update.indirect_draw_buffer_size = sizeof(VkDrawIndexedIndirectCommand) * number_of_indirect_commands;
-		context_compute_update.instance_centers_buffer = instance_centers_buffer;
-		context_compute_update.instance_centers_buffer_size = sizeof(glm::vec4) * object_count;
-	
-		descriptor_sets = detail::UpdateComputeUniqueDescriptor(context_compute_update, descriptor_sets);
+		context_compute_update.instance_centers = instance_centers_buffer;
 
+		descriptor_sets = detail::UpdateComputeUniqueDescriptor(context_compute_update, descriptor_sets);
 	}
 
 	GLFWwindow* Renderer::Get_Window() {

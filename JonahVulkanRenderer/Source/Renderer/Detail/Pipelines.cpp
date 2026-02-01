@@ -46,7 +46,14 @@ namespace {
 // Implements all Vulkan Pipeline Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	PipelineData CreateComputePipeline(const ComputePipelineContext& Context) {
+	void DestroyPipeline(const VkDevice& LogicalDevice, Pipeline& Target) {
+		vkDestroyPipeline(LogicalDevice, Target.pipeline, nullptr);
+		vkDestroyPipelineLayout(LogicalDevice, Target.layout, nullptr);
+		Target.pipeline = NULL;
+		Target.layout = NULL;
+	}
+
+	Pipeline CreateComputePipeline(const ComputePipelineContext& Context) {
 
 		// Load shader
 		auto comp_shader_code = ReadFile("shaders/cull.spv");
@@ -83,14 +90,14 @@ namespace renderer::detail {
 		// Cleanup
 		vkDestroyShaderModule(Context.logical_device, comp_shader_module, nullptr);
 
-		PipelineData return_data{};
+		Pipeline return_data{};
 		return_data.pipeline = compute_pipeline;
 		return_data.layout = compute_pipeline_layout;
 
 		return return_data;
 	}
 
-	PipelineData CreateGraphicsPipeline(const GraphicsPipelineContext& Context) {
+	Pipeline CreateGraphicsPipeline(const GraphicsPipelineContext& Context) {
 
 		// Vertex and Fragment shaders
 		auto vert_shader_code = ReadFile("shaders/vert.spv");
@@ -232,7 +239,7 @@ namespace renderer::detail {
 		vkDestroyShaderModule(Context.logical_device, frag_shader_module, nullptr);
 		vkDestroyShaderModule(Context.logical_device, vert_shader_module, nullptr);
 
-		PipelineData return_data{};
+		Pipeline return_data{};
 		return_data.pipeline = graphics_pipeline;
 		return_data.layout = layout;
 
