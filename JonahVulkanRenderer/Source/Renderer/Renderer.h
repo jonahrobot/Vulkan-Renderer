@@ -99,8 +99,6 @@ private:
 	VkCommandPool compute_command_pool;
 	std::vector<VkCommandBuffer> compute_command_buffers;
 
-
-
 	detail::GPUResource depth_buffer;
 
 	PFN_vkCmdBeginDebugUtilsLabelEXT pfn_CmdBeginDebugUtilsLabelEXT = nullptr;

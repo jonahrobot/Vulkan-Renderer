@@ -171,6 +171,7 @@
     </ClCompile>
     <ClCompile Include="Source\Game\Application.cpp" />
     <ClCompile Include="Source\Game\Camera.cpp" />
+    <ClCompile Include="Source\MP Loader\MP_Parser.cpp" />
     <ClCompile Include="Source\Renderer\Detail\CommandBuffer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\DescriptorSet.cpp" />
     <ClCompile Include="Source\Renderer\Detail\FrameBuffer.cpp" />
@@ -188,6 +189,7 @@
   <ItemGroup>
     <ClInclude Include="Source\Game\Application.h" />
     <ClInclude Include="Source\Game\Camera.h" />
+    <ClInclude Include="Source\MP Loader\MP_Parser.h" />
     <ClInclude Include="Source\Renderer\Detail\RendererDetail.h" />
     <ClInclude Include="Source\Renderer\Detail\RendererDetail_Common.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />

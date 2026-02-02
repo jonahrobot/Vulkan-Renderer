@@ -1,4 +1,4 @@
-#include "USDParser.h"
+#include "MP_Parser.h"
 #include <fstream>
 #include <iostream>
 #include <random>
@@ -147,7 +147,7 @@ namespace {
 		return remaining_bytes;
 	}
 
-	std::vector<renderer::detail::MeshInstances> Run_ParseUSD(std::string MP_FilePath) {
+	std::vector<renderer::detail::MeshInstances> Run_ParseMP(std::string MP_FilePath) {
 		std::ifstream file(MP_FilePath, std::ios::binary);
 
 		if (!file) {
@@ -203,12 +203,12 @@ namespace {
 	}
 } // namespace unnamed
 
-namespace USD {
+namespace MP {
 
-	std::vector<renderer::detail::MeshInstances> ParseUSD(std::string MP_FilePath, bool BenchmarkMode){
+	std::vector<renderer::detail::MeshInstances> ParseMP(std::string MP_FilePath, bool BenchmarkMode){
 		
 		if (BenchmarkMode == false) {
-			return Run_ParseUSD(MP_FilePath);
+			return Run_ParseMP(MP_FilePath);
 		}
 
 		int run_count = 10;
@@ -217,7 +217,7 @@ namespace USD {
 		for (int i = 0; i < run_count; i++) {
 			auto start = std::chrono::high_resolution_clock::now();
 
-			Run_ParseUSD(MP_FilePath);
+			Run_ParseMP(MP_FilePath);
 
 			auto end = std::chrono::high_resolution_clock::now();
 			auto execution_time_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
@@ -229,7 +229,7 @@ namespace USD {
 		std::cout << "Average time over " << run_count << " executions: ";
 		std::cout << average_time / 60000000 << "m " << (average_time / 1000000) % 60 << "s " << (average_time / 1000) % 1000 << "ms " << average_time % 1000 << "us" << std::endl;
 	
-		return Run_ParseUSD(MP_FilePath);
+		return Run_ParseMP(MP_FilePath);
 	}
 
-} // namespace USD
+} // namespace MP

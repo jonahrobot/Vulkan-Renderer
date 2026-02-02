@@ -1,5 +1,5 @@
 #include "Application.h"
-#include "../USD Loader/USDParser.h"
+#include "../MP Loader/MP_Parser.h"
 
 #include <iostream>
 
@@ -8,7 +8,7 @@ namespace game {
 Application::Application() {
 	renderer = new renderer::Renderer();
 
-	std::vector<renderer::detail::MeshInstances> model_set = USD::ParseUSD("ExternalTools/dev.mp", false);
+	std::vector<renderer::detail::MeshInstances> model_set = MP::ParseMP("ExternalTools/dev.mp", false);
 
 	renderer->UpdateModelSet(model_set,true);
 
