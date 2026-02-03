@@ -170,7 +170,7 @@ namespace renderer {
 
 				uint32_t offset = static_cast<uint32_t>(VerticeToRender.size());
 
-				for (detail::Vertex v : model.vertices) {
+				for (const detail::Vertex& v : model.vertices) {
 					VerticeToRender.push_back(v);
 				}
 
@@ -203,6 +203,9 @@ namespace renderer {
 	}
 
 	Renderer::Renderer() {
+
+		mesh_count = 0;
+		unique_mesh_count = 0;
 
 		window = CreateGLFWWindow();
 		glfwSetWindowUserPointer(window, this);

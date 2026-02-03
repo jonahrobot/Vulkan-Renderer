@@ -6,6 +6,8 @@
 namespace game {
 
 Application::Application() {
+	last_frame_time = static_cast<float>(glfwGetTime());;
+
 	renderer = new renderer::Renderer();
 
 	std::vector<renderer::detail::MeshInstances> model_set = MP::ParseMP("ExternalTools/dev.mp", false);

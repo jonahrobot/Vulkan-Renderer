@@ -29,7 +29,7 @@ namespace renderer::detail {
 	struct Buffer {
 		VkBuffer buffer;
 		VkDeviceMemory memory;
-		uint64_t byte_size;
+		uint64_t byte_size = 0;
 	};
 
 	struct BufferMapped {
@@ -44,7 +44,7 @@ namespace renderer::detail {
 
 	struct MeshInstances {
 		Mesh model_data;
-		uint32_t instance_count;
+		uint32_t instance_count = 0;
 		std::vector<glm::mat4> instance_model_matrices;
 	};
 #pragma endregion

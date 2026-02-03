@@ -184,7 +184,6 @@
     <ClCompile Include="Source\Renderer\Detail\DataBuffer.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
-    <ClCompile Include="Source\USD Loader\USDParser.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Application.h" />
@@ -193,7 +192,6 @@
     <ClInclude Include="Source\Renderer\Detail\RendererDetail.h" />
     <ClInclude Include="Source\Renderer\Detail\RendererDetail_Common.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
-    <ClInclude Include="Source\USD Loader\USDParser.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\cull.comp" />
