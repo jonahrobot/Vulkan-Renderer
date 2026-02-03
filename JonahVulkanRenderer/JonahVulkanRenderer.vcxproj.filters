@@ -60,9 +60,6 @@
     <ClCompile Include="Source\Game\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\USD Loader\USDParser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\MP Loader\MP_Parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -83,9 +80,6 @@
     <ClInclude Include="Source\Game\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\USD Loader\USDParser.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\MP Loader\MP_Parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -94,5 +88,6 @@
     <None Include="Shaders\shader.vert" />
     <None Include="Shaders\shader.frag" />
     <None Include="Shaders\cull.comp" />
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

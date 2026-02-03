@@ -84,7 +84,7 @@ namespace renderer::detail {
 #pragma endregion
 
 #pragma region Image Creation
-	struct GPUResource {
+	struct DepthBuffer {
 		VkImage image;
 		VkDeviceMemory image_memory;
 		VkImageView image_view;

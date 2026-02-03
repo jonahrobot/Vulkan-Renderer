@@ -56,12 +56,60 @@ namespace {
 			return actualExtent;
 		}
 	}
+
+	std::vector<VkImage> GetSwapchainImages(const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice) {
+
+		std::vector<VkImage> images{};
+
+		uint32_t image_count = 0;
+		vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, nullptr);
+		images.resize(image_count);
+		vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, images.data());
+
+		return images;
+	}
+
+	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat) {
+
+		std::vector<VkImageView> image_views{};
+
+		image_views.resize(Images.size());
+
+		for (size_t i = 0; i < Images.size(); i++) {
+
+			VkImageViewCreateInfo create_info{};
+			create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			create_info.image = Images[i];
+
+			create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			create_info.format = ImageFormat;
+
+			// Set all to identity to avoid color alteration
+			create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+			create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			create_info.subresourceRange.baseMipLevel = 0;
+			create_info.subresourceRange.levelCount = 1;
+			create_info.subresourceRange.baseArrayLayer = 0;
+			create_info.subresourceRange.layerCount = 1;
+
+			VkResult created = vkCreateImageView(LogicalDevice, &create_info, nullptr, &image_views[i]);
+			if (created != VK_SUCCESS) {
+				throw std::runtime_error("Failed to create Image View.");
+			}
+		}
+
+		return image_views;
+	}
 }
 
 // Implements all Vulkan SwapChain Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	SwapchainData CreateSwapchain(const SwapchainContext& Context) {
+	SwapchainCore CreateSwapchain(const VulkanCore& Context) {
 
 		SwapChainSupportDetails creation_options = GetDeviceSwapchainSupport(Context.physical_device, Context.vulkan_surface);
 
@@ -88,11 +136,11 @@ namespace renderer::detail {
 		create_info.imageArrayLayers = 1; // Always 1 unless stereoscopic 3D.
 		create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-		uint32_t queue_family_indices[] = { Context.supported_queues.graphics_compute_family.value(), Context.supported_queues.present_family.value() };
+		uint32_t queue_family_indices[] = { Context.queues_supported.graphics_compute_family.value(), Context.queues_supported.present_family.value() };
 
 		// Must check if graphics and present queues are different.
 		// If they are, we must handle interactions concurrently.
-		if (Context.supported_queues.graphics_compute_family != Context.supported_queues.present_family) {
+		if (Context.queues_supported.graphics_compute_family != Context.queues_supported.present_family) {
 			create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			create_info.queueFamilyIndexCount = 2;
 			create_info.pQueueFamilyIndices = queue_family_indices;
@@ -113,119 +161,9 @@ namespace renderer::detail {
 			throw std::runtime_error("Failed to create swap chain!");
 		}
 
-		SwapchainData return_data{};
+		std::vector<VkImage> images = GetSwapchainImages(swapchain, Context.logical_device);
+		std::vector<VkImageView> image_views = CreateSwapchainViews(images, Context.logical_device, surface_format.format);
 
-		return_data.swapchain_image_format = surface_format.format;
-		return_data.swapchain_extent = extent;
-		return_data.swapchain = swapchain;
-
-		return return_data;
+		return { swapchain, extent, surface_format.format, images, image_views };
 	}
-
-	std::vector<VkImage> GetSwapchainImages(const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice) {
-
-		std::vector<VkImage> images{};
-
-		uint32_t image_count = 0;
-		vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, nullptr);
-		images.resize(image_count);
-		vkGetSwapchainImagesKHR(LogicalDevice, Swapchain, &image_count, images.data());
-		
-		return images;
-	}
-
-	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat){
-
-		std::vector<VkImageView> image_views{};
-
-		image_views.resize(Images.size());
-
-		for (size_t i = 0; i < Images.size(); i++) {
-
-			VkImageViewCreateInfo create_info{};
-			create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			create_info.image = Images[i];
-
-			create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			create_info.format = ImageFormat;
-			
-			// Set all to identity to avoid color alteration
-			create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-			create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			create_info.subresourceRange.baseMipLevel = 0;
-			create_info.subresourceRange.levelCount = 1;
-			create_info.subresourceRange.baseArrayLayer = 0;
-			create_info.subresourceRange.layerCount = 1;
-
-			VkResult created = vkCreateImageView(LogicalDevice, &create_info, nullptr, &image_views[i]);
-			if (created != VK_SUCCESS) {
-				throw std::runtime_error("Failed to create Image View.");
-			}
-		}
-
-		return image_views;
-	}
-
-	RecreateSwapchainData RecreateSwapchain(RecreateSwapchainContext Context) {
-
-		RecreateSwapchainData out_data = {};
-
-		VkDevice logical_device = Context.swapchain_creation_data.logical_device;
-
-		// If window minimized, pause execution.
-		int width = 0, height = 0;
-		glfwGetFramebufferSize(Context.swapchain_creation_data.window, &width, &height);
-		while (width == 0 || height == 0) {
-			glfwGetFramebufferSize(Context.swapchain_creation_data.window, &width, &height);
-			glfwWaitEvents();
-		}
-
-		vkDeviceWaitIdle(logical_device);
-
-		// Cleanup old swapchain data
-
-		vkDestroyImageView(logical_device, Context.OLD_depth_buffer.image_view, nullptr);
-		vkDestroyImage(logical_device, Context.OLD_depth_buffer.image, nullptr);
-		vkFreeMemory(logical_device, Context.OLD_depth_buffer.image_memory, nullptr);
-
-		for (auto framebuffer : Context.OLD_framebuffers) {
-			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
-		}
-		for (auto view : Context.OLD_swapchain_image_views) {
-			vkDestroyImageView(logical_device, view, nullptr);
-		}
-		vkDestroySwapchainKHR(logical_device, Context.OLD_swapchain, nullptr);
-
-		// Create new swapchain data
-
-		out_data.swapchain_data = detail::CreateSwapchain(Context.swapchain_creation_data);
-
-		out_data.swapchain_images = detail::GetSwapchainImages(out_data.swapchain_data.swapchain, logical_device);
-
-		out_data.swapchain_image_views = detail::CreateSwapchainViews(out_data.swapchain_images, logical_device, out_data.swapchain_data.swapchain_image_format);
-
-		// Create Depth Resource
-		detail::DepthBufferContext context_depth_buffer = {};
-		context_depth_buffer.logical_device = logical_device;
-		context_depth_buffer.physical_device = Context.swapchain_creation_data.physical_device;
-		context_depth_buffer.swapchain_extent = out_data.swapchain_data.swapchain_extent;
-
-		out_data.depth_buffer = CreateDepthBuffer(context_depth_buffer);
-
-		detail::FrameBufferContext context_framebuffer = {};
-		context_framebuffer.image_views = out_data.swapchain_image_views;
-		context_framebuffer.render_pass = Context.render_pass;
-		context_framebuffer.swapchain_extent = out_data.swapchain_data.swapchain_extent;
-		context_framebuffer.logical_device = logical_device;
-		context_framebuffer.depth_image_view = out_data.depth_buffer.image_view;
-
-		out_data.framebuffers = detail::CreateFramebuffers(context_framebuffer);
-
-		return out_data;
-	}
-
 } // namespace renderer::detail

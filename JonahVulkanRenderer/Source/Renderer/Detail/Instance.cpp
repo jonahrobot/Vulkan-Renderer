@@ -35,7 +35,7 @@ bool CheckValidationLayerSupport(const std::vector<const char*>& ValidationLayer
 // Implements all Vulkan Instance creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions) {
+Instance_Stage CreateVulkanInstance(GLFWwindow* window, bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions){
 
 	if (UseValidationLayers && CheckValidationLayerSupport(ValidationLayersToSupport) == false) {
 		throw std::runtime_error("Current device does not support all Validation Layers.");	
@@ -67,7 +67,7 @@ VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vecto
 		throw std::runtime_error("Vulkan failed to create instance.");
 	}
 
-	return VulkanInstance;
+	return {VulkanInstance, window};
 }
 
 } // namespace renderer::detail

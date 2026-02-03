@@ -47,26 +47,44 @@ namespace renderer::detail {
 		uint32_t instance_count = 0;
 		std::vector<glm::mat4> instance_model_matrices;
 	};
+
 #pragma endregion
 
 #pragma region Vulkan Instance
+
 	// Implemented in "Instance.cpp"
-	VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions);
+	struct Instance_Stage {
+		VkInstance vulkan_instance;
+		GLFWwindow* window;
+	};
+	Instance_Stage CreateVulkanInstance(GLFWwindow* window, bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions);
+
+#pragma endregion
+
+#pragma region Surface Creation
+
+	struct Surface_Stage {
+		VkInstance vulkan_instance;
+		GLFWwindow* window;
+		VkSurfaceKHR vulkan_surface;
+	};
+	Surface_Stage CreateVulkanSurface(const Instance_Stage& Context);
+
 #pragma endregion
 
 #pragma region Physical Device
 	// Implemented in "PhysicalDevice.cpp"
-	struct PhysicalDeviceContext {
+
+	struct PhysicalDevice_Stage {
 		VkInstance vulkan_instance;
+		GLFWwindow* window;
 		VkSurfaceKHR vulkan_surface;
-		std::vector<const char*> DeviceExtensionsToSupport;
-	};
-	struct PhysicalDeviceData {
 		VkPhysicalDevice physical_device;
 		QueueFamilyIndices queues_supported;
 	};
-	PhysicalDeviceData PickPhysicalDevice(const PhysicalDeviceContext& Context);
+	PhysicalDevice_Stage PickPhysicalDevice(const Surface_Stage& Context, const std::vector<const char*>& DeviceExtensionsToSupport);
 
+	// NEED TO MOVE TO SWAPCHAIN CLASS!
 	struct SwapChainSupportDetails {
 		VkSurfaceCapabilitiesKHR capabilities;
 		std::vector<VkSurfaceFormatKHR> formats;
@@ -78,55 +96,40 @@ namespace renderer::detail {
 
 #pragma region Logical Device
 	// Implemented in "LogicalDevice.cpp"
-	struct LogicalDeviceContext {
+	struct VulkanCore {
 		VkInstance vulkan_instance;
+		GLFWwindow* window;
 		VkSurfaceKHR vulkan_surface;
 		VkPhysicalDevice physical_device;
-		QueueFamilyIndices supported_queues;
-		bool UseValidationLayers;
-		std::vector<const char*> DeviceExtensionsToSupport;
-		std::vector<const char*> ValidationLayersToSupport;
+		QueueFamilyIndices queues_supported;
+		VkDevice logical_device;
 	};
-	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context);
+
+	VulkanCore CreateLogicalDevice(const PhysicalDevice_Stage& Context, bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& DeviceExtensionsToSupport);
 #pragma endregion
 
 #pragma region Swapchain
 	// Implemented in "Swapchain.cpp"
-	struct SwapchainContext {
-		VkSurfaceKHR vulkan_surface;
-		VkPhysicalDevice physical_device;
-		VkDevice logical_device;
-		GLFWwindow* window;
-		QueueFamilyIndices supported_queues;
-	};
-	struct SwapchainData {
+
+	struct SwapchainCore {
 		VkSwapchainKHR swapchain;
-		VkFormat swapchain_image_format;
 		VkExtent2D swapchain_extent;
-	};
-	SwapchainData CreateSwapchain(const SwapchainContext& Context);
-
-	std::vector<VkImage> GetSwapchainImages(const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
-
-	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
-
-	struct RecreateSwapchainContext {
-		SwapchainContext swapchain_creation_data;
-		VkRenderPass render_pass;
-
-		VkSwapchainKHR OLD_swapchain;
-		GPUResource OLD_depth_buffer;
-		std::vector<VkImageView> OLD_swapchain_image_views;
-		std::vector<VkFramebuffer> OLD_framebuffers;
-	};
-	struct RecreateSwapchainData {
-		SwapchainData swapchain_data;
-		GPUResource depth_buffer;
+		VkFormat swapchain_image_format;
 		std::vector<VkImage> swapchain_images;
 		std::vector<VkImageView> swapchain_image_views;
+	};
+	SwapchainCore CreateSwapchain(const VulkanCore& VulkanCore);
+
+	struct SwapchainDependents {
+		VkRenderPass render_pass;
+		DepthBuffer depth_buffer;
 		std::vector<VkFramebuffer> framebuffers;
 	};
-	RecreateSwapchainData RecreateSwapchain(RecreateSwapchainContext Context);
+
+	VkRenderPass CreateRenderPass(const VulkanCore& VulkanCore, const SwapchainCore& Swapchain);
+	DepthBuffer CreateDepthBuffer(const VulkanCore& VulkanCore, const SwapchainCore& Swapchain);
+	std::vector<VkFramebuffer> CreateFrameBuffers(const VulkanCore& VulkanCore, const SwapchainCore& Swapchain, const VkRenderPass& RenderPass, const DepthBuffer& DepthBuffer);
+
 #pragma endregion
 
 #pragma region Command Buffers
@@ -166,14 +169,14 @@ namespace renderer::detail {
 
 #pragma region Frame Buffers
 	// Implemented in "FrameBuffer.cpp"
-	struct FrameBufferContext {
-		std::vector<VkImageView> image_views;
-		VkRenderPass render_pass;
-		VkExtent2D swapchain_extent;
-		VkDevice logical_device;
-		VkImageView depth_image_view;
-	};
-	std::vector<VkFramebuffer> CreateFramebuffers(const FrameBufferContext& Context);
+	//struct FrameBufferContext {
+	//	std::vector<VkImageView> image_views;
+	//	VkRenderPass render_pass;
+	//	VkExtent2D swapchain_extent;
+	//	VkDevice logical_device;
+	//	VkImageView depth_image_view;
+	//};
+	//std::vector<VkFramebuffer> CreateFramebuffers(const FrameBufferContext& Context);
 #pragma endregion
 
 #pragma region Synchronization Primitives
@@ -229,12 +232,12 @@ namespace renderer::detail {
 
 	VkFormat FindDepthFormat(VkPhysicalDevice PhysicalDevice);
 
-	struct DepthBufferContext {
-		VkDevice logical_device;
-		VkPhysicalDevice physical_device;
-		VkExtent2D swapchain_extent;
-	};
-	GPUResource CreateDepthBuffer(const DepthBufferContext& Context);
+	//struct DepthBufferContext {
+	//	VkDevice logical_device;
+	//	VkPhysicalDevice physical_device;
+	//	VkExtent2D swapchain_extent;
+	//};
+	//DepthBuffer CreateDepthBuffer(const DepthBufferContext& Context);
 
 
 #pragma endregion
@@ -266,13 +269,6 @@ namespace renderer::detail {
 		Buffer instance_centers;
 	};
 	std::vector<VkDescriptorSet> UpdateComputeUniqueDescriptor(const Compute_DescriptorContext& Context, std::vector<VkDescriptorSet> old_set);
-
-#pragma endregion
-
-#pragma region Asset Loading
-	// Implemented in "AssetLoader.cpp"
-
-
 
 #pragma endregion
 

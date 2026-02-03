@@ -49,18 +49,20 @@ private:
 
 	GLFWwindow* window;
 
+	VkDevice logical_device;
+	detail::VulkanCore vulkan_core;
+	detail::SwapchainCore swapchain_core;
+	detail::SwapchainDependents swapchain_dependents;
+
+	void FreeVulkanCore(detail::VulkanCore& VulkanCore);
+	void FreeSwapchainCore(const detail::VulkanCore& VulkanCore, detail::SwapchainCore& SwapchainCore);
+
 	uint32_t mesh_count;
 	uint32_t unique_mesh_count;
 
-	VkInstance vulkan_instance;
-	VkSurfaceKHR vulkan_surface;
-	VkSwapchainKHR swapchain;
-	VkPhysicalDevice physical_device;
-	VkDevice logical_device;
 	VkQueue graphics_queue;
 	VkQueue compute_queue;
 	VkQueue present_queue;
-	VkRenderPass render_pass;
 
 	detail::Buffer vertex_buffer;
 	detail::Buffer index_buffer;
@@ -82,30 +84,21 @@ private:
 
 	// BAD - Needs refactoring
 
-	detail::SwapchainContext swapchain_creation_data;
-	VkExtent2D extent;
-
-	std::vector<VkImage> swapchain_images;
-	std::vector<VkImageView> swapchain_image_views;
-
 	VkDescriptorPool descriptor_pool;
 	std::vector<VkDescriptorSet> descriptor_sets;
 
 	VkDescriptorSetLayout descriptor_set_layout;
-	std::vector<VkFramebuffer> framebuffers;
 	VkCommandPool command_pool;
 	std::vector<VkCommandBuffer> command_buffers;
 
 	VkCommandPool compute_command_pool;
 	std::vector<VkCommandBuffer> compute_command_buffers;
 
-	detail::GPUResource depth_buffer;
-
 	PFN_vkCmdBeginDebugUtilsLabelEXT pfn_CmdBeginDebugUtilsLabelEXT = nullptr;
 	PFN_vkCmdEndDebugUtilsLabelEXT pfn_CmdEndDebugUtilsLabelEXT = nullptr;
 	
 	uint32_t current_frame = 0;
 
-	void RecreateSwapchainHelper();
+	void RecreateSwapchain();
 };
 } // namespace renderer
