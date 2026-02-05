@@ -194,7 +194,6 @@
     <ClInclude Include="Source\Renderer\Renderer.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram.cd" />
     <None Include="Shaders\cull.comp" />
     <None Include="Shaders\shader.frag" />
     <None Include="Shaders\shader.vert" />

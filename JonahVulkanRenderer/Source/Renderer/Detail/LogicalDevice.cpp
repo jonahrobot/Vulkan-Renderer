@@ -5,15 +5,15 @@
 // Implements all Vulkan Logical Device Creation functions in "RendererDetail.h" to be used in "Renderer.cpp"
 namespace renderer::detail {
 
-	VulkanCore CreateLogicalDevice(const PhysicalDevice_Stage& Context, bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& DeviceExtensionsToSupport){
+	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context) {
 		
 		VkDevice logical_device;
 
 		std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
 
 		// We convert supported queues to a set for easier iteration
-		uint32_t graphics_index = Context.queues_supported.graphics_compute_family.value();
-		uint32_t present_index = Context.queues_supported.present_family.value();
+		uint32_t graphics_index = Context.supported_queues.graphics_compute_family.value();
+		uint32_t present_index = Context.supported_queues.present_family.value();
 		std::set<uint32_t> supported_queues = { graphics_index, present_index };
 
 		float queue_priority = 1.0f;
@@ -36,13 +36,13 @@ namespace renderer::detail {
 		createInfo.pQueueCreateInfos = queue_create_infos.data();
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queue_create_infos.size());
 		createInfo.pEnabledFeatures = &device_features;
-		createInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensionsToSupport.size());;
-		createInfo.ppEnabledExtensionNames = DeviceExtensionsToSupport.data();
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(Context.DeviceExtensionsToSupport.size());;
+		createInfo.ppEnabledExtensionNames = Context.DeviceExtensionsToSupport.data();
 
 		// New versions of vulkan merge device extension validation with validation layers.
-		if (UseValidationLayers) {
-			createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayersToSupport.size());
-			createInfo.ppEnabledLayerNames = ValidationLayersToSupport.data();
+		if (Context.UseValidationLayers) {
+			createInfo.enabledLayerCount = static_cast<uint32_t>(Context.ValidationLayersToSupport.size());
+			createInfo.ppEnabledLayerNames = Context.ValidationLayersToSupport.data();
 		}
 		else {
 			createInfo.enabledLayerCount = 0;
@@ -54,7 +54,7 @@ namespace renderer::detail {
 			throw std::runtime_error("Failed to create logical device!");
 		}
 
-		return {Context.vulkan_instance, Context.window, Context.vulkan_surface, Context.physical_device, Context.queues_supported, logical_device};
+		return logical_device;
 	}
 
 } // namespace renderer::detail

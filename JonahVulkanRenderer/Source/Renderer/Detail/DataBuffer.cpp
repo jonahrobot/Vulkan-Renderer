@@ -221,18 +221,18 @@ namespace renderer::detail {
 		return FindSupportedFormat(Options, PhysicalDevice, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
 
-	DepthBuffer CreateDepthBuffer(const VulkanCore& VulkanCore, const SwapchainCore& Swapchain){
+	GPUResource CreateDepthBuffer(const DepthBufferContext& Context) {
 
-		DepthBuffer depth_buffer{};
+		GPUResource depth_buffer{};
 
-		VkFormat depth_format = FindDepthFormat(VulkanCore.physical_device);
+		VkFormat depth_format = FindDepthFormat(Context.physical_device);
 
 		CreateImageContext context_image{};
 		context_image.format = depth_format;
-		context_image.height = Swapchain.swapchain_extent.height;
-		context_image.width = Swapchain.swapchain_extent.width;
-		context_image.logical_device = VulkanCore.logical_device;
-		context_image.physical_device = VulkanCore.physical_device;
+		context_image.height = Context.swapchain_extent.height;
+		context_image.width = Context.swapchain_extent.width;
+		context_image.logical_device = Context.logical_device;
+		context_image.physical_device = Context.physical_device;
 		context_image.required_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 		context_image.tiling = VK_IMAGE_TILING_OPTIMAL;
 		context_image.usage_flags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -244,7 +244,7 @@ namespace renderer::detail {
 		ImageViewContext context_image_view{};
 		context_image_view.image_format = depth_format;
 		context_image_view.image = created_image.image;
-		context_image_view.logical_device = VulkanCore.logical_device;
+		context_image_view.logical_device = Context.logical_device;
 		context_image_view.aspect_flags = VK_IMAGE_ASPECT_DEPTH_BIT;
 		context_image_view.view_type = VK_IMAGE_VIEW_TYPE_2D;
 

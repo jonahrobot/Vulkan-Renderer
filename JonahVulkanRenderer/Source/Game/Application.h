@@ -15,12 +15,13 @@ public:
 	void Update();
 
 private:
-	renderer::Renderer* renderer;
 	GLFWwindow* window;
+	renderer::Renderer* renderer;
 	Camera* camera;
 
 	float last_frame_time;
 	bool held_space = false;
+
 	bool frustum_cull = true;
 };
 

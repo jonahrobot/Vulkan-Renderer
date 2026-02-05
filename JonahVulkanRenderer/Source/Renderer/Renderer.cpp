@@ -9,24 +9,41 @@
 
 namespace renderer {
 
-	namespace detail {
-		Surface_Stage CreateVulkanSurface(const Instance_Stage& Context){
+	// Unnamed namespace to show functions below are pure Utility with no internal state. 
+	// Cannot see or access private data of Renderer class.
+	namespace {
 
-			VkSurfaceKHR VulkanSurface;
+		GLFWwindow* CreateGLFWWindow() {
 
-			if (glfwCreateWindowSurface(Context.vulkan_instance, Context.window, nullptr, &VulkanSurface) != VK_SUCCESS) {
+			int GLFWErrorCode = glfwInit();
+			if (GLFWErrorCode == GLFW_FALSE) {
+				throw std::runtime_error("GLFW did not initialize correctly.");
+			}
+
+			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+			glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+
+			GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
+			return window;
+		}
+
+		VkSurfaceKHR CreateVulkanSurface(const VkInstance VulkanInstance, GLFWwindow* Window) {
+
+			VkSurfaceKHR vulkanSurface;
+
+			if (glfwCreateWindowSurface(VulkanInstance, Window, nullptr, &vulkanSurface) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create window surface!");
 			}
 
-			return { Context.vulkan_instance, Context.window, VulkanSurface };
+			return vulkanSurface;
 		}
 
-		VkRenderPass CreateRenderPass(const VulkanCore& VulkanCore, const SwapchainCore& Swapchain){
+		VkRenderPass CreateRenderPass(const VkDevice LogicalDevice, const VkFormat SwapChainFormat, const VkPhysicalDevice PhysicalDevice) {
 
 			VkRenderPass render_pass;
 
 			VkAttachmentDescription color_attachment{};
-			color_attachment.format = Swapchain.swapchain_image_format;
+			color_attachment.format = SwapChainFormat;
 			color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 			color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -40,7 +57,7 @@ namespace renderer {
 			color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 			VkAttachmentDescription depth_attachment{};
-			depth_attachment.format = renderer::detail::FindDepthFormat(VulkanCore.physical_device);
+			depth_attachment.format = renderer::detail::FindDepthFormat(PhysicalDevice);
 			depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 			depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -78,31 +95,11 @@ namespace renderer {
 			render_pass_info.dependencyCount = 1;
 			render_pass_info.pDependencies = &dependency;
 
-			if (vkCreateRenderPass(VulkanCore.logical_device, &render_pass_info, nullptr, &render_pass) != VK_SUCCESS) {
+			if (vkCreateRenderPass(LogicalDevice, &render_pass_info, nullptr, &render_pass) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create render pass.");
 			}
 
 			return render_pass;
-		}
-
-	}
-
-	// Unnamed namespace to show functions below are pure Utility with no internal state. 
-	// Cannot see or access private data of Renderer class.
-	namespace {
-
-		GLFWwindow* CreateGLFWWindow() {
-
-			int GLFWErrorCode = glfwInit();
-			if (GLFWErrorCode == GLFW_FALSE) {
-				throw std::runtime_error("GLFW did not initialize correctly.");
-			}
-
-			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-			glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-			GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-			return window;
 		}
 
 		std::vector<detail::InstanceData> ProcessInstanceData(const std::vector<detail::MeshInstances>& NewModelSet) {
@@ -221,25 +218,61 @@ namespace renderer {
 			InstanceExtensionsToSupport.push_back(glfwExtensions[i]);
 		}
 
-		auto instance_stage = detail::CreateVulkanInstance(window, UseValidationLayers, ValidationLayersToSupport, InstanceExtensionsToSupport);
-		auto surface_stage = detail::CreateVulkanSurface(instance_stage);
-		auto physical_device_stage = detail::PickPhysicalDevice(surface_stage, DeviceExtensionsToSupport);
-		vulkan_core = detail::CreateLogicalDevice(physical_device_stage, UseValidationLayers, ValidationLayersToSupport, DeviceExtensionsToSupport);
-		swapchain_core = detail::CreateSwapchain(vulkan_core);
+		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport, InstanceExtensionsToSupport);
+		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
 
-		swapchain_dependents = {};
-		swapchain_dependents.render_pass = detail::CreateRenderPass(vulkan_core, swapchain_core);
-		swapchain_dependents.depth_buffer = detail::CreateDepthBuffer(vulkan_core, swapchain_core);
-		swapchain_dependents.framebuffers = detail::CreateFrameBuffers(vulkan_core, swapchain_core, swapchain_dependents.render_pass, swapchain_dependents.depth_buffer);
+		// Fetch functions
+		pfn_CmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
+		pfn_CmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
 
-		logical_device = vulkan_core.logical_device;		
+		// Create Physical Device
+		detail::PhysicalDeviceContext context_physical = {};
+		context_physical.vulkan_instance = vulkan_instance;
+		context_physical.vulkan_surface = vulkan_surface;
+		context_physical.DeviceExtensionsToSupport = DeviceExtensionsToSupport;
+
+		detail::PhysicalDeviceData physical_device_data = detail::PickPhysicalDevice(context_physical);
+		physical_device = physical_device_data.physical_device;
+
+		// Create Logical Device
+		detail::LogicalDeviceContext context_logical = {};
+		context_logical.vulkan_instance = vulkan_instance;
+		context_logical.vulkan_surface = vulkan_surface;
+		context_logical.physical_device = physical_device;
+		context_logical.supported_queues = physical_device_data.queues_supported;
+		context_logical.UseValidationLayers = UseValidationLayers;
+		context_logical.DeviceExtensionsToSupport = DeviceExtensionsToSupport;
+		context_logical.ValidationLayersToSupport = ValidationLayersToSupport;
+
+		logical_device = detail::CreateLogicalDevice(context_logical);
+
+		// Create Swapchain
+		detail::SwapchainContext context_swapchain = {};
+		context_swapchain.physical_device = physical_device;
+		context_swapchain.vulkan_surface = vulkan_surface;
+		context_swapchain.logical_device = logical_device;
+		context_swapchain.window = window;
+		context_swapchain.supported_queues = physical_device_data.queues_supported;
+
+		swapchain_creation_data = context_swapchain;
+
+		detail::SwapchainData swapchain_info = detail::CreateSwapchain(context_swapchain);
+		swapchain = swapchain_info.swapchain;
+		extent = swapchain_info.swapchain_extent;
+
+		// Create images
+		swapchain_images = detail::GetSwapchainImages(swapchain, logical_device);
+		swapchain_image_views = detail::CreateSwapchainViews(swapchain_images, logical_device, swapchain_info.swapchain_image_format);
 
 		// Create queues
-		vkGetDeviceQueue(logical_device, vulkan_core.queues_supported.graphics_compute_family.value(), 0, &graphics_queue);
-		vkGetDeviceQueue(logical_device, vulkan_core.queues_supported.present_family.value(), 0, &present_queue);
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &graphics_queue);
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.present_family.value(), 0, &present_queue);
 
 		// Currently not using Async compute, in future can swap compute_queue to not be equal to graphics_queue
-		vkGetDeviceQueue(logical_device, vulkan_core.queues_supported.graphics_compute_family.value(), 0, &compute_queue);
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &compute_queue);
+
+		// Create render pass
+		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format, physical_device);
 
 		// Create descriptor set for graphics and compute
 		descriptor_set_layout = detail::CreateDescriptorLayout(logical_device);
@@ -247,8 +280,8 @@ namespace renderer {
 		// Create graphics pipeline
 		detail::GraphicsPipelineContext context_graphics_pipeline = {};
 		context_graphics_pipeline.logical_device = logical_device;
-		context_graphics_pipeline.render_pass = swapchain_dependents.render_pass;
-		context_graphics_pipeline.swapchain_extent = swapchain_core.swapchain_extent;
+		context_graphics_pipeline.render_pass = render_pass;
+		context_graphics_pipeline.swapchain_extent = extent;
 		context_graphics_pipeline.descriptor_set_layout = descriptor_set_layout;
 
 		graphics_pipeline = detail::CreateGraphicsPipeline(context_graphics_pipeline);
@@ -260,17 +293,35 @@ namespace renderer {
 
 		compute_pipeline = detail::CreateComputePipeline(context_compute_pipeline);
 
+		// Create depth buffer
+		detail::DepthBufferContext context_depth_buffer = {};
+		context_depth_buffer.logical_device = logical_device;
+		context_depth_buffer.physical_device = physical_device;
+		context_depth_buffer.swapchain_extent = extent;
+
+		depth_buffer = detail::CreateDepthBuffer(context_depth_buffer);
+
+		// Create framebuffers
+		detail::FrameBufferContext context_framebuffer = {};
+		context_framebuffer.logical_device = logical_device;
+		context_framebuffer.image_views = swapchain_image_views;
+		context_framebuffer.render_pass = render_pass;
+		context_framebuffer.swapchain_extent = extent;
+		context_framebuffer.depth_image_view = depth_buffer.image_view;
+
+		framebuffers = detail::CreateFramebuffers(context_framebuffer);
+
 		// Create Command Heirarchy
-		command_pool = detail::CreateCommandPool(logical_device, vulkan_core.queues_supported.graphics_compute_family.value());
+		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
 		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
 
-		compute_command_pool = detail::CreateCommandPool(logical_device, vulkan_core.queues_supported.graphics_compute_family.value());
+		compute_command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
 		compute_command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, compute_command_pool);
 
 		// Create UBOs
 		detail::MappedBufferContext context_ubo = {};
 		context_ubo.logical_device = logical_device;
-		context_ubo.physical_device = vulkan_core.physical_device;
+		context_ubo.physical_device = physical_device;
 		context_ubo.buffer_size = sizeof(detail::UniformBufferObject);
 		
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -299,88 +350,70 @@ namespace renderer {
 			compute_in_flight_fences.push_back(detail::CreateVulkanFence(logical_device));
 			compute_finished_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
 		}
-		for (size_t i = 0; i < swapchain_core.swapchain_images.size(); i++) {
+		for (size_t i = 0; i < swapchain_images.size(); i++) {
 			render_finished_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
 		}
-
-		// Fetch functions
-		pfn_CmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_core.vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
-		pfn_CmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_core.vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
-	}
-
-	void Renderer::FreeVulkanCore(detail::VulkanCore& VulkanCore) {
-
-		vkDeviceWaitIdle(VulkanCore.logical_device);
-
-		vkDestroyDevice(VulkanCore.logical_device, nullptr);
-		vkDestroySurfaceKHR(VulkanCore.vulkan_instance, VulkanCore.vulkan_surface, nullptr);
-		vkDestroyInstance(VulkanCore.vulkan_instance, nullptr);
-
-		glfwDestroyWindow(VulkanCore.window);
-		glfwTerminate();
-	}
-
-	void Renderer::FreeSwapchainCore(const detail::VulkanCore& VulkanCore, detail::SwapchainCore& SwapchainCore) {
-
-		vkDeviceWaitIdle(VulkanCore.logical_device);
-
-		for (auto view : SwapchainCore.swapchain_image_views) {
-			vkDestroyImageView(VulkanCore.logical_device, view, nullptr);
-		}
-
-		vkDestroySwapchainKHR(VulkanCore.logical_device, SwapchainCore.swapchain, nullptr);
 	}
 
 	Renderer::~Renderer() {
 
-		vkDeviceWaitIdle(vulkan_core.logical_device);
+		vkDeviceWaitIdle(logical_device);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			vkDestroySemaphore(vulkan_core.logical_device, image_available_semaphores[i], nullptr);
-			vkDestroyFence(vulkan_core.logical_device, in_flight_fences[i], nullptr);
-			vkDestroySemaphore(vulkan_core.logical_device, compute_finished_semaphores[i], nullptr);
-			vkDestroyFence(vulkan_core.logical_device, compute_in_flight_fences[i], nullptr);
+			vkDestroySemaphore(logical_device, image_available_semaphores[i], nullptr);
+			vkDestroyFence(logical_device, in_flight_fences[i], nullptr);
+			vkDestroySemaphore(logical_device, compute_finished_semaphores[i], nullptr);
+			vkDestroyFence(logical_device, compute_in_flight_fences[i], nullptr);
 		}
 
-		for (size_t i = 0; i < swapchain_core.swapchain_images.size(); i++) {
-			vkDestroySemaphore(vulkan_core.logical_device, render_finished_semaphores[i], nullptr);
+		for (size_t i = 0; i < swapchain_images.size(); i++) {
+			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
 
-		vkDestroyImageView(vulkan_core.logical_device, swapchain_dependents.depth_buffer.image_view, nullptr);
-		vkDestroyImage(vulkan_core.logical_device, swapchain_dependents.depth_buffer.image, nullptr);
-		vkFreeMemory(vulkan_core.logical_device, swapchain_dependents.depth_buffer.image_memory, nullptr);
+		vkDestroyImageView(logical_device, depth_buffer.image_view, nullptr);
+		vkDestroyImage(logical_device, depth_buffer.image, nullptr);
+		vkFreeMemory(logical_device, depth_buffer.image_memory, nullptr);
 
-		vkDestroyDescriptorPool(vulkan_core.logical_device, descriptor_pool, nullptr);
+		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
 
-		vkDestroyDescriptorSetLayout(vulkan_core.logical_device, descriptor_set_layout, nullptr);
+		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr); 
 
-		vkDestroyCommandPool(vulkan_core.logical_device, command_pool, nullptr);
+		vkDestroyCommandPool(logical_device, command_pool, nullptr);
 
-		vkDestroyCommandPool(vulkan_core.logical_device, compute_command_pool, nullptr);
+		vkDestroyCommandPool(logical_device, compute_command_pool, nullptr);
 
-		for (auto framebuffer : swapchain_dependents.framebuffers) {
-			vkDestroyFramebuffer(vulkan_core.logical_device, framebuffer, nullptr);
+		for (auto framebuffer : framebuffers) {
+			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
 		}
 
-		DestroyPipeline(vulkan_core.logical_device, graphics_pipeline);
-		DestroyPipeline(vulkan_core.logical_device, compute_pipeline);
+		DestroyPipeline(logical_device, graphics_pipeline);
+		DestroyPipeline(logical_device, compute_pipeline);
 
-		vkDestroyRenderPass(vulkan_core.logical_device, swapchain_dependents.render_pass, nullptr);
+		vkDestroyRenderPass(logical_device, render_pass, nullptr);
 
+		for (auto view : swapchain_image_views) {
+			vkDestroyImageView(logical_device, view, nullptr);
+		}
 
-		DestroyBuffer(vulkan_core.logical_device, vertex_buffer);
-		DestroyBuffer(vulkan_core.logical_device, index_buffer);
-		DestroyBuffer(vulkan_core.logical_device, instance_centers_buffer);
-		DestroyBuffer(vulkan_core.logical_device, instance_data_buffer);
+		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
+
+		DestroyBuffer(logical_device, vertex_buffer);
+		DestroyBuffer(logical_device, index_buffer);
+		DestroyBuffer(logical_device, instance_centers_buffer);
+		DestroyBuffer(logical_device, instance_data_buffer);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			DestroyBuffer(vulkan_core.logical_device, indirect_command_buffers[i]);
-			DestroyBuffer(vulkan_core.logical_device, should_draw_buffers[i]);
-			DestroyBuffer(vulkan_core.logical_device, uniform_buffers[i]);
+			DestroyBuffer(logical_device, indirect_command_buffers[i]);
+			DestroyBuffer(logical_device, should_draw_buffers[i]);
+			DestroyBuffer(logical_device, uniform_buffers[i]);
 		}
 
-		FreeSwapchainCore(vulkan_core,swapchain_core);
-		FreeVulkanCore(vulkan_core);
+		vkDestroyDevice(logical_device, nullptr);
+		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
+		vkDestroyInstance(vulkan_instance, nullptr); // Cleanup instance LAST in Vulkan Cleanup
+
+		glfwDestroyWindow(window);
+		glfwTerminate();
 	}
 
 	void Renderer::Draw(glm::mat4 CameraPosition, bool FrustumCull) {
@@ -392,7 +425,7 @@ namespace renderer {
 		vkWaitForFences(logical_device, 1, &compute_in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
 		// Get Camera position
-		detail::UniformBufferObject current_ubo_data = GetNextUBO(swapchain_core.swapchain_extent, CameraPosition);
+		detail::UniformBufferObject current_ubo_data = GetNextUBO(extent, CameraPosition);
 
 		memcpy(uniform_buffers[current_frame].buffer_mapped, &current_ubo_data, sizeof(detail::UniformBufferObject));
 
@@ -429,10 +462,10 @@ namespace renderer {
 		// GRAPHICS WORKLOAD
 
 		uint32_t image_index;
-		VkResult result = vkAcquireNextImageKHR(logical_device, swapchain_core.swapchain, UINT64_MAX, image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
+		VkResult result = vkAcquireNextImageKHR(logical_device, swapchain, UINT64_MAX, image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			RecreateSwapchain();
+			RecreateSwapchainHelper();
 			return;
 		}
 		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -445,13 +478,13 @@ namespace renderer {
 		
 		/// DRAW
 		detail::CommandRecordingContext command_context{};
-		command_context.framebuffers = swapchain_dependents.framebuffers;
-		command_context.render_pass = swapchain_dependents.render_pass;
+		command_context.framebuffers = framebuffers;
+		command_context.render_pass = render_pass;
 		command_context.graphics_pipeline = graphics_pipeline;
 		command_context.command_buffer = command_buffers[current_frame];
 		command_context.current_descriptor_set = descriptor_sets[current_frame];
 		command_context.image_write_index = image_index;
-		command_context.swapchain_extent = swapchain_core.swapchain_extent;
+		command_context.swapchain_extent = extent;
 		command_context.vertex_buffer = vertex_buffer;
 		command_context.index_buffer = index_buffer;
 		command_context.unique_mesh_count = unique_mesh_count;
@@ -488,7 +521,7 @@ namespace renderer {
 		present_info.waitSemaphoreCount = 1;
 		present_info.pWaitSemaphores = signal_semaphores; // Wait for above command to complete before we render frame.
 
-		VkSwapchainKHR all_swapchains[] = { swapchain_core.swapchain };
+		VkSwapchainKHR all_swapchains[] = { swapchain };
 		present_info.swapchainCount = 1;
 		present_info.pSwapchains = all_swapchains;
 		present_info.pImageIndices = &image_index;
@@ -499,7 +532,7 @@ namespace renderer {
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebuffer_resized) {
 			framebuffer_resized = false;
-			RecreateSwapchain();
+			RecreateSwapchainHelper();
 		}
 		else if (result != VK_SUCCESS) {
 			throw std::runtime_error("Failed to present swapchain image.");
@@ -536,7 +569,7 @@ namespace renderer {
 
 		detail::BufferContext context_buffercreation = {};
 		context_buffercreation.logical_device = logical_device;
-		context_buffercreation.physical_device = vulkan_core.physical_device;
+		context_buffercreation.physical_device = physical_device;
 		context_buffercreation.graphics_queue = graphics_queue;
 		context_buffercreation.command_pool = command_pool;
 
@@ -604,34 +637,25 @@ namespace renderer {
 		return window;
 	}
 
-	void Renderer::RecreateSwapchain() {
+	void Renderer::RecreateSwapchainHelper() {
+		detail::RecreateSwapchainContext swapchain_context{};
+		swapchain_context.swapchain_creation_data = swapchain_creation_data;
+		swapchain_context.render_pass = render_pass;
+		swapchain_context.OLD_framebuffers = framebuffers;
+		swapchain_context.OLD_swapchain = swapchain;
+		swapchain_context.OLD_swapchain_image_views = swapchain_image_views;
+		swapchain_context.OLD_depth_buffer = depth_buffer;
 
-		int width = 0, height = 0;
-		glfwGetFramebufferSize(vulkan_core.window, &width, &height);
-		while (width == 0 || height == 0) {
-			glfwGetFramebufferSize(vulkan_core.window, &width, &height);
-			glfwWaitEvents();
-		}
+		detail::RecreateSwapchainData out_data = detail::RecreateSwapchain(swapchain_context);
 
-		vkDeviceWaitIdle(logical_device);
+		swapchain = out_data.swapchain_data.swapchain;
+		extent = out_data.swapchain_data.swapchain_extent;
 
-		// Cleanup old swapchain parts
-		vkDestroyImageView(logical_device, swapchain_dependents.depth_buffer.image_view, nullptr);
-		vkDestroyImage(logical_device, swapchain_dependents.depth_buffer.image, nullptr);
-		vkFreeMemory(logical_device, swapchain_dependents.depth_buffer.image_memory, nullptr);
+		std::cout << "Recreated swapchain with new extent: " << extent.width << " X " << extent.height << "." << std::endl;
 
-		for (auto framebuffer : swapchain_dependents.framebuffers) {
-			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
-		}
-
-		FreeSwapchainCore(vulkan_core, swapchain_core);
-
-		// Create new swapchain parts
-		swapchain_core = detail::CreateSwapchain(vulkan_core);
-
-		swapchain_dependents.depth_buffer = detail::CreateDepthBuffer(vulkan_core, swapchain_core);
-		swapchain_dependents.framebuffers = detail::CreateFrameBuffers(vulkan_core, swapchain_core, swapchain_dependents.render_pass, swapchain_dependents.depth_buffer);
-
-		std::cout << "Recreated swapchain with new extent: " << swapchain_core.swapchain_extent.width << " X " << swapchain_core.swapchain_extent.height << "." << std::endl;
+		framebuffers = out_data.framebuffers;
+		swapchain_images = out_data.swapchain_images;
+		swapchain_image_views = out_data.swapchain_image_views;
+		depth_buffer = out_data.depth_buffer;
 	}
 }// namespace renderer
