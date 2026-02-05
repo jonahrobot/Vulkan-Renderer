@@ -259,39 +259,14 @@ namespace renderer {
 		detail::SwapchainData swapchain_info = detail::CreateSwapchain(context_swapchain);
 		swapchain = swapchain_info.swapchain;
 		extent = swapchain_info.swapchain_extent;
+		VkFormat swapchain_format = swapchain_info.swapchain_image_format;
 
 		// Create images
 		swapchain_images = detail::GetSwapchainImages(swapchain, logical_device);
-		swapchain_image_views = detail::CreateSwapchainViews(swapchain_images, logical_device, swapchain_info.swapchain_image_format);
-
-		// Create queues
-		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &graphics_queue);
-		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.present_family.value(), 0, &present_queue);
-
-		// Currently not using Async compute, in future can swap compute_queue to not be equal to graphics_queue
-		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &compute_queue);
+		swapchain_image_views = detail::CreateSwapchainViews(swapchain_images, logical_device, swapchain_format);
 
 		// Create render pass
-		render_pass = CreateRenderPass(logical_device, swapchain_info.swapchain_image_format, physical_device);
-
-		// Create descriptor set for graphics and compute
-		descriptor_set_layout = detail::CreateDescriptorLayout(logical_device);
-
-		// Create graphics pipeline
-		detail::GraphicsPipelineContext context_graphics_pipeline = {};
-		context_graphics_pipeline.logical_device = logical_device;
-		context_graphics_pipeline.render_pass = render_pass;
-		context_graphics_pipeline.swapchain_extent = extent;
-		context_graphics_pipeline.descriptor_set_layout = descriptor_set_layout;
-
-		graphics_pipeline = detail::CreateGraphicsPipeline(context_graphics_pipeline);
-
-		// Create compute pipeline
-		detail::ComputePipelineContext context_compute_pipeline = {};
-		context_compute_pipeline.logical_device = logical_device;
-		context_compute_pipeline.descriptor_set_layout = descriptor_set_layout;
-
-		compute_pipeline = detail::CreateComputePipeline(context_compute_pipeline);
+		render_pass = CreateRenderPass(logical_device, swapchain_format, physical_device);
 
 		// Create depth buffer
 		detail::DepthBufferContext context_depth_buffer = {};
@@ -311,6 +286,38 @@ namespace renderer {
 
 		framebuffers = detail::CreateFramebuffers(context_framebuffer);
 
+		// Create queues
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &graphics_queue);
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.present_family.value(), 0, &present_queue);
+		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &compute_queue);
+		
+		// Create descriptor set for graphics and compute
+		descriptor_set_layout = detail::CreateDescriptorLayout(logical_device);
+		descriptor_pool = detail::CreateDescriptorPool(logical_device, MAX_FRAMES_IN_FLIGHT);
+
+		detail::DescriptorCreateContext context_descriptor_set = {};
+		context_descriptor_set.descriptor_pool = descriptor_pool;
+		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
+		context_descriptor_set.logical_device = logical_device;
+
+		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
+
+		// Create graphics pipeline
+		detail::GraphicsPipelineContext context_graphics_pipeline = {};
+		context_graphics_pipeline.logical_device = logical_device;
+		context_graphics_pipeline.render_pass = render_pass;
+		context_graphics_pipeline.swapchain_extent = extent;
+		context_graphics_pipeline.descriptor_set_layout = descriptor_set_layout;
+
+		graphics_pipeline = detail::CreateGraphicsPipeline(context_graphics_pipeline);
+
+		// Create compute pipeline
+		detail::ComputePipelineContext context_compute_pipeline = {};
+		context_compute_pipeline.logical_device = logical_device;
+		context_compute_pipeline.descriptor_set_layout = descriptor_set_layout;
+
+		compute_pipeline = detail::CreateComputePipeline(context_compute_pipeline);
+
 		// Create Command Heirarchy
 		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
 		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
@@ -327,17 +334,6 @@ namespace renderer {
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			uniform_buffers[i] = detail::CreateMappedBuffer(context_ubo);
 		}
-
-		// Create Descriptor Pool
-		descriptor_pool = detail::CreateDescriptorPool(logical_device, MAX_FRAMES_IN_FLIGHT);
-
-		// Create Descriptor Sets
-		detail::DescriptorCreateContext context_descriptor_set = {};
-		context_descriptor_set.descriptor_pool = descriptor_pool;
-		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
-		context_descriptor_set.logical_device = logical_device;
-
-		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
 
 		// Create sync objects
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -370,24 +366,26 @@ namespace renderer {
 			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
 
-		vkDestroyImageView(logical_device, depth_buffer.image_view, nullptr);
-		vkDestroyImage(logical_device, depth_buffer.image, nullptr);
-		vkFreeMemory(logical_device, depth_buffer.image_memory, nullptr);
-
-		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
-
-		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr); 
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			DestroyBuffer(logical_device, uniform_buffers[i]);
+		}
 
 		vkDestroyCommandPool(logical_device, command_pool, nullptr);
-
 		vkDestroyCommandPool(logical_device, compute_command_pool, nullptr);
+
+		DestroyPipeline(logical_device, graphics_pipeline);
+		DestroyPipeline(logical_device, compute_pipeline);
+
+		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
+		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr);
 
 		for (auto framebuffer : framebuffers) {
 			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
 		}
 
-		DestroyPipeline(logical_device, graphics_pipeline);
-		DestroyPipeline(logical_device, compute_pipeline);
+		vkDestroyImageView(logical_device, depth_buffer.image_view, nullptr);
+		vkDestroyImage(logical_device, depth_buffer.image, nullptr);
+		vkFreeMemory(logical_device, depth_buffer.image_memory, nullptr);
 
 		vkDestroyRenderPass(logical_device, render_pass, nullptr);
 
@@ -405,7 +403,6 @@ namespace renderer {
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			DestroyBuffer(logical_device, indirect_command_buffers[i]);
 			DestroyBuffer(logical_device, should_draw_buffers[i]);
-			DestroyBuffer(logical_device, uniform_buffers[i]);
 		}
 
 		vkDestroyDevice(logical_device, nullptr);
