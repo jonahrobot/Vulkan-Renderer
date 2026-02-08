@@ -191,14 +191,46 @@ namespace renderer::device {
 		return physical_device;
 	}
 
-	struct LogicalDeviceContext {
-		VkPhysicalDevice PhysicalDevice;
-		QueueFamilyIndices SupportedQueues;
-		bool UseValidationLayers;
-		std::vector<const char*> DeviceExtensionsToSupport;
-		std::vector<const char*> ValidationLayersToSupport;
-	};
 	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context) {
 
+		VkPhysicalDeviceFeatures device_features{};
+		device_features.samplerAnisotropy = VK_TRUE;
+
+		float queue_priority = 1.0f;
+
+		VkDeviceQueueCreateInfo graphics_compute_queue{};
+		graphics_compute_queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		graphics_compute_queue.queueFamilyIndex = Context.SupportedQueues.graphics_compute_family.value();
+		graphics_compute_queue.queueCount = 1;
+		graphics_compute_queue.pQueuePriorities = &queue_priority;
+
+		VkDeviceQueueCreateInfo present_queue{};
+		present_queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		present_queue.queueFamilyIndex = Context.SupportedQueues.present_family.value();
+		present_queue.queueCount = 1;
+		present_queue.pQueuePriorities = &queue_priority;
+
+		std::array<VkDeviceQueueCreateInfo, 2> queues{ graphics_compute_queue, present_queue};
+
+		VkDeviceCreateInfo create_info{};
+		create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		create_info.pQueueCreateInfos = queues.data();
+		create_info.queueCreateInfoCount = static_cast<uint32_t>(queues.size());
+		create_info.pEnabledFeatures = &device_features;
+		create_info.enabledExtensionCount = static_cast<uint32_t>(Context.DeviceExtensionsToSupport.size());;
+		create_info.ppEnabledExtensionNames = Context.DeviceExtensionsToSupport.data();
+		create_info.enabledLayerCount = 0;
+
+		if (Context.UseValidationLayers) {
+			create_info.enabledLayerCount = static_cast<uint32_t>(Context.ValidationLayersToSupport.size());
+			create_info.ppEnabledLayerNames = Context.ValidationLayersToSupport.data();
+		}
+
+		VkDevice logical_device;
+		if (vkCreateDevice(Context.PhysicalDevice, &create_info, nullptr, &logical_device) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create logical device!");
+		}
+
+		return logical_device;
 	}
 }

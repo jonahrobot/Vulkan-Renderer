@@ -60,28 +60,7 @@ namespace {
 
 #pragma endregion
 
-	bool IsDeviceSuitable(const VkPhysicalDevice PhysicalDevice,const VkSurfaceKHR CurrentSurface, const std::vector<const char*>& deviceExtensionsToSupport) {
 
-		renderer::detail::QueueFamilyIndices queues_found = FindSupportedQueues(PhysicalDevice, CurrentSurface);
-
-		bool all_extensions_supported = CheckDeviceExtensionSupport(PhysicalDevice, deviceExtensionsToSupport);
-
-		bool swap_chain_capable = false;
-
-		// Only check swapchain capabilities if GPU supports swapchains.
-		if (all_extensions_supported) { 
-			renderer::detail::SwapChainSupportDetails swap_chain_details = renderer::detail::GetDeviceSwapchainSupport(PhysicalDevice, CurrentSurface);
-			swap_chain_capable = !swap_chain_details.formats.empty() && !swap_chain_details.presentModes.empty();
-		}
-
-		// Check if GPU supports Anisotropic Filtering
-		VkPhysicalDeviceFeatures supported_features{};
-		vkGetPhysicalDeviceFeatures(PhysicalDevice, &supported_features);
-
-		bool all_queues_found = queues_found.graphics_compute_family.has_value() && queues_found.present_family.has_value();
-
-		return all_queues_found && all_extensions_supported && swap_chain_capable && supported_features.samplerAnisotropy;
-	}
 
 }
 
