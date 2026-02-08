@@ -182,6 +182,10 @@
     <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp" />
     <ClCompile Include="Source\Renderer\Detail\SyncPrimatives.cpp" />
     <ClCompile Include="Source\Renderer\Detail\DataBuffer.cpp" />
+    <ClCompile Include="Source\Renderer\NewDetail\VkDataSetup.cpp" />
+    <ClCompile Include="Source\Renderer\NewDetail\VkDeviceSetup.cpp" />
+    <ClCompile Include="Source\Renderer\NewDetail\VkPipelineSetup.cpp" />
+    <ClCompile Include="Source\Renderer\NewDetail\VkSwapchainSetup.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
   </ItemGroup>
@@ -191,7 +195,12 @@
     <ClInclude Include="Source\MP Loader\MP_Parser.h" />
     <ClInclude Include="Source\Renderer\Detail\RendererDetail.h" />
     <ClInclude Include="Source\Renderer\Detail\RendererDetail_Common.h" />
+    <ClInclude Include="Source\Renderer\NewDetail\VkDataSetup.h" />
+    <ClInclude Include="Source\Renderer\NewDetail\VkCommon.h" />
+    <ClInclude Include="Source\Renderer\NewDetail\VkDeviceSetup.h" />
+    <ClInclude Include="Source\Renderer\NewDetail\VkSwapchainSetup.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
+    <ClInclude Include="Source\Renderer\NewDetail\VkPipelineSetup.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\cull.comp" />

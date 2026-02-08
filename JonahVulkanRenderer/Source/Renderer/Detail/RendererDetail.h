@@ -50,65 +50,21 @@ namespace renderer::detail {
 #pragma endregion
 
 #pragma region Vulkan Instance
-	// Implemented in "Instance.cpp"
-	VkInstance CreateVulkanInstance(const bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions);
+	
 #pragma endregion
 
 #pragma region Physical Device
-	// Implemented in "PhysicalDevice.cpp"
-	struct PhysicalDeviceContext {
-		VkInstance vulkan_instance;
-		VkSurfaceKHR vulkan_surface;
-		std::vector<const char*> DeviceExtensionsToSupport;
-	};
-	struct PhysicalDeviceData {
-		VkPhysicalDevice physical_device;
-		QueueFamilyIndices queues_supported;
-	};
-	PhysicalDeviceData PickPhysicalDevice(const PhysicalDeviceContext& Context);
-
-	struct SwapChainSupportDetails {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	};
-	SwapChainSupportDetails GetDeviceSwapchainSupport(const VkPhysicalDevice physical_device, const VkSurfaceKHR current_surface);
 
 #pragma endregion
 
 #pragma region Logical Device
 	// Implemented in "LogicalDevice.cpp"
-	struct LogicalDeviceContext {
-		VkInstance vulkan_instance;
-		VkSurfaceKHR vulkan_surface;
-		VkPhysicalDevice physical_device;
-		QueueFamilyIndices supported_queues;
-		bool UseValidationLayers;
-		std::vector<const char*> DeviceExtensionsToSupport;
-		std::vector<const char*> ValidationLayersToSupport;
-	};
-	VkDevice CreateLogicalDevice(const LogicalDeviceContext& Context);
+
 #pragma endregion
 
 #pragma region Swapchain
 	// Implemented in "Swapchain.cpp"
-	struct SwapchainContext {
-		VkSurfaceKHR vulkan_surface;
-		VkPhysicalDevice physical_device;
-		VkDevice logical_device;
-		GLFWwindow* window;
-		QueueFamilyIndices supported_queues;
-	};
-	struct SwapchainData {
-		VkSwapchainKHR swapchain;
-		VkFormat swapchain_image_format;
-		VkExtent2D swapchain_extent;
-	};
-	SwapchainData CreateSwapchain(const SwapchainContext& Context);
 
-	std::vector<VkImage> GetSwapchainImages(const VkSwapchainKHR Swapchain, const VkDevice LogicalDevice);
-
-	std::vector<VkImageView> CreateSwapchainViews(const std::vector<VkImage>& Images, const VkDevice LogicalDevice, const VkFormat& ImageFormat);
 
 	struct RecreateSwapchainContext {
 		SwapchainContext swapchain_creation_data;
@@ -130,10 +86,7 @@ namespace renderer::detail {
 #pragma endregion
 
 #pragma region Command Buffers
-	// Implemented in "CommandBuffer.cpp"
-	VkCommandPool CreateCommandPool(const VkDevice LogicalDevice, uint32_t GraphicsFamilyIndex);
 
-	std::vector<VkCommandBuffer> CreateCommandBuffers(const int TotalFrames, const VkDevice LogicalDevice, const VkCommandPool CommandPool);
 
 	struct CommandRecordingContext {
 		uint64_t unique_mesh_count;
@@ -177,29 +130,11 @@ namespace renderer::detail {
 #pragma endregion
 
 #pragma region Synchronization Primitives
-	// Implemented in "SyncPrimatives.cpp"
-	VkSemaphore CreateVulkanSemaphore(VkDevice LogicalDevice);
-	VkFence CreateVulkanFence(VkDevice LogicalDevice);
+
 #pragma endregion
 
 #pragma region Graphics and Compute Pipeline
 	// Implemented in "Pipelines.cpp"
-
-	struct GraphicsPipelineContext {
-		VkRenderPass render_pass;
-		VkDevice logical_device;
-		VkExtent2D swapchain_extent;
-		VkDescriptorSetLayout descriptor_set_layout;
-	};
-	Pipeline CreateGraphicsPipeline(const GraphicsPipelineContext& Context);
-
-	struct ComputePipelineContext {
-		VkDevice logical_device;
-		VkDescriptorSetLayout descriptor_set_layout;
-	};
-	Pipeline CreateComputePipeline(const ComputePipelineContext& Context);
-
-	void DestroyPipeline(const VkDevice& LogicalDevice, Pipeline& Target);
 
 #pragma endregion
 
@@ -227,30 +162,11 @@ namespace renderer::detail {
 
 	BufferMapped CreateMappedBuffer(const MappedBufferContext& Context);
 
-	VkFormat FindDepthFormat(VkPhysicalDevice PhysicalDevice);
-
-	struct DepthBufferContext {
-		VkDevice logical_device;
-		VkPhysicalDevice physical_device;
-		VkExtent2D swapchain_extent;
-	};
-	GPUResource CreateDepthBuffer(const DepthBufferContext& Context);
-
 
 #pragma endregion
 
 #pragma region Descriptor Sets
 	// Implemented in "DescriptorSet.cpp"
-
-	VkDescriptorPool CreateDescriptorPool(const VkDevice& LogicalDevice, uint8_t MaxFramesInFlight);
-	VkDescriptorSetLayout CreateDescriptorLayout(const VkDevice& LogicalDevice);
-	
-	struct DescriptorCreateContext {
-		VkDevice logical_device;
-		VkDescriptorSetLayout descriptor_set_layout;
-		VkDescriptorPool descriptor_pool;
-	};
-	std::vector<VkDescriptorSet> CreateDescriptorSets(const DescriptorCreateContext& Context);
 
 	struct Graphic_DescriptorContext {
 		VkDevice logical_device;

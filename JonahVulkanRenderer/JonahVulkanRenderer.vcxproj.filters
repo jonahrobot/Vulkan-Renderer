@@ -60,10 +60,19 @@
     <ClCompile Include="Source\Game\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\USD Loader\USDParser.cpp">
+    <ClCompile Include="Source\MP Loader\MP_Parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\MP Loader\MP_Parser.cpp">
+    <ClCompile Include="Source\Renderer\NewDetail\VkDataSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\NewDetail\VkDeviceSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\NewDetail\VkPipelineSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\NewDetail\VkSwapchainSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,10 +92,22 @@
     <ClInclude Include="Source\Game\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\USD Loader\USDParser.h">
+    <ClInclude Include="Source\MP Loader\MP_Parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\MP Loader\MP_Parser.h">
+    <ClInclude Include="Source\Renderer\NewDetail\VkDeviceSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\NewDetail\VkSwapchainSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\NewDetail\VkPipelineSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\NewDetail\VkDataSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\NewDetail\VkCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
