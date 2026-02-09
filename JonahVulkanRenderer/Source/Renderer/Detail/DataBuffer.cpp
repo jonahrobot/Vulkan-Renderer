@@ -17,7 +17,7 @@ namespace {
 
 
 
-	VkFormat FindSupportedFormat(const std::vector<VkFormat>& Options, VkPhysicalDevice PhysicalDevice, VkImageTiling DesiredTiling, VkFormatFeatureFlags DesiredFeatures) {
+	VkFormat FindDepthFormat(const std::vector<VkFormat>& Options, VkPhysicalDevice PhysicalDevice, VkImageTiling DesiredTiling, VkFormatFeatureFlags DesiredFeatures) {
 
 		for (VkFormat format : Options) {
 			VkFormatProperties properties;
@@ -53,7 +53,7 @@ namespace renderer::detail {
 
 		std::vector<VkFormat> Options = { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
 
-		return FindSupportedFormat(Options, PhysicalDevice, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		return FindDepthFormat(Options, PhysicalDevice, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
 
 	GPUResource CreateDepthBuffer(const DepthBufferContext& Context) {

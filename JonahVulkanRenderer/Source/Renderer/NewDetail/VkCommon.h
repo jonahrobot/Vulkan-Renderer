@@ -3,11 +3,54 @@
 #include <vulkan/vulkan.hpp>
 #include <optional>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_CXX2A
+#include <glm/glm.hpp>
+
 namespace renderer {
+
+	#define MAX_FRAMES_IN_FLIGHT 2
 
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphics_compute_family;
 		std::optional<uint32_t> present_family;
+	};
+
+	struct Vertex {
+		glm::vec3 position;
+		glm::vec3 color;
+
+		static VkVertexInputBindingDescription GetBindingDescription() {
+			VkVertexInputBindingDescription binding_description{};
+			binding_description.binding = 0;
+			binding_description.stride = sizeof(Vertex);
+			binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+			return binding_description;
+		}
+
+		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescription() {
+			std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions = {};
+
+			// Position
+			attribute_descriptions[0].binding = 0;
+			attribute_descriptions[0].location = 0;
+			attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
+			attribute_descriptions[0].offset = offsetof(Vertex, position);
+
+			// Color
+			attribute_descriptions[1].binding = 0;
+			attribute_descriptions[1].location = 1;
+			attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
+			attribute_descriptions[1].offset = offsetof(Vertex, color);
+
+			return attribute_descriptions;
+		}
+
+		bool operator==(const Vertex& other) const {
+			return position == other.position && color == other.color;
+		}
 	};
 
 	VkCommandBuffer BeginSingleTimeCommand(VkCommandPool CommandPool, VkDevice LogicalDevice) {

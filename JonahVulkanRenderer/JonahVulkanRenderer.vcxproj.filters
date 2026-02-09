@@ -75,6 +75,9 @@
     <ClCompile Include="Source\Renderer\NewDetail\VkSwapchainSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Renderer\NewDetail\VkDrawSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Game\Application.h">
@@ -108,6 +111,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Renderer\NewDetail\VkCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\NewDetail\VkDrawSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
