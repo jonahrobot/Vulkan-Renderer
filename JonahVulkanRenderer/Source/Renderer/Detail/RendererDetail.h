@@ -119,14 +119,7 @@ namespace renderer::detail {
 
 #pragma region Frame Buffers
 	// Implemented in "FrameBuffer.cpp"
-	struct FrameBufferContext {
-		std::vector<VkImageView> image_views;
-		VkRenderPass render_pass;
-		VkExtent2D swapchain_extent;
-		VkDevice logical_device;
-		VkImageView depth_image_view;
-	};
-	std::vector<VkFramebuffer> CreateFramebuffers(const FrameBufferContext& Context);
+
 #pragma endregion
 
 #pragma region Synchronization Primitives
@@ -141,26 +134,6 @@ namespace renderer::detail {
 #pragma region Data Buffers
 	// Implemented in "DataBuffer.cpp"
 
-	struct BufferContext {
-		VkDevice logical_device;
-		VkPhysicalDevice physical_device;
-		VkQueue graphics_queue;
-		VkCommandPool command_pool;
-	};
-
-	template<typename T>
-	Buffer CreateLocalBuffer(const BufferContext& Context, const std::vector<T>& Data, VkBufferUsageFlags UsageFlags);
-
-	void DestroyBuffer(VkDevice LogicalDevice, Buffer& Buffer);
-	void DestroyBuffer(VkDevice LogicalDevice, BufferMapped& Buffer);
-
-	struct MappedBufferContext {
-		uint16_t buffer_size;
-		VkDevice logical_device;
-		VkPhysicalDevice physical_device;
-	};
-
-	BufferMapped CreateMappedBuffer(const MappedBufferContext& Context);
 
 
 #pragma endregion

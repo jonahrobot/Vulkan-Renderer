@@ -44,9 +44,6 @@ namespace renderer::detail {
 
 #pragma region Command Buffer Recording
 
-	VkCommandBuffer BeginSingleTimeCommand(VkCommandPool CommandPool, VkDevice LogicalDevice);
-
-	void EndSingleTimeCommand(VkCommandBuffer CommandBuffer, VkCommandPool CommandPool, VkDevice LogicalDevice, VkQueue GraphicsQueue);
 
 #pragma endregion
 

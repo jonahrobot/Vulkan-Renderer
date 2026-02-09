@@ -16,9 +16,19 @@ namespace renderer::swapchain {
 
 	VkSurfaceFormatKHR ChooseFormat(const SwapchainOptions& SwapchainOptions);
 	VkPresentModeKHR ChoosePresentMode(const SwapchainOptions& SwapchainOptions);
-	VkExtent2D ChooseExtent(const SwapchainOptions& SwapchainOptions, const GLFWwindow* Window);
-
-	VkSwapchainKHR CreateSwapchain(VkDevice LogicalDevice, VkSurfaceKHR VulkanSurface, const QueueFamilyIndices& SupportedQueues);
+	VkExtent2D ChooseExtent(const SwapchainOptions& SwapchainOptions, GLFWwindow* Window);
+	uint32_t ChooseImageCount(const SwapchainOptions& SwapchainOptions);
+	
+	VkSwapchainKHR CreateSwapchain(
+		VkDevice LogicalDevice, 
+		VkSurfaceKHR VulkanSurface, 
+		VkSurfaceFormatKHR Format, 
+		VkPresentModeKHR PresentMode, 
+		VkExtent2D Extent, 
+		uint32_t ImageCount,
+		const SwapchainOptions& SwapchainOptions,
+		const QueueFamilyIndices& SupportedQueues
+	);
 
 	std::vector<VkImage> CreateSwapchainImages(VkDevice LogicalDevice, VkSwapchainKHR Swapchain);
 	std::vector<VkImageView> CreateSwapchainViews(VkDevice LogicalDevice, VkFormat ImageFormat, const std::vector<VkImage>& Images);
