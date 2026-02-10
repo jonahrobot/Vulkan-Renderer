@@ -103,11 +103,11 @@ namespace {
 				v.color = mesh_color;
 				v.position = { vertices[j], vertices[j + 1],vertices[j + 2] };
 
-				new_model.model_data.vertices.push_back(v);
+				new_model.mesh.vertices.push_back(v);
 			}
 
 			for (int j = 0; j < indices.size(); j += 1) {
-				new_model.model_data.indices.push_back(indices[j]);
+				new_model.mesh.indices.push_back(indices[j]);
 			}
 
 			for (int j = 0; j < matrices.size(); j += 16) {

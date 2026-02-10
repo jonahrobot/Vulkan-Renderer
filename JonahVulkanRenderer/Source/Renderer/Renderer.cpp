@@ -10,33 +10,13 @@
 #include "NewDetail/VkPipelineSetup.h"
 #include "NewDetail/VkDataSetup.h"
 #include "NewDetail/VkDrawSetup.h"
+#include "NewDetail/VkSceneProcesser.h"
 
 namespace renderer {
 
 	// Unnamed namespace to show functions below are pure Utility with no internal state. 
 	// Cannot see or access private data of Renderer class.
 	namespace {
-
-
-		std::vector<InstanceData> ProcessInstanceData(const std::vector<MeshInstances>& NewModelSet) {
-
-			std::vector<detail::InstanceData> instance_data = {};
-
-			for (detail::MeshInstances model_data : NewModelSet) {
-
-				for (uint32_t i = 0; i < model_data.instance_count; i++) {
-
-					detail::InstanceData new_instance;
-
-					new_instance.model = model_data.instance_model_matrices[i];
-					new_instance.array_index.x = 0;
-
-					instance_data.push_back(new_instance);
-				}
-			}
-
-			return instance_data;
-		}
 
 		UBOData GetNextUBO(VkExtent2D SwapchainExtent, glm::mat4 CameraPosition) {
 
@@ -67,78 +47,6 @@ namespace renderer {
 			return ubo;
 		}
 
-		std::vector<glm::vec4> ProcessModelCenters(const std::vector<MeshInstances>& NewModelSet) {
-
-			std::vector<glm::vec4> instance_centers{};
-
-			for (const MeshInstances& unique_model : NewModelSet) {
-
-				// Get bounding sphere center
-				glm::vec3 sum = glm::vec3(0);
-				for (const Vertex& vertex : unique_model.model_data.vertices) {
-					sum += vertex.position;
-				}
-
-				float length = unique_model.model_data.vertices.size();
-				glm::vec4 model_center_point = glm::vec4(sum.x / length, sum.y / length, sum.z / length, 1);
-
-				// Apply Model offsets then add centers
-				for (const glm::mat4& instance_model_matrix : unique_model.instance_model_matrices) {
-
-					glm::vec4 center_with_offset = instance_model_matrix[3] + model_center_point;
-					center_with_offset.w = 1;
-
-					instance_centers.push_back(center_with_offset);
-				}
-			}
-
-			return instance_centers;
-		}
-
-		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<MeshInstances>& NewModelSet) {
-			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
-
-			uint32_t m = 0;
-			NumberOfMeshes = 0;
-			VerticeToRender.clear();
-			Indices.clear();
-
-			for (MeshInstances model_usage_data : NewModelSet) {
-
-				Mesh model = model_usage_data.model_data;
-
-				bool no_data = model.vertices.size() == 0 || model.indices.size() == 0;
-				if (no_data) continue;
-
-				NumberOfMeshes += model_usage_data.instance_count;
-
-				uint32_t offset = static_cast<uint32_t>(VerticeToRender.size());
-
-				for (const Vertex& v : model.vertices) {
-					VerticeToRender.push_back(v);
-				}
-
-				uint32_t first_index = static_cast<uint32_t>(Indices.size());
-
-				for (uint32_t i : model.indices) {
-					Indices.push_back(i + offset);
-				}
-
-				// Create draw command
-				VkDrawIndexedIndirectCommand indirect_command{};
-				indirect_command.instanceCount = model_usage_data.instance_count;
-				indirect_command.firstInstance = m;
-				indirect_command.firstIndex = first_index;
-				indirect_command.indexCount = static_cast<uint32_t>(model.indices.size());
-
-				indirect_commands.push_back(indirect_command);
-
-				m += model_usage_data.instance_count;
-			}
-
-			return indirect_commands;
-		}
-
 	} // namespace util
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -146,14 +54,17 @@ namespace renderer {
 		renderer->framebuffer_resized = true;
 	}
 
-	Renderer::Renderer() {
+	Renderer::Renderer(int ScreenWidth, int ScreenHeight) {
 
 		// Inital setup
 		mesh_count = 0;
 		unique_mesh_count = 0;
+		const char* vertex_shader_path = "shaders/vert.spv";
+		const char* fragment_shader_path = "shaders/frag.spv";
+		const char* compute_shader_path = "shaders/cull.spv";
 
 		// GLFW setup
-		window = device::CreateVulkanWindow("OpenUSD Renderer", WIDTH, HEIGHT);
+		window = device::CreateVulkanWindow("OpenUSD Renderer", ScreenWidth, ScreenHeight);
 		glfwSetWindowUserPointer(window, this);
 		glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
 
@@ -206,8 +117,8 @@ namespace renderer {
 		descriptor_sets = pipeline::CreateDescriptorSets(logical_device, descriptor_layout, descriptor_pool);
 
 		pipeline_layout = pipeline::CreatePipelineLayout(logical_device, descriptor_layout);
-		graphics_pipeline = pipeline::CreateGraphicsPipeline(logical_device, pipeline_layout, render_pass, VERTEX_SHADER, FRAGMENT_SHADER);
-		compute_pipeline = pipeline::CreateComputePipeline(logical_device, pipeline_layout, COMPUTE_SHADER);
+		graphics_pipeline = pipeline::CreateGraphicsPipeline(logical_device, pipeline_layout, render_pass, vertex_shader_path, fragment_shader_path);
+		compute_pipeline = pipeline::CreateComputePipeline(logical_device, pipeline_layout, compute_shader_path);
 
 		// Draw setup
 		graphics_command_pool = draw::CreateCommandPool(logical_device, queues_supported.graphics_compute_family.value());
@@ -509,15 +420,19 @@ namespace renderer {
 		}
 
 		// Get new data
-		std::vector<Vertex> vertex_buffer_data;
-		std::vector<uint32_t> index_buffer_data;
-		std::vector<uint32_t> should_draw_flags(mesh_count, 0);
-		std::vector<InstanceData> instance_data = ProcessInstanceData(NewModelSet);
-		std::vector<glm::vec4> model_centers_data = ProcessModelCenters(NewModelSet);
+		scene::SceneParser parser = scene::SceneParser(NewModelSet);
 
-		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertex_buffer_data, index_buffer_data, mesh_count, NewModelSet);
+		std::vector<Vertex> vertex_buffer_data = parser.GetSceneVertices();
+		std::vector<uint32_t> index_buffer_data = parser.GetSceneIndices();
+		std::vector<InstanceData> instance_data = parser.GetInstanceData();
+		std::vector<glm::vec4> model_centers_data = parser.GetModelCenters();
+		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = parser.GetDrawCommands();
+		std::vector<uint32_t> should_draw_flags(mesh_count, 0);
+
+		mesh_count = parser.GetMeshCount();
 		unique_mesh_count = indirect_commands.size();
 
+		// Load new data to GPU
 		data::BaseBufferContext ctx = {};
 		ctx.LogicalDevice = logical_device;
 		ctx.PhysicalDevice = physical_device;
@@ -530,7 +445,6 @@ namespace renderer {
 		VkBufferUsageFlags vertex_bit = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		VkBufferUsageFlags index_bit = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-		// Load new data to GPU
 		vertex_buffer = data::CreateBuffer(vertex_buffer_data.data(), vertex_buffer_data.size(), transfer_bit | vertex_bit, ctx);
 		index_buffer = data::CreateBuffer(index_buffer_data.data(), index_buffer_data.size(), transfer_bit | index_bit, ctx);
 		instance_data_buffer = data::CreateBuffer(instance_data.data(), instance_data.size(), storage_bit | transfer_bit, ctx);

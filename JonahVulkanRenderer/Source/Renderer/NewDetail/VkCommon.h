@@ -18,6 +18,28 @@ namespace renderer {
 		std::optional<uint32_t> present_family;
 	};
 
+	struct InstanceData {
+		alignas(16) glm::mat4 model;
+		alignas(16) glm::vec4 array_index;
+	};
+
+	struct UBOData {
+		alignas(16) glm::mat4 view;
+		alignas(16) glm::mat4 proj;
+		alignas(16) glm::vec4 frustum_planes[6];
+	};
+
+	struct Mesh {
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
+	};
+
+	struct MeshInstances {
+		Mesh mesh;
+		uint32_t instance_count = 0;
+		std::vector<glm::mat4> instance_model_matrices;
+	};
+
 	struct Vertex {
 		glm::vec3 position;
 		glm::vec3 color;

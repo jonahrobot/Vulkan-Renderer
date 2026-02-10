@@ -186,6 +186,7 @@
     <ClCompile Include="Source\Renderer\NewDetail\VkDeviceSetup.cpp" />
     <ClCompile Include="Source\Renderer\NewDetail\VkDrawSetup.cpp" />
     <ClCompile Include="Source\Renderer\NewDetail\VkPipelineSetup.cpp" />
+    <ClCompile Include="Source\Renderer\NewDetail\VkSceneProcesser.cpp" />
     <ClCompile Include="Source\Renderer\NewDetail\VkSwapchainSetup.cpp" />
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
     <ClCompile Include="Source\Renderer\Detail\Instance.cpp" />
@@ -200,6 +201,7 @@
     <ClInclude Include="Source\Renderer\NewDetail\VkCommon.h" />
     <ClInclude Include="Source\Renderer\NewDetail\VkDeviceSetup.h" />
     <ClInclude Include="Source\Renderer\NewDetail\VkDrawSetup.h" />
+    <ClInclude Include="Source\Renderer\NewDetail\VkSceneProcesser.h" />
     <ClInclude Include="Source\Renderer\NewDetail\VkSwapchainSetup.h" />
     <ClInclude Include="Source\Renderer\Renderer.h" />
     <ClInclude Include="Source\Renderer\NewDetail\VkPipelineSetup.h" />

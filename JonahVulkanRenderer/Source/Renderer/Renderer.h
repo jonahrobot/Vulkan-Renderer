@@ -8,6 +8,7 @@
 #include "Detail/RendererDetail.h"
 #include "NewDetail/VkCommon.h"
 #include "NewDetail/VkDrawSetup.h"
+#include "NewDetail/VkDataSetup.h"
 
 #ifdef NDEBUG
 const bool UseValidationLayers = false;
@@ -17,43 +18,14 @@ const bool UseValidationLayers = true;
 
 namespace renderer {
 
-	#define WIDTH 800
-	#define HEIGHT 600
-	#define VERTEX_SHADER "shaders/vert.spv"
-	#define FRAGMENT_SHADER "shaders/frag.spv"
-	#define COMPUTE_SHADER "shaders/cull.spv"
-
-	struct InstanceData {
-		alignas(16) glm::mat4 model;
-		alignas(16) glm::vec4 array_index;
-	};
-
-	struct UBOData {
-		alignas(16) glm::mat4 view;
-		alignas(16) glm::mat4 proj;
-		alignas(16) glm::vec4 frustum_planes[6];
-	};
-
-	struct Mesh {
-		std::vector<Vertex> vertices;
-		std::vector<uint32_t> indices;
-	};
-
-	struct MeshInstances {
-		Mesh model_data;
-		uint32_t instance_count = 0;
-		std::vector<glm::mat4> instance_model_matrices;
-	};
-
 class Renderer {
 public:
-	Renderer();
+
+	Renderer(int ScreenWidth, int ScreenHeight);
 	~Renderer();
 
 	void Draw(glm::mat4 CameraPosition, bool FrustumCull);
-
 	void UpdateModelSet(std::vector<MeshInstances> NewModelSet, bool UseWhiteTexture);
-
 	GLFWwindow* Get_Window();
 
 	bool framebuffer_resized = false;
@@ -85,18 +57,28 @@ private:
 	VkSurfaceKHR vulkan_surface;
 	VkPhysicalDevice physical_device;
 	VkDevice logical_device;
+	VkRenderPass render_pass;
+
+	QueueFamilyIndices queues_supported;
 	VkQueue graphics_queue;
 	VkQueue compute_queue;
 	VkQueue present_queue;
-	VkRenderPass render_pass;
+
+	VkDescriptorPool descriptor_pool;
+	VkDescriptorSetLayout descriptor_layout;
+	std::vector<VkDescriptorSet> descriptor_sets;
 
 	draw::DepthBuffer depth_buffer;
+	std::vector<VkFramebuffer> framebuffers;
 
 	VkSurfaceFormatKHR swapchain_format;
 	VkPresentModeKHR swapchain_present_mode;
 	VkExtent2D swapchain_extent;
 	uint32_t swapchain_image_count;
+
 	VkSwapchainKHR swapchain;
+	std::vector<VkImage> swapchain_images;
+	std::vector<VkImageView> swapchain_image_views;
 
 	data::Buffer vertex_buffer;
 	data::Buffer index_buffer;
@@ -116,26 +98,9 @@ private:
 	VkPipelineLayout pipeline_layout;
 	VkPipeline graphics_pipeline;
 	VkPipeline compute_pipeline;
-
-	QueueFamilyIndices queues_supported;
-
-
-	// BAD - Needs refactoring
-
-	//detail::SwapchainContext swapchain_creation_data;
-
-	std::vector<VkImage> swapchain_images;
-	std::vector<VkImageView> swapchain_image_views;
-
-	VkDescriptorPool descriptor_pool;
-	std::vector<VkDescriptorSet> descriptor_sets;
-
-	VkDescriptorSetLayout descriptor_layout;
-	std::vector<VkFramebuffer> framebuffers;
 	VkCommandPool graphics_command_pool;
-	std::vector<VkCommandBuffer> graphics_command_buffers;
-
 	VkCommandPool compute_command_pool;
+	std::vector<VkCommandBuffer> graphics_command_buffers;
 	std::vector<VkCommandBuffer> compute_command_buffers;
 
 	PFN_vkCmdBeginDebugUtilsLabelEXT cmd_begin_debug = nullptr;
