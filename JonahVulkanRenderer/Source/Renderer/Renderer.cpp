@@ -358,14 +358,13 @@ namespace renderer {
 		vkCmdSetScissor(command_buffer, 0, 1, & scissor);
 
 		if (vertex_buffer.ByteSize != 0) {
+
 			VkBuffer vertex_buffers[] = { vertex_buffer.Buffer };
 			VkDeviceSize offsets[] = { 0 };
+
 			vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-
 			vkCmdBindIndexBuffer(command_buffer, index_buffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
-
-			vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeline_layout, 0, 1, &descriptor_sets[current_frame], 0, nullptr);
+			vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets[current_frame], 0, nullptr);
 
 			uint32_t size_of_command = sizeof(VkDrawIndexedIndirectCommand);
 
@@ -393,8 +392,8 @@ namespace renderer {
 
 		vkResetFences(logical_device, 1, &compute_in_flight_fences[current_frame]);
 		vkResetCommandBuffer(compute_command_buffers[current_frame], 0);
-
-
+		
+		// Compute Cull
 		RecordComputeCommands(current_frame, FrustumCull);
 		
 		VkSubmitInfo submit_info_compute{};
@@ -408,8 +407,7 @@ namespace renderer {
 			throw std::runtime_error("Failed to submit compute command buffer.");
 		}
 
-		// GRAPHICS WORKLOAD
-
+		// Prep for draw
 		uint32_t image_index;
 		VkResult result = vkAcquireNextImageKHR(logical_device, swapchain, UINT64_MAX, image_available_semaphores[current_frame], VK_NULL_HANDLE, &image_index);
 
@@ -424,40 +422,34 @@ namespace renderer {
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 		vkResetCommandBuffer(graphics_command_buffers[current_frame], 0);
 		
+		// Graphics Draw
 		RecordGraphicsCommands(current_frame, image_index);
+
+		VkSemaphore wait_semaphores[] = { compute_finished_semaphores[current_frame], image_available_semaphores[current_frame] };
+		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		VkSemaphore signal_semaphores[] = { render_finished_semaphores[image_index] };
 
 		VkSubmitInfo submit_info{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		VkSemaphore wait_semaphores[] = { compute_finished_semaphores[current_frame], image_available_semaphores[current_frame] }; // Command wont execute until semaphores are flagged.
-		VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT , VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }; // These stages will wait for above flag.
-		submit_info.waitSemaphoreCount = 2;
 		submit_info.pWaitSemaphores = wait_semaphores;
 		submit_info.pWaitDstStageMask = wait_stages;
-
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &graphics_command_buffers[current_frame];
-
-		VkSemaphore signal_semaphores[] = { render_finished_semaphores[image_index] }; // These will be flagged once command complete.
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = signal_semaphores;
 
-		if (vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]) != VK_SUCCESS) { // Once queue submitted, can start next frame.
+		if (vkQueueSubmit(graphics_queue, 1, &submit_info, in_flight_fences[current_frame]) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to submit draw command buffer.");
 		}
 
-		/// PRESENT
-
+		// Present
 		VkPresentInfoKHR present_info{};
 		present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		present_info.waitSemaphoreCount = 1;
-		present_info.pWaitSemaphores = signal_semaphores; // Wait for above command to complete before we render frame.
-
-		VkSwapchainKHR all_swapchains[] = { swapchain };
+		present_info.pWaitSemaphores = signal_semaphores;
 		present_info.swapchainCount = 1;
-		present_info.pSwapchains = all_swapchains;
+		present_info.pSwapchains = &swapchain;
 		present_info.pImageIndices = &image_index;
-
 		present_info.pResults = nullptr;
 
 		result = vkQueuePresentKHR(present_queue, &present_info);
