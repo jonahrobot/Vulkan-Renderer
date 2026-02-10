@@ -162,6 +162,12 @@ namespace renderer::draw {
 		return { depth_image, depth_image_memory, depth_image_view, depth_image_format };
 	}
 
+	void DestroyDepthBuffer(VkDevice LogicalDevice, DepthBuffer& Instance) {
+		vkDestroyImageView(LogicalDevice, Instance.ImageView, nullptr);
+		vkDestroyImage(LogicalDevice, Instance.Image, nullptr);
+		vkFreeMemory(LogicalDevice, Instance.ImageDeviceMemory, nullptr);
+	}
+
 	std::vector<VkFramebuffer> CreateFramebuffers(VkDevice LogicalDevice, DepthBuffer DepthBuffer, VkRenderPass RenderPass, VkExtent2D SwapchainExtent, const std::vector<VkImageView>& SwapchainImageViews) {
 		
 		std::vector<VkFramebuffer> frame_buffers(SwapchainImageViews.size());

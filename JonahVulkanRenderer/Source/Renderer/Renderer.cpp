@@ -216,26 +216,39 @@ namespace renderer {
 
 		vkDeviceWaitIdle(logical_device);
 
+		// Cleanup per frame data
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			// Graphics sync objects
 			vkDestroySemaphore(logical_device, image_available_semaphores[i], nullptr);
 			vkDestroyFence(logical_device, in_flight_fences[i], nullptr);
+
+			// Compute sync objects
 			vkDestroySemaphore(logical_device, compute_finished_semaphores[i], nullptr);
 			vkDestroyFence(logical_device, compute_in_flight_fences[i], nullptr);
+
+			// UBO for graphics and compute
+			data::DestroyUBO(logical_device, uniform_buffers[i]);
+
+			// SSBO for graphics and compute
+			data::DestroyBuffer(logical_device, indirect_command_buffers[i]);
+			data::DestroyBuffer(logical_device, should_draw_buffers[i]);
 		}
 
-		for (size_t i = 0; i < swapchain_images.size(); i++) {
-			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
-		}
+		// Cleanup render data
+		data::DestroyBuffer(logical_device, vertex_buffer);
+		data::DestroyBuffer(logical_device, index_buffer);
+		data::DestroyBuffer(logical_device, instance_centers_buffer);
+		data::DestroyBuffer(logical_device, instance_data_buffer);
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			DestroyBuffer(logical_device, uniform_buffers[i]);
-		}
-
+		// Cleanup draw framework
 		vkDestroyCommandPool(logical_device, graphics_command_pool, nullptr);
 		vkDestroyCommandPool(logical_device, compute_command_pool, nullptr);
 
-		DestroyPipeline(logical_device, graphics_pipeline);
-		DestroyPipeline(logical_device, compute_pipeline);
+		// Cleanup pipeline
+		vkDestroyPipeline(logical_device, graphics_pipeline, nullptr);
+		vkDestroyPipeline(logical_device, compute_pipeline, nullptr);
+		vkDestroyPipelineLayout(logical_device, pipeline_layout, nullptr);
 
 		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
 		vkDestroyDescriptorSetLayout(logical_device, descriptor_layout, nullptr);
@@ -243,33 +256,25 @@ namespace renderer {
 		for (auto framebuffer : framebuffers) {
 			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
 		}
-
-		vkDestroyImageView(logical_device, depth_buffer.image_view, nullptr);
-		vkDestroyImage(logical_device, depth_buffer.image, nullptr);
-		vkFreeMemory(logical_device, depth_buffer.image_memory, nullptr);
-
+		draw::DestroyDepthBuffer(logical_device, depth_buffer);
 		vkDestroyRenderPass(logical_device, render_pass, nullptr);
 
-		for (auto view : swapchain_image_views) {
-			vkDestroyImageView(logical_device, view, nullptr);
+		// Cleanup swapchain
+		for (size_t i = 0; i < swapchain_image_views.size(); i++) {
+			vkDestroyImageView(logical_device, swapchain_image_views[i], nullptr);
+			vkDestroyImage(logical_device, swapchain_images[i], nullptr);
+			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
-
 		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
-
-		DestroyBuffer(logical_device, vertex_buffer);
-		DestroyBuffer(logical_device, index_buffer);
-		DestroyBuffer(logical_device, instance_centers_buffer);
-		DestroyBuffer(logical_device, instance_data_buffer);
-
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			DestroyBuffer(logical_device, indirect_command_buffers[i]);
-			DestroyBuffer(logical_device, should_draw_buffers[i]);
-		}
-
+		
+		// Cleanup device
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
-		vkDestroyInstance(vulkan_instance, nullptr); // Cleanup instance LAST in Vulkan Cleanup
 
+		// Destroy instance - Last Vulkan VkDestroy command to call.
+		vkDestroyInstance(vulkan_instance, nullptr);
+
+		// Cleanup GLFW
 		glfwDestroyWindow(window);
 		glfwTerminate();
 	}

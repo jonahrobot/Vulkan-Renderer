@@ -85,13 +85,13 @@ private:
 	uint32_t swapchain_image_count;
 	VkSwapchainKHR swapchain;
 
-	detail::Buffer vertex_buffer;
-	detail::Buffer index_buffer;
-	detail::Buffer instance_centers_buffer;
-	detail::Buffer instance_data_buffer;
+	data::Buffer vertex_buffer;
+	data::Buffer index_buffer;
+	data::Buffer instance_centers_buffer;
+	data::Buffer instance_data_buffer;
 
-	std::array<detail::Buffer, MAX_FRAMES_IN_FLIGHT> should_draw_buffers;
-	std::array<detail::Buffer, MAX_FRAMES_IN_FLIGHT> indirect_command_buffers;
+	std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> should_draw_buffers;
+	std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> indirect_command_buffers;
 	std::array<data::UBO, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
 
 	std::vector<VkSemaphore> image_available_semaphores;
