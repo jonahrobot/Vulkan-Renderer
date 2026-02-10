@@ -37,16 +37,6 @@ namespace renderer::detail {
 		void* buffer_mapped;
 	};
 
-	struct Mesh {
-		std::vector<Vertex> vertices;
-		std::vector<uint32_t> indices;
-	};
-
-	struct MeshInstances {
-		Mesh model_data;
-		uint32_t instance_count = 0;
-		std::vector<glm::mat4> instance_model_matrices;
-	};
 #pragma endregion
 
 #pragma region Vulkan Instance

@@ -18,7 +18,7 @@ namespace renderer {
 	namespace {
 
 
-		std::vector<detail::InstanceData> ProcessInstanceData(const std::vector<detail::MeshInstances>& NewModelSet) {
+		std::vector<InstanceData> ProcessInstanceData(const std::vector<MeshInstances>& NewModelSet) {
 
 			std::vector<detail::InstanceData> instance_data = {};
 
@@ -67,7 +67,35 @@ namespace renderer {
 			return ubo;
 		}
 
-		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::MeshInstances>& NewModelSet) {
+		std::vector<glm::vec4> ProcessModelCenters(const std::vector<MeshInstances>& NewModelSet) {
+
+			std::vector<glm::vec4> instance_centers{};
+
+			for (const MeshInstances& unique_model : NewModelSet) {
+
+				// Get bounding sphere center
+				glm::vec3 sum = glm::vec3(0);
+				for (const Vertex& vertex : unique_model.model_data.vertices) {
+					sum += vertex.position;
+				}
+
+				float length = unique_model.model_data.vertices.size();
+				glm::vec4 model_center_point = glm::vec4(sum.x / length, sum.y / length, sum.z / length, 1);
+
+				// Apply Model offsets then add centers
+				for (const glm::mat4& instance_model_matrix : unique_model.instance_model_matrices) {
+
+					glm::vec4 center_with_offset = instance_model_matrix[3] + model_center_point;
+					center_with_offset.w = 1;
+
+					instance_centers.push_back(center_with_offset);
+				}
+			}
+
+			return instance_centers;
+		}
+
+		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<MeshInstances>& NewModelSet) {
 			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
 
 			uint32_t m = 0;
@@ -75,9 +103,9 @@ namespace renderer {
 			VerticeToRender.clear();
 			Indices.clear();
 
-			for (detail::MeshInstances model_usage_data : NewModelSet) {
+			for (MeshInstances model_usage_data : NewModelSet) {
 
-				detail::Mesh model = model_usage_data.model_data;
+				Mesh model = model_usage_data.model_data;
 
 				bool no_data = model.vertices.size() == 0 || model.indices.size() == 0;
 				if (no_data) continue;
@@ -465,82 +493,55 @@ namespace renderer {
 		current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
-
-	/// TODO: UPDATE this function to support ModelWithUsage Data
-	// Will still merge index and vertex data, but now will be more specific with instanced data with specific model matrices and such!
-	// This will be changes in this function, RecordIndirectCommands and ProcessInstanceData
-	void Renderer::UpdateModelSet(std::vector<detail::MeshInstances> NewModelSet, bool UseWhiteTexture) {
+	void Renderer::UpdateModelSet(std::vector<MeshInstances> NewModelSet, bool UseWhiteTexture) {
 
 		vkDeviceWaitIdle(logical_device);
 
-		DestroyBuffer(logical_device, vertex_buffer);
-		DestroyBuffer(logical_device, index_buffer);
-		DestroyBuffer(logical_device, instance_centers_buffer);
-		DestroyBuffer(logical_device, instance_data_buffer);
+		// Clear old data
+		data::DestroyBuffer(logical_device, vertex_buffer);
+		data::DestroyBuffer(logical_device, index_buffer);
+		data::DestroyBuffer(logical_device, instance_centers_buffer);
+		data::DestroyBuffer(logical_device, instance_data_buffer);
 	
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			DestroyBuffer(logical_device, indirect_command_buffers[i]);
-			DestroyBuffer(logical_device, should_draw_buffers[i]);
+			data::DestroyBuffer(logical_device, indirect_command_buffers[i]);
+			data::DestroyBuffer(logical_device, should_draw_buffers[i]);
 		}
 
-		std::vector<detail::Vertex> vertices_to_render;
-		std::vector<uint32_t>indices;
+		// Get new data
+		std::vector<Vertex> vertex_buffer_data;
+		std::vector<uint32_t> index_buffer_data;
+		std::vector<uint32_t> should_draw_flags(mesh_count, 0);
+		std::vector<InstanceData> instance_data = ProcessInstanceData(NewModelSet);
+		std::vector<glm::vec4> model_centers_data = ProcessModelCenters(NewModelSet);
 
-		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertices_to_render, indices, mesh_count, NewModelSet);
+		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = RecordIndirectCommands(vertex_buffer_data, index_buffer_data, mesh_count, NewModelSet);
 		unique_mesh_count = indirect_commands.size();
 
-		// Create buffers
+		data::BaseBufferContext ctx = {};
+		ctx.LogicalDevice = logical_device;
+		ctx.PhysicalDevice = physical_device;
+		ctx.GraphicsQueue = graphics_queue;
+		ctx.CommandPool = graphics_command_pool;
 
-		detail::BufferContext context_buffercreation = {};
-		context_buffercreation.logical_device = logical_device;
-		context_buffercreation.physical_device = physical_device;
-		context_buffercreation.graphics_queue = graphics_queue;
-		context_buffercreation.graphics_command_pool = graphics_command_pool;
+		VkBufferUsageFlags transfer_bit = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		VkBufferUsageFlags indirect_bit = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+		VkBufferUsageFlags storage_bit = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		VkBufferUsageFlags vertex_bit = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		VkBufferUsageFlags index_bit = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-		vertex_buffer = detail::CreateLocalBuffer<detail::Vertex>(context_buffercreation, vertices_to_render, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-		index_buffer = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, indices, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-
-		VkBufferUsageFlags commandbuffer_usage_flags = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+		// Load new data to GPU
+		vertex_buffer = data::CreateBuffer(vertex_buffer_data.data(), vertex_buffer_data.size(), transfer_bit | vertex_bit, ctx);
+		index_buffer = data::CreateBuffer(index_buffer_data.data(), index_buffer_data.size(), transfer_bit | index_bit, ctx);
+		instance_data_buffer = data::CreateBuffer(instance_data.data(), instance_data.size(), storage_bit | transfer_bit, ctx);
+		instance_centers_buffer = data::CreateBuffer(model_centers_data.data(), model_centers_data.size(), storage_bit | transfer_bit, ctx);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			indirect_command_buffers[i] = detail::CreateLocalBuffer<VkDrawIndexedIndirectCommand>(context_buffercreation, indirect_commands, commandbuffer_usage_flags);
+			indirect_command_buffers[i] = data::CreateBuffer(indirect_commands.data(), indirect_commands.size(), indirect_bit | storage_bit | transfer_bit, ctx);
+			should_draw_buffers[i] = data::CreateBuffer(should_draw_flags.data(), should_draw_flags.size(), storage_bit | transfer_bit, ctx);
 		}
 
-		std::vector<uint32_t> should_draw_flags(mesh_count, 0);
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			should_draw_buffers[i] = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, should_draw_flags, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-		}
-
-		instance_data_buffer = detail::CreateLocalBuffer<detail::InstanceData>(context_buffercreation, ProcessInstanceData(NewModelSet), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-
-
-		// Instance Centers Buffer
-		std::vector<glm::vec4> instance_centers{};
-
-		for (const detail::MeshInstances& unique_model : NewModelSet) {
-			
-			// Get bounding sphere center
-			glm::vec3 sum = glm::vec3(0);
-			for (const detail::Vertex& vertex : unique_model.model_data.vertices) {
-				sum += vertex.position;
-			}
-
-			float length = unique_model.model_data.vertices.size();
-			glm::vec4 model_center_point = glm::vec4(sum.x / length, sum.y / length, sum.z / length, 1);
-
-			// Apply Model offsets then add centers
-			for (const glm::mat4& instance_model_matrix : unique_model.instance_model_matrices) {
-
-				glm::vec4 center_with_offset = instance_model_matrix[3] + model_center_point;
-				center_with_offset.w = 1;
-
-				instance_centers.push_back(center_with_offset);
-			}
-		}
-
-		instance_centers_buffer = detail::CreateLocalBuffer<glm::vec4>(context_buffercreation, instance_centers, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-
-		// Update our Graphics Pipeline Descriptor Sets
+		// Update our descriptor set links
 		detail::Graphic_DescriptorContext context_graphics_update = {};
 		context_graphics_update.logical_device = logical_device;
 		context_graphics_update.uniform_buffers = uniform_buffers;

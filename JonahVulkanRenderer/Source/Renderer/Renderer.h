@@ -34,6 +34,17 @@ namespace renderer {
 		alignas(16) glm::vec4 frustum_planes[6];
 	};
 
+	struct Mesh {
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
+	};
+
+	struct MeshInstances {
+		Mesh model_data;
+		uint32_t instance_count = 0;
+		std::vector<glm::mat4> instance_model_matrices;
+	};
+
 class Renderer {
 public:
 	Renderer();
@@ -41,7 +52,7 @@ public:
 
 	void Draw(glm::mat4 CameraPosition, bool FrustumCull);
 
-	void UpdateModelSet(std::vector<detail::MeshInstances> NewModelSet, bool UseWhiteTexture);
+	void UpdateModelSet(std::vector<MeshInstances> NewModelSet, bool UseWhiteTexture);
 
 	GLFWwindow* Get_Window();
 
