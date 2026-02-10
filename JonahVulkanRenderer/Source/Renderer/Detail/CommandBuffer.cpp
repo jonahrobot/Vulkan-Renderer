@@ -4,22 +4,7 @@
 // Unnamed namespace to show functions below are pure Utility strictly for this .cpp file.
 namespace {
 
-	// From: docs.vulkan.org tutorial on Debug Utils
-	void cmd_begin_label(PFN_vkCmdBeginDebugUtilsLabelEXT Function, VkCommandBuffer Commandbuffer, const char* LabelName, std::vector<float> Color) {
 
-		VkDebugUtilsLabelEXT label = { VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT };
-		label.pLabelName = LabelName;
-		label.color[0] = Color[0];
-		label.color[1] = Color[1];
-		label.color[2] = Color[2];
-		label.color[3] = Color[3];
-		Function(Commandbuffer, &label);
-
-	}
-
-	void cmd_end_label(PFN_vkCmdEndDebugUtilsLabelEXT Function, VkCommandBuffer Commandbuffer) {
-		Function(Commandbuffer);
-	}
 
 }
 

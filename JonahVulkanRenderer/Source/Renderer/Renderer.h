@@ -17,11 +17,22 @@ const bool UseValidationLayers = true;
 
 namespace renderer {
 
-#define WIDTH 800
-#define HEIGHT 600
-#define VERTEX_SHADER "shaders/vert.spv"
-#define FRAGMENT_SHADER "shaders/frag.spv"
-#define COMPUTE_SHADER "shaders/cull.spv"
+	#define WIDTH 800
+	#define HEIGHT 600
+	#define VERTEX_SHADER "shaders/vert.spv"
+	#define FRAGMENT_SHADER "shaders/frag.spv"
+	#define COMPUTE_SHADER "shaders/cull.spv"
+
+	struct InstanceData {
+		alignas(16) glm::mat4 model;
+		alignas(16) glm::vec4 array_index;
+	};
+
+	struct UBOData {
+		alignas(16) glm::mat4 view;
+		alignas(16) glm::mat4 proj;
+		alignas(16) glm::vec4 frustum_planes[6];
+	};
 
 class Renderer {
 public:
@@ -38,18 +49,9 @@ public:
 
 private:
 
-	// GOOD - No refactor needed
-
-	struct InstanceData {
-		alignas(16) glm::mat4 model;
-		alignas(16) glm::vec4 array_index;
-	};
-
-	struct UBOData {
-		alignas(16) glm::mat4 view;
-		alignas(16) glm::mat4 proj;
-		alignas(16) glm::vec4 frustum_planes[6];
-	};
+	void RecordComputeCommands(uint32_t CurrentFrame, bool FrustumCull);
+	void RecordGraphicsCommands(uint32_t CurrentFrame, uint32_t ImageIndex);
+	void RecreateSwapchainHelper();
 
 	const std::vector<const char*> ValidationLayersToSupport = {
 		"VK_LAYER_KHRONOS_validation"
@@ -125,11 +127,9 @@ private:
 	VkCommandPool compute_command_pool;
 	std::vector<VkCommandBuffer> compute_command_buffers;
 
-	PFN_vkCmdBeginDebugUtilsLabelEXT pfn_CmdBeginDebugUtilsLabelEXT = nullptr;
-	PFN_vkCmdEndDebugUtilsLabelEXT pfn_CmdEndDebugUtilsLabelEXT = nullptr;
+	PFN_vkCmdBeginDebugUtilsLabelEXT cmd_begin_debug = nullptr;
+	PFN_vkCmdEndDebugUtilsLabelEXT cmd_end_debug = nullptr;
 	
 	uint32_t current_frame = 0;
-
-	void RecreateSwapchainHelper();
 };
 } // namespace renderer

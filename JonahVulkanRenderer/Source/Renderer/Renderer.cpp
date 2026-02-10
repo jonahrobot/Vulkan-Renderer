@@ -38,11 +38,11 @@ namespace renderer {
 			return instance_data;
 		}
 
-		detail::UBOData GetNextUBO(VkExtent2D Extent, glm::mat4 CameraPosition) {
+		UBOData GetNextUBO(VkExtent2D SwapchainExtent, glm::mat4 CameraPosition) {
 
-			detail::UBOData ubo = {};
+			UBOData ubo = {};
 
-			ubo.proj = glm::perspective(glm::radians(45.0f), Extent.width / (float)Extent.height, 0.01f, 100.0f);
+			ubo.proj = glm::perspective(glm::radians(45.0f), SwapchainExtent.width / (float)SwapchainExtent.height, 0.01f, 100.0f);
 			ubo.proj[1][1] *= -1;
 			ubo.view = CameraPosition;
 
@@ -208,8 +208,8 @@ namespace renderer {
 		}
 
 		// Debug setup
-		pfn_CmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
-		pfn_CmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
+		cmd_begin_debug = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
+		cmd_end_debug = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
 	}
 
 	Renderer::~Renderer() {
@@ -279,37 +279,123 @@ namespace renderer {
 		glfwTerminate();
 	}
 
+	void Renderer::RecordComputeCommands(uint32_t CurrentFrame, bool FrustumCull) {
+
+		VkCommandBuffer command_buffer = compute_command_buffers[CurrentFrame];
+
+		VkCommandBufferBeginInfo begin_info{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = nullptr;
+
+		if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to begin recording compute command buffer.");
+		}
+
+		draw::DEBUG_StartLabelCommand(cmd_begin_debug, command_buffer, "Compute Workload", {0.455f, 0.259f, 0.325f, 1.0f});
+
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline);
+		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout, 0, 1, &descriptor_sets[CurrentFrame], 0, 0);
+
+		if (FrustumCull) {
+			vkCmdDispatch(command_buffer, mesh_count / 64, 1, 1);
+		}
+		else {
+			vkCmdDispatch(command_buffer, 0, 1, 1); // Do not run compute commands.
+		}
+
+		draw::DEBUG_EndLabelCommand(cmd_end_debug, command_buffer);
+
+		if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to record command buffer.");
+		}
+	}
+
+	void Renderer::RecordGraphicsCommands(uint32_t CurrentFrame, uint32_t ImageIndex) {
+
+		VkCommandBuffer command_buffer = graphics_command_buffers[CurrentFrame];
+
+		VkCommandBufferBeginInfo begin_info{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = nullptr;
+
+		if (vkBeginCommandBuffer(command_buffer, &begin_info) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to begin recording command buffer.");
+		}
+
+		draw::DEBUG_StartLabelCommand(cmd_begin_debug, command_buffer, "Render Pass", { 0.016f, 0.565f, 1.0f, 1.0f });
+
+		VkRenderPassBeginInfo render_pass_info{};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		render_pass_info.renderPass = render_pass;
+		render_pass_info.framebuffer = framebuffers[ImageIndex];
+		render_pass_info.renderArea.offset = { 0,0 };
+		render_pass_info.renderArea.extent = swapchain_extent;
+
+		std::array<VkClearValue, 2> clear_values;
+		clear_values[0].color = { {0.0f,0.0f,0.0f,1.0f} };
+		clear_values[1].depthStencil = { 1.0f,0 };
+
+		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+		render_pass_info.pClearValues = clear_values.data();
+
+		vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
+
+		VkViewport viewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(swapchain_extent.width);
+		viewport.height = static_cast<float>(swapchain_extent.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+
+		VkRect2D scissor{};
+		scissor.offset = { 0,0 };
+		scissor.extent = swapchain_extent;
+		vkCmdSetScissor(command_buffer, 0, 1, & scissor);
+
+		if (vertex_buffer.ByteSize != 0) {
+			VkBuffer vertex_buffers[] = { vertex_buffer.Buffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+
+			vkCmdBindIndexBuffer(command_buffer, index_buffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeline_layout, 0, 1, &descriptor_sets[current_frame], 0, nullptr);
+
+			uint32_t size_of_command = sizeof(VkDrawIndexedIndirectCommand);
+
+			for (uint32_t x = 0; x < unique_mesh_count; x++) {
+				vkCmdDrawIndexedIndirect(command_buffer, indirect_command_buffers[current_frame].Buffer, x * size_of_command, 1, size_of_command);
+			}
+		}
+
+		vkCmdEndRenderPass(command_buffer);
+
+		draw::DEBUG_EndLabelCommand(cmd_end_debug, command_buffer);
+
+		if (vkEndCommandBuffer(command_buffer) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to record command buffer.");
+		}
+	}
+
 	void Renderer::Draw(glm::mat4 CameraPosition, bool FrustumCull) {
 
-		/// PREP DRAW
-
-		// COMPUTE WORKLOAD
 		vkWaitForFences(logical_device, 1, &in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 		vkWaitForFences(logical_device, 1, &compute_in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
-		// Get Camera position
-		detail::UBOData current_ubo_data = GetNextUBO(extent, CameraPosition);
-
-		memcpy(uniform_buffers[current_frame].buffer_mapped, &current_ubo_data, sizeof(detail::UBOData));
+		UBOData current_ubo_data = GetNextUBO(swapchain_extent, CameraPosition);
+		memcpy(uniform_buffers[current_frame].BufferMapped, &current_ubo_data, sizeof(UBOData));
 
 		vkResetFences(logical_device, 1, &compute_in_flight_fences[current_frame]);
-
 		vkResetCommandBuffer(compute_command_buffers[current_frame], 0);
 
-		detail::Compute_CommandRecordingContext compute_command_context{};
-		compute_command_context.command_buffer = compute_command_buffers[current_frame];
-		compute_command_context.compute_pipeline = compute_pipeline;
-		compute_command_context.current_descriptor_set = descriptor_sets[current_frame];
-		if (FrustumCull) {
-			compute_command_context.instance_count = mesh_count;
-		}
-		else {
-			compute_command_context.instance_count = 0;
-		}
-		compute_command_context.debug_function_begin = pfn_CmdBeginDebugUtilsLabelEXT;
-		compute_command_context.debug_function_end = pfn_CmdEndDebugUtilsLabelEXT;
 
-		RecordCommandBuffer(compute_command_context);
+		RecordComputeCommands(current_frame, FrustumCull);
 		
 		VkSubmitInfo submit_info_compute{};
 		submit_info_compute.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -336,26 +422,9 @@ namespace renderer {
 		} 
 
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
-
 		vkResetCommandBuffer(graphics_command_buffers[current_frame], 0);
 		
-		/// DRAW
-		detail::CommandRecordingContext command_context{};
-		command_context.framebuffers = framebuffers;
-		command_context.render_pass = render_pass;
-		command_context.graphics_pipeline = graphics_pipeline;
-		command_context.command_buffer = graphics_command_buffers[current_frame];
-		command_context.current_descriptor_set = descriptor_sets[current_frame];
-		command_context.image_write_index = image_index;
-		command_context.swapchain_extent = extent;
-		command_context.vertex_buffer = vertex_buffer;
-		command_context.index_buffer = index_buffer;
-		command_context.unique_mesh_count = unique_mesh_count;
-		command_context.indirect_command_buffer = indirect_command_buffers[current_frame];
-		command_context.debug_function_begin = pfn_CmdBeginDebugUtilsLabelEXT;
-		command_context.debug_function_end = pfn_CmdEndDebugUtilsLabelEXT;
-
-		RecordCommandBuffer(command_context);
+		RecordGraphicsCommands(current_frame, image_index);
 
 		VkSubmitInfo submit_info{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

@@ -21,4 +21,6 @@ namespace renderer::draw {
 
 	std::vector<VkFramebuffer> CreateFramebuffers(VkDevice LogicalDevice, DepthBuffer DepthBuffer, VkRenderPass RenderPass, VkExtent2D SwapchainExtent, const std::vector<VkImageView>& SwapchainImageViews);
 
+	void DEBUG_StartLabelCommand(PFN_vkCmdBeginDebugUtilsLabelEXT Function, VkCommandBuffer Commandbuffer, const char* LabelName, std::vector<float> Color);
+	void DEBUG_EndLabelCommand(PFN_vkCmdEndDebugUtilsLabelEXT Function, VkCommandBuffer Commandbuffer);
 }

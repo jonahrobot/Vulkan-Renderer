@@ -196,4 +196,16 @@ namespace renderer::draw {
 		return frame_buffers;
 	}
 
+	void DEBUG_StartLabelCommand(PFN_vkCmdBeginDebugUtilsLabelEXT Function, VkCommandBuffer Commandbuffer, const char* LabelName, std::vector<float> Color) {
+		VkDebugUtilsLabelEXT label = { VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT };
+		label.pLabelName = LabelName;
+		label.color[0] = Color[0];
+		label.color[1] = Color[1];
+		label.color[2] = Color[2];
+		label.color[3] = Color[3];
+		Function(Commandbuffer, &label);
+	}
+	void DEBUG_EndLabelCommand(PFN_vkCmdEndDebugUtilsLabelEXT Function, VkCommandBuffer Commandbuffer) {
+		Function(Commandbuffer);
+	}
 }
