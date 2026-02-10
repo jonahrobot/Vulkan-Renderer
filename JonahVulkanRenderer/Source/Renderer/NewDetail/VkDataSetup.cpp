@@ -124,4 +124,97 @@ namespace renderer::data {
 		Instance.Memory = VK_NULL_HANDLE;
 		Instance.ByteSize = 0;
 	}
+
+	void UpdateDescriptorSets(
+		std::vector<VkDescriptorSet>& DescriptorSet,
+		VkDevice LogicalDevice,
+		Buffer InstanceData,
+		Buffer MeshCenters,
+		std::array<data::UBO, MAX_FRAMES_IN_FLIGHT> UniformBuffers,
+		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> ShouldDrawFlagBuffers,
+		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT>  IndirectDrawBuffers){
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			// [0] Update Uniform Buffer Object
+			VkDescriptorBufferInfo ubo_info{};
+			ubo_info.buffer = UniformBuffers[i].Buffer.Buffer;
+			ubo_info.offset = 0;
+			ubo_info.range = UniformBuffers[i].Buffer.ByteSize;
+
+			VkWriteDescriptorSet ubo = {};
+			ubo.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			ubo.dstSet = DescriptorSet[i];
+			ubo.dstBinding = 0;
+			ubo.dstArrayElement = 0;
+			ubo.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			ubo.descriptorCount = 1;
+			ubo.pBufferInfo = &ubo_info;
+
+			// [1] Update Instance Data SSBO
+			VkDescriptorBufferInfo instance_data_info{};
+			instance_data_info.buffer = InstanceData.Buffer;
+			instance_data_info.offset = 0;
+			instance_data_info.range = InstanceData.ByteSize;
+
+			VkWriteDescriptorSet instance_data = {};
+			instance_data.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			instance_data.dstSet = DescriptorSet[i];
+			instance_data.dstBinding = 1;
+			instance_data.dstArrayElement = 0;
+			instance_data.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			instance_data.descriptorCount = 1;
+			instance_data.pBufferInfo = &instance_data_info;
+
+			// [2] Update Indirect Draw Command SSBO
+			VkDescriptorBufferInfo draw_command_info{};
+			draw_command_info.buffer = IndirectDrawBuffers[i].Buffer;
+			draw_command_info.offset = 0;
+			draw_command_info.range = IndirectDrawBuffers[i].ByteSize;
+
+			VkWriteDescriptorSet draw_commands = {};
+			draw_commands.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			draw_commands.dstSet = DescriptorSet[i];
+			draw_commands.dstBinding = 2;
+			draw_commands.dstArrayElement = 0;
+			draw_commands.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			draw_commands.descriptorCount = 1;
+			draw_commands.pBufferInfo = &draw_command_info;
+
+			// [3] Update Mesh Centers SSBO
+			VkDescriptorBufferInfo mesh_centers_info{};
+			mesh_centers_info.buffer = MeshCenters.Buffer;
+			mesh_centers_info.offset = 0;
+			mesh_centers_info.range = MeshCenters.ByteSize;
+
+			VkWriteDescriptorSet mesh_centers = {};
+			mesh_centers.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			mesh_centers.dstSet = DescriptorSet[i];
+			mesh_centers.dstBinding = 3;
+			mesh_centers.dstArrayElement = 0;
+			mesh_centers.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			mesh_centers.descriptorCount = 1;
+			mesh_centers.pBufferInfo = &mesh_centers_info;
+
+			// [4] Update Should Draw Flags SSBO
+			VkDescriptorBufferInfo should_draw_flags_info{};
+			should_draw_flags_info.buffer = ShouldDrawFlagBuffers[i].Buffer;
+			should_draw_flags_info.offset = 0;
+			should_draw_flags_info.range = ShouldDrawFlagBuffers[i].ByteSize;
+
+			VkWriteDescriptorSet should_draw_flags = {};
+			should_draw_flags.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			should_draw_flags.dstSet = DescriptorSet[i];
+			should_draw_flags.dstBinding = 4;
+			should_draw_flags.dstArrayElement = 0;
+			should_draw_flags.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			should_draw_flags.descriptorCount = 1;
+			should_draw_flags.pBufferInfo = &should_draw_flags_info;
+
+			std::array<VkWriteDescriptorSet, 5> descriptor_writes = {ubo, instance_data, draw_commands, mesh_centers, should_draw_flags};
+
+			vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
+		}
+
+	}
 }

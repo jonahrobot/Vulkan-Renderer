@@ -82,7 +82,7 @@ private:
 
 	data::Buffer vertex_buffer;
 	data::Buffer index_buffer;
-	data::Buffer instance_centers_buffer;
+	data::Buffer mesh_centers_buffer;
 	data::Buffer instance_data_buffer;
 
 	std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> should_draw_buffers;

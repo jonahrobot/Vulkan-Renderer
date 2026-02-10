@@ -177,7 +177,7 @@ namespace renderer {
 		// Cleanup render data
 		data::DestroyBuffer(logical_device, vertex_buffer);
 		data::DestroyBuffer(logical_device, index_buffer);
-		data::DestroyBuffer(logical_device, instance_centers_buffer);
+		data::DestroyBuffer(logical_device, mesh_centers_buffer);
 		data::DestroyBuffer(logical_device, instance_data_buffer);
 
 		// Cleanup draw framework
@@ -201,7 +201,6 @@ namespace renderer {
 		// Cleanup swapchain
 		for (size_t i = 0; i < swapchain_image_views.size(); i++) {
 			vkDestroyImageView(logical_device, swapchain_image_views[i], nullptr);
-			vkDestroyImage(logical_device, swapchain_images[i], nullptr);
 			vkDestroySemaphore(logical_device, render_finished_semaphores[i], nullptr);
 		}
 		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
@@ -411,7 +410,7 @@ namespace renderer {
 		// Clear old data
 		data::DestroyBuffer(logical_device, vertex_buffer);
 		data::DestroyBuffer(logical_device, index_buffer);
-		data::DestroyBuffer(logical_device, instance_centers_buffer);
+		data::DestroyBuffer(logical_device, mesh_centers_buffer);
 		data::DestroyBuffer(logical_device, instance_data_buffer);
 	
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -448,28 +447,14 @@ namespace renderer {
 		vertex_buffer = data::CreateBuffer(vertex_buffer_data.data(), vertex_buffer_data.size(), transfer_bit | vertex_bit, ctx);
 		index_buffer = data::CreateBuffer(index_buffer_data.data(), index_buffer_data.size(), transfer_bit | index_bit, ctx);
 		instance_data_buffer = data::CreateBuffer(instance_data.data(), instance_data.size(), storage_bit | transfer_bit, ctx);
-		instance_centers_buffer = data::CreateBuffer(model_centers_data.data(), model_centers_data.size(), storage_bit | transfer_bit, ctx);
+		mesh_centers_buffer = data::CreateBuffer(model_centers_data.data(), model_centers_data.size(), storage_bit | transfer_bit, ctx);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			indirect_command_buffers[i] = data::CreateBuffer(indirect_commands.data(), indirect_commands.size(), indirect_bit | storage_bit | transfer_bit, ctx);
 			should_draw_buffers[i] = data::CreateBuffer(should_draw_flags.data(), should_draw_flags.size(), storage_bit | transfer_bit, ctx);
 		}
 
-		// Update our descriptor set links
-		detail::Graphic_DescriptorContext context_graphics_update = {};
-		context_graphics_update.logical_device = logical_device;
-		context_graphics_update.uniform_buffers = uniform_buffers;
-		context_graphics_update.instance_buffer = instance_data_buffer;
-		context_graphics_update.should_draw_flags_buffer = should_draw_buffers;
-
-		descriptor_sets = detail::UpdateDescriptorSets(context_graphics_update, descriptor_sets);
-
-		detail::Compute_DescriptorContext context_compute_update = {};
-		context_compute_update.logical_device = logical_device;
-		context_compute_update.indirect_draw_buffers = indirect_command_buffers;
-		context_compute_update.instance_centers = instance_centers_buffer;
-
-		descriptor_sets = detail::UpdateComputeUniqueDescriptor(context_compute_update, descriptor_sets);
+		data::UpdateDescriptorSets(descriptor_sets, logical_device, instance_data_buffer, mesh_centers_buffer, uniform_buffers, should_draw_buffers, indirect_command_buffers);
 	}
 
 	GLFWwindow* Renderer::Get_Window() {
@@ -477,24 +462,42 @@ namespace renderer {
 	}
 
 	void Renderer::RecreateSwapchainHelper() {
-		detail::RecreateSwapchainContext swapchain_context{};
-		swapchain_context.swapchain_creation_data = swapchain_creation_data;
-		swapchain_context.render_pass = render_pass;
-		swapchain_context.OLD_framebuffers = framebuffers;
-		swapchain_context.OLD_swapchain = swapchain;
-		swapchain_context.OLD_swapchain_image_views = swapchain_image_views;
-		swapchain_context.OLD_depth_buffer = depth_buffer;
 
-		detail::RecreateSwapchainData out_data = detail::RecreateSwapchain(swapchain_context);
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(window, &width, &height);
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(window, &width, &height);
+			glfwWaitEvents();
+		}
 
-		swapchain = out_data.swapchain_data.swapchain;
-		extent = out_data.swapchain_data.swapchain_extent;
+		vkDeviceWaitIdle(logical_device);
 
-		std::cout << "Recreated swapchain with new extent: " << extent.width << " X " << extent.height << "." << std::endl;
+		// Cleanup old swapchain
+		draw::DestroyDepthBuffer(logical_device, depth_buffer);
 
-		framebuffers = out_data.framebuffers;
-		swapchain_images = out_data.swapchain_images;
-		swapchain_image_views = out_data.swapchain_image_views;
-		depth_buffer = out_data.depth_buffer;
+		for (auto framebuffer : framebuffers) {
+			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
+		}
+
+		for (size_t i = 0; i < swapchain_image_views.size(); i++) {
+			vkDestroyImageView(logical_device, swapchain_image_views[i], nullptr);
+		}
+		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
+
+		// Create new swapchain
+		swapchain::SwapchainOptions swapchain_options = swapchain::QuerySwapchainSupport(physical_device, vulkan_surface);
+		
+		swapchain_format = swapchain::ChooseFormat(swapchain_options);
+		swapchain_present_mode = swapchain::ChoosePresentMode(swapchain_options);
+		swapchain_extent = swapchain::ChooseExtent(swapchain_options, window);
+		swapchain_image_count = swapchain::ChooseImageCount(swapchain_options);
+		
+		swapchain = swapchain::CreateSwapchain(logical_device, vulkan_surface, swapchain_format, swapchain_present_mode, swapchain_extent, swapchain_image_count, swapchain_options, queues_supported);
+
+		swapchain_images = swapchain::CreateSwapchainImages(logical_device, swapchain);
+		swapchain_image_views = swapchain::CreateSwapchainViews(logical_device, swapchain_format.format, swapchain_images);
+
+		depth_buffer = draw::CreateDepthBuffer(logical_device, physical_device, swapchain_extent);
+		framebuffers = draw::CreateFramebuffers(logical_device, depth_buffer, render_pass, swapchain_extent, swapchain_image_views);
 	}
 }// namespace renderer

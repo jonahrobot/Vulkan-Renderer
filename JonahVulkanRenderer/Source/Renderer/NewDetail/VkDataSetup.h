@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.hpp>
+#include "VkCommon.h"
 
 namespace renderer::data {
 
@@ -24,4 +25,13 @@ namespace renderer::data {
 	};
 	UBO CreateUBO(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, uint16_t SizeAllocated);
 	void DestroyUBO(VkDevice LogicalDevice, UBO& Instance);
+
+	void UpdateDescriptorSets(
+		std::vector<VkDescriptorSet>& DescriptorSet,
+		VkDevice LogicalDevice, 
+		Buffer InstanceData, 
+		Buffer MeshCenters, 
+		std::array<data::UBO, MAX_FRAMES_IN_FLIGHT> UniformBuffers,
+		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> ShouldDrawFlagBuffers,
+		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT>  IndirectDrawBuffers);
 }
