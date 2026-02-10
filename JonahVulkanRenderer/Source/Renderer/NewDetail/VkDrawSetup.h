@@ -14,6 +14,7 @@ namespace renderer::draw {
 		VkImage Image;
 		VkDeviceMemory ImageDeviceMemory;
 		VkImageView ImageView;
+		VkFormat ImageFormat;
 	};
 	DepthBuffer CreateDepthBuffer(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkExtent2D SwapchainExtent);
 	std::vector<VkFramebuffer> CreateFramebuffers(VkDevice LogicalDevice, DepthBuffer DepthBuffer, VkRenderPass RenderPass, VkExtent2D SwapchainExtent, const std::vector<VkImageView>& SwapchainImageViews);

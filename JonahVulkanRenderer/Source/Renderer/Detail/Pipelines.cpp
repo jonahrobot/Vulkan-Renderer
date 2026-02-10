@@ -63,7 +63,7 @@ namespace renderer::detail {
 		VkPipelineLayoutCreateInfo pipeline_layout_info{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &Context.descriptor_set_layout;
+		pipeline_layout_info.pSetLayouts = &Context.descriptor_layout;
 
 		VkPipelineLayout compute_pipeline_layout;
 		if (vkCreatePipelineLayout(Context.logical_device, &pipeline_layout_info, nullptr, &compute_pipeline_layout) != VK_SUCCESS) {
@@ -200,7 +200,7 @@ namespace renderer::detail {
 		VkPipelineLayoutCreateInfo pipeline_layout_info{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &Context.descriptor_set_layout;
+		pipeline_layout_info.pSetLayouts = &Context.descriptor_layout;
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = 0;
 

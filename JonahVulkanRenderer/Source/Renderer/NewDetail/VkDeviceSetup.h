@@ -8,7 +8,7 @@
 
 namespace renderer::device {
 
-	GLFWwindow* CreateWindow(const char* Title, int Width, int Height);
+	GLFWwindow* CreateVulkanWindow(const char* Title, int Width, int Height);
 
 	VkInstance CreateVulkanInstance(bool UseValidationLayers, const std::vector<const char*>& ValidationLayersToSupport, const std::vector<const char*>& InstanceExtensions);
 

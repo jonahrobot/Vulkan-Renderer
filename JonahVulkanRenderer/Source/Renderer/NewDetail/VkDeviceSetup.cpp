@@ -71,7 +71,7 @@ namespace {
 
 namespace renderer::device {
 
-	GLFWwindow* CreateWindow(const char* Title, int Width, int Height) {
+	GLFWwindow* CreateVulkanWindow(const char* Title, int Width, int Height) {
 
 		int GLFW_error_code = glfwInit();
 		if (GLFW_error_code == GLFW_FALSE) {

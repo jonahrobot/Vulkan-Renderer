@@ -4,7 +4,7 @@
 
 namespace renderer::pipeline {
 
-	VkRenderPass CreateRenderPass(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkFormat SwapchainFormat, VkSurfaceFormatKHR DepthBufferFormat);
+	VkRenderPass CreateRenderPass(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkFormat SwapchainFormat, VkFormat DepthBufferFormat);
 
 	VkDescriptorSetLayout CreateDescriptorLayout(VkDevice LogicalDevice);
 	VkDescriptorPool CreateDescriptorPool(VkDevice LogicalDevice);

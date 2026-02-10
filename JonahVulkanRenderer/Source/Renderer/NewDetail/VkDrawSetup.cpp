@@ -51,16 +51,16 @@ namespace renderer::draw {
 		create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		create_info.queueFamilyIndex = GraphicsFamilyIndex;
 
-		VkCommandPool command_pool;
-		if (vkCreateCommandPool(LogicalDevice, &create_info, nullptr, &command_pool) != VK_SUCCESS) {
+		VkCommandPool graphics_command_pool;
+		if (vkCreateCommandPool(LogicalDevice, &create_info, nullptr, &graphics_command_pool) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create command pool.");
 		}
-		return command_pool;
+		return graphics_command_pool;
 	}
 
 	std::vector<VkCommandBuffer> CreateCommandBuffers(VkDevice LogicalDevice, VkCommandPool CommandPool, int TotalFrames) {
-		std::vector<VkCommandBuffer> command_buffers;
-		command_buffers.resize(TotalFrames);
+		std::vector<VkCommandBuffer> graphics_command_buffers;
+		graphics_command_buffers.resize(TotalFrames);
 
 		VkCommandBufferAllocateInfo create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -68,10 +68,10 @@ namespace renderer::draw {
 		create_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		create_info.commandBufferCount = (uint32_t)TotalFrames;
 
-		if (vkAllocateCommandBuffers(LogicalDevice, &create_info, command_buffers.data()) != VK_SUCCESS) {
+		if (vkAllocateCommandBuffers(LogicalDevice, &create_info, graphics_command_buffers.data()) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to allocate command buffers.");
 		}
-		return command_buffers;
+		return graphics_command_buffers;
 	}
 
 	VkSemaphore CreateVulkanSemaphore(VkDevice LogicalDevice) {
@@ -103,10 +103,10 @@ namespace renderer::draw {
 		VkImage depth_image = VK_NULL_HANDLE;
 		VkDeviceMemory depth_image_memory = VK_NULL_HANDLE;
 		VkImageView depth_image_view = VK_NULL_HANDLE;
-
+		VkFormat depth_image_format;
 
 		// 1. Create depth image
-		VkFormat depth_format = FindDepthFormat(PhysicalDevice, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		depth_image_format = FindDepthFormat(PhysicalDevice, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 		VkImageCreateInfo create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -116,7 +116,7 @@ namespace renderer::draw {
 		create_info.extent.depth = 1;
 		create_info.mipLevels = 1;
 		create_info.arrayLayers = 1;
-		create_info.format = depth_format;
+		create_info.format = depth_image_format;
 		create_info.tiling = VK_IMAGE_TILING_OPTIMAL;
 		create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		create_info.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -148,7 +148,7 @@ namespace renderer::draw {
 		view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		view_info.image = depth_image;
 		view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		view_info.format = depth_format;
+		view_info.format = depth_image_format;
 		view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 		view_info.subresourceRange.baseMipLevel = 0;
 		view_info.subresourceRange.levelCount = 1;
@@ -159,7 +159,7 @@ namespace renderer::draw {
 			throw std::runtime_error("Failed to create image view.");
 		}
 
-		return { depth_image, depth_image_memory, depth_image_view };
+		return { depth_image, depth_image_memory, depth_image_view, depth_image_format };
 	}
 
 	std::vector<VkFramebuffer> CreateFramebuffers(VkDevice LogicalDevice, DepthBuffer DepthBuffer, VkRenderPass RenderPass, VkExtent2D SwapchainExtent, const std::vector<VkImageView>& SwapchainImageViews) {

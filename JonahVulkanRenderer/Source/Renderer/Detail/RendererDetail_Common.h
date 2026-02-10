@@ -18,16 +18,7 @@ namespace renderer::detail {
 
 #pragma region Uniform and Instance Data
 
-	struct InstanceData {
-		alignas(16) glm::mat4 model;
-		alignas(16) glm::vec4 array_index;
-	};
 
-	struct UniformBufferObject {
-		alignas(16) glm::mat4 view;
-		alignas(16) glm::mat4 proj;
-		alignas(16) glm::vec4 frustum_planes[6];
-	};
 
 #pragma endregion
 

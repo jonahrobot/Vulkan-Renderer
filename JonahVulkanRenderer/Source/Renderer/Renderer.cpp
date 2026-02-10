@@ -1,12 +1,15 @@
-
-
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
 #include <unordered_map>
 #include <iostream>
 
 #include "Renderer.h"
-#include "Detail/RendererDetail.h"
+#include "NewDetail/VkCommon.h"
+#include "NewDetail/VkDeviceSetup.h"
+#include "NewDetail/VkSwapchainSetup.h"
+#include "NewDetail/VkPipelineSetup.h"
+#include "NewDetail/VkDataSetup.h"
+#include "NewDetail/VkDrawSetup.h"
 
 namespace renderer {
 
@@ -14,94 +17,6 @@ namespace renderer {
 	// Cannot see or access private data of Renderer class.
 	namespace {
 
-		GLFWwindow* CreateGLFWWindow() {
-
-			int GLFWErrorCode = glfwInit();
-			if (GLFWErrorCode == GLFW_FALSE) {
-				throw std::runtime_error("GLFW did not initialize correctly.");
-			}
-
-			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-			glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-			GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-			return window;
-		}
-
-		VkSurfaceKHR CreateVulkanSurface(const VkInstance VulkanInstance, GLFWwindow* Window) {
-
-			VkSurfaceKHR vulkanSurface;
-
-			if (glfwCreateWindowSurface(VulkanInstance, Window, nullptr, &vulkanSurface) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to create window surface!");
-			}
-
-			return vulkanSurface;
-		}
-
-		VkRenderPass CreateRenderPass(const VkDevice LogicalDevice, const VkFormat SwapChainFormat, const VkPhysicalDevice PhysicalDevice) {
-
-			VkRenderPass render_pass;
-
-			VkAttachmentDescription color_attachment{};
-			color_attachment.format = SwapChainFormat;
-			color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-			color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-			VkAttachmentReference color_attachment_reference{};
-			color_attachment_reference.attachment = 0;
-			color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-			VkAttachmentDescription depth_attachment{};
-			depth_attachment.format = renderer::detail::FindDepthFormat(PhysicalDevice);
-			depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-			depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-			depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-			depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-			VkAttachmentReference depth_attachment_reference{};
-			depth_attachment_reference.attachment = 1;
-			depth_attachment_reference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-			VkSubpassDescription subpass{};
-			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-			subpass.colorAttachmentCount = 1;
-			subpass.pColorAttachments = &color_attachment_reference;
-			subpass.pDepthStencilAttachment = &depth_attachment_reference;
-
-			VkSubpassDependency dependency{};
-			dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-			dependency.dstSubpass = 0;
-			dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-			dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-			dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-			dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-			std::array<VkAttachmentDescription, 2> attachments = { color_attachment, depth_attachment };
-
-			VkRenderPassCreateInfo render_pass_info{};
-			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-			render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-			render_pass_info.pAttachments = attachments.data();
-			render_pass_info.subpassCount = 1;
-			render_pass_info.pSubpasses = &subpass;
-			render_pass_info.dependencyCount = 1;
-			render_pass_info.pDependencies = &dependency;
-
-			if (vkCreateRenderPass(LogicalDevice, &render_pass_info, nullptr, &render_pass) != VK_SUCCESS) {
-				throw std::runtime_error("Failed to create render pass.");
-			}
-
-			return render_pass;
-		}
 
 		std::vector<detail::InstanceData> ProcessInstanceData(const std::vector<detail::MeshInstances>& NewModelSet) {
 
@@ -123,9 +38,9 @@ namespace renderer {
 			return instance_data;
 		}
 
-		detail::UniformBufferObject GetNextUBO(VkExtent2D Extent, glm::mat4 CameraPosition) {
+		detail::UBOData GetNextUBO(VkExtent2D Extent, glm::mat4 CameraPosition) {
 
-			detail::UniformBufferObject ubo = {};
+			detail::UBOData ubo = {};
 
 			ubo.proj = glm::perspective(glm::radians(45.0f), Extent.width / (float)Extent.height, 0.01f, 100.0f);
 			ubo.proj[1][1] *= -1;
@@ -152,7 +67,7 @@ namespace renderer {
 			return ubo;
 		}
 
-		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<detail::Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::MeshInstances>& NewModelSet) {
+		std::vector<VkDrawIndexedIndirectCommand> RecordIndirectCommands(std::vector<Vertex>& VerticeToRender, std::vector<uint32_t>& Indices, uint32_t& NumberOfMeshes, const std::vector<detail::MeshInstances>& NewModelSet) {
 			std::vector<VkDrawIndexedIndirectCommand> indirect_commands;
 
 			uint32_t m = 0;
@@ -171,7 +86,7 @@ namespace renderer {
 
 				uint32_t offset = static_cast<uint32_t>(VerticeToRender.size());
 
-				for (const detail::Vertex& v : model.vertices) {
+				for (const Vertex& v : model.vertices) {
 					VerticeToRender.push_back(v);
 				}
 
@@ -205,10 +120,12 @@ namespace renderer {
 
 	Renderer::Renderer() {
 
+		// Inital setup
 		mesh_count = 0;
 		unique_mesh_count = 0;
 
-		window = CreateGLFWWindow();
+		// GLFW setup
+		window = device::CreateVulkanWindow("OpenUSD Renderer", WIDTH, HEIGHT);
 		glfwSetWindowUserPointer(window, this);
 		glfwSetFramebufferSizeCallback(window, FramebufferResizeCallback);
 
@@ -218,138 +135,81 @@ namespace renderer {
 		for (int i = 0; i < number_of_extentions; i++) {
 			InstanceExtensionsToSupport.push_back(glfwExtensions[i]);
 		}
+		
+		// Device setup
+		vulkan_instance = device::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport, InstanceExtensionsToSupport);
+		vulkan_surface = device::CreateVulkanSurface(vulkan_instance, window);
+		queues_supported = device::FindSupportedQueues(physical_device, vulkan_surface);
+		physical_device = device::PickPhysicalDevice(vulkan_instance, vulkan_surface, DeviceExtensionsToSupport);
 
-		vulkan_instance = detail::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport, InstanceExtensionsToSupport);
-		vulkan_surface = CreateVulkanSurface(vulkan_instance, window);
-
-		// Fetch functions
-		pfn_CmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
-		pfn_CmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
-
-		// Create Physical Device
-		detail::PhysicalDeviceContext context_physical = {};
-		context_physical.vulkan_instance = vulkan_instance;
-		context_physical.vulkan_surface = vulkan_surface;
-		context_physical.DeviceExtensionsToSupport = DeviceExtensionsToSupport;
-
-		detail::PhysicalDeviceData physical_device_data = detail::PickPhysicalDevice(context_physical);
-		physical_device = physical_device_data.physical_device;
-
-		// Create Logical Device
-		detail::LogicalDeviceContext context_logical = {};
-		context_logical.vulkan_instance = vulkan_instance;
-		context_logical.vulkan_surface = vulkan_surface;
-		context_logical.physical_device = physical_device;
-		context_logical.supported_queues = physical_device_data.queues_supported;
+		device::LogicalDeviceContext context_logical = {};
+		context_logical.PhysicalDevice = physical_device;
+		context_logical.SupportedQueues = queues_supported;
 		context_logical.UseValidationLayers = UseValidationLayers;
 		context_logical.DeviceExtensionsToSupport = DeviceExtensionsToSupport;
 		context_logical.ValidationLayersToSupport = ValidationLayersToSupport;
 
-		logical_device = detail::CreateLogicalDevice(context_logical);
+		logical_device = device::CreateLogicalDevice(context_logical);
 
-		// Create Swapchain
-		detail::SwapchainContext context_swapchain = {};
-		context_swapchain.physical_device = physical_device;
-		context_swapchain.vulkan_surface = vulkan_surface;
-		context_swapchain.logical_device = logical_device;
-		context_swapchain.window = window;
-		context_swapchain.supported_queues = physical_device_data.queues_supported;
+		// Swapchain setup
+		swapchain::SwapchainOptions swapchain_options = swapchain::QuerySwapchainSupport(physical_device, vulkan_surface);
 
-		swapchain_creation_data = context_swapchain;
+		swapchain_format = swapchain::ChooseFormat(swapchain_options);
+		swapchain_present_mode = swapchain::ChoosePresentMode(swapchain_options);
+		swapchain_extent = swapchain::ChooseExtent(swapchain_options, window);
+		swapchain_image_count = swapchain::ChooseImageCount(swapchain_options);
 
-		detail::SwapchainData swapchain_info = detail::CreateSwapchain(context_swapchain);
-		swapchain = swapchain_info.swapchain;
-		extent = swapchain_info.swapchain_extent;
-		VkFormat swapchain_format = swapchain_info.swapchain_image_format;
-
-		// Create images
-		swapchain_images = detail::GetSwapchainImages(swapchain, logical_device);
-		swapchain_image_views = detail::CreateSwapchainViews(swapchain_images, logical_device, swapchain_format);
-
-		// Create render pass
-		render_pass = CreateRenderPass(logical_device, swapchain_format, physical_device);
-
-		// Create depth buffer
-		detail::DepthBufferContext context_depth_buffer = {};
-		context_depth_buffer.logical_device = logical_device;
-		context_depth_buffer.physical_device = physical_device;
-		context_depth_buffer.swapchain_extent = extent;
-
-		depth_buffer = detail::CreateDepthBuffer(context_depth_buffer);
-
-		// Create framebuffers
-		detail::FrameBufferContext context_framebuffer = {};
-		context_framebuffer.logical_device = logical_device;
-		context_framebuffer.image_views = swapchain_image_views;
-		context_framebuffer.render_pass = render_pass;
-		context_framebuffer.swapchain_extent = extent;
-		context_framebuffer.depth_image_view = depth_buffer.image_view;
-
-		framebuffers = detail::CreateFramebuffers(context_framebuffer);
-
-		// Create queues
-		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &graphics_queue);
-		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.present_family.value(), 0, &present_queue);
-		vkGetDeviceQueue(logical_device, physical_device_data.queues_supported.graphics_compute_family.value(), 0, &compute_queue);
+		swapchain = swapchain::CreateSwapchain(logical_device, vulkan_surface, swapchain_format, swapchain_present_mode, swapchain_extent, swapchain_image_count, swapchain_options, queues_supported);
 		
-		// Create descriptor set for graphics and compute
-		descriptor_set_layout = detail::CreateDescriptorLayout(logical_device);
-		descriptor_pool = detail::CreateDescriptorPool(logical_device, MAX_FRAMES_IN_FLIGHT);
+		swapchain_images = swapchain::CreateSwapchainImages(logical_device, swapchain);
+		swapchain_image_views = swapchain::CreateSwapchainViews(logical_device, swapchain_format.format, swapchain_images);
 
-		detail::DescriptorCreateContext context_descriptor_set = {};
-		context_descriptor_set.descriptor_pool = descriptor_pool;
-		context_descriptor_set.descriptor_set_layout = descriptor_set_layout;
-		context_descriptor_set.logical_device = logical_device;
-
-		descriptor_sets = detail::CreateDescriptorSets(context_descriptor_set);
-
-		// Create graphics pipeline
-		detail::GraphicsPipelineContext context_graphics_pipeline = {};
-		context_graphics_pipeline.logical_device = logical_device;
-		context_graphics_pipeline.render_pass = render_pass;
-		context_graphics_pipeline.swapchain_extent = extent;
-		context_graphics_pipeline.descriptor_set_layout = descriptor_set_layout;
-
-		graphics_pipeline = detail::CreateGraphicsPipeline(context_graphics_pipeline);
-
-		// Create compute pipeline
-		detail::ComputePipelineContext context_compute_pipeline = {};
-		context_compute_pipeline.logical_device = logical_device;
-		context_compute_pipeline.descriptor_set_layout = descriptor_set_layout;
-
-		compute_pipeline = detail::CreateComputePipeline(context_compute_pipeline);
-
-		// Create Command Heirarchy
-		command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
-		command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, command_pool);
-
-		compute_command_pool = detail::CreateCommandPool(logical_device, physical_device_data.queues_supported.graphics_compute_family.value());
-		compute_command_buffers = detail::CreateCommandBuffers(MAX_FRAMES_IN_FLIGHT, logical_device, compute_command_pool);
-
-		// Create UBOs
-		detail::MappedBufferContext context_ubo = {};
-		context_ubo.logical_device = logical_device;
-		context_ubo.physical_device = physical_device;
-		context_ubo.buffer_size = sizeof(detail::UniformBufferObject);
-		
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			uniform_buffers[i] = detail::CreateMappedBuffer(context_ubo);
-		}
-
-		// Create sync objects
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-
-			// Graphics
-			image_available_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
-			in_flight_fences.push_back(detail::CreateVulkanFence(logical_device));
-
-			// Compute
-			compute_in_flight_fences.push_back(detail::CreateVulkanFence(logical_device));
-			compute_finished_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
-		}
 		for (size_t i = 0; i < swapchain_images.size(); i++) {
-			render_finished_semaphores.push_back(detail::CreateVulkanSemaphore(logical_device));
+			render_finished_semaphores.push_back(draw::CreateVulkanSemaphore(logical_device));
 		}
+
+		// Pipeline setup
+		depth_buffer = draw::CreateDepthBuffer(logical_device, physical_device, swapchain_extent);
+		render_pass = pipeline::CreateRenderPass(logical_device, physical_device, swapchain_format.format, depth_buffer.ImageFormat);
+		framebuffers = draw::CreateFramebuffers(logical_device, depth_buffer, render_pass, swapchain_extent, swapchain_image_views);
+
+		descriptor_layout = pipeline::CreateDescriptorLayout(logical_device);
+		descriptor_pool = pipeline::CreateDescriptorPool(logical_device);
+		descriptor_sets = pipeline::CreateDescriptorSets(logical_device, descriptor_layout, descriptor_pool);
+
+		pipeline_layout = pipeline::CreatePipelineLayout(logical_device, descriptor_layout);
+		graphics_pipeline = pipeline::CreateGraphicsPipeline(logical_device, pipeline_layout, render_pass, VERTEX_SHADER, FRAGMENT_SHADER);
+		compute_pipeline = pipeline::CreateComputePipeline(logical_device, pipeline_layout, COMPUTE_SHADER);
+
+		// Draw setup
+		graphics_command_pool = draw::CreateCommandPool(logical_device, queues_supported.graphics_compute_family.value());
+		graphics_command_buffers = draw::CreateCommandBuffers(logical_device, graphics_command_pool, MAX_FRAMES_IN_FLIGHT);
+
+		compute_command_pool = draw::CreateCommandPool(logical_device, queues_supported.graphics_compute_family.value());
+		compute_command_buffers = draw::CreateCommandBuffers(logical_device, compute_command_pool, MAX_FRAMES_IN_FLIGHT);
+
+		vkGetDeviceQueue(logical_device, queues_supported.graphics_compute_family.value(), 0, &graphics_queue);
+		vkGetDeviceQueue(logical_device, queues_supported.present_family.value(), 0, &present_queue);
+		vkGetDeviceQueue(logical_device, queues_supported.graphics_compute_family.value(), 0, &compute_queue);
+
+		// Per frame setup
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+
+			// Graphics sync objects
+			image_available_semaphores.push_back(draw::CreateVulkanSemaphore(logical_device));
+			in_flight_fences.push_back(draw::CreateVulkanFence(logical_device));
+
+			// Compute sync objects
+			compute_in_flight_fences.push_back(draw::CreateVulkanFence(logical_device));
+			compute_finished_semaphores.push_back(draw::CreateVulkanSemaphore(logical_device));
+
+			// UBO for graphics and compute
+			uniform_buffers[i] = data::CreateUBO(logical_device, physical_device, sizeof(UBOData));
+		}
+
+		// Debug setup
+		pfn_CmdBeginDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
+		pfn_CmdEndDebugUtilsLabelEXT = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
 	}
 
 	Renderer::~Renderer() {
@@ -371,14 +231,14 @@ namespace renderer {
 			DestroyBuffer(logical_device, uniform_buffers[i]);
 		}
 
-		vkDestroyCommandPool(logical_device, command_pool, nullptr);
+		vkDestroyCommandPool(logical_device, graphics_command_pool, nullptr);
 		vkDestroyCommandPool(logical_device, compute_command_pool, nullptr);
 
 		DestroyPipeline(logical_device, graphics_pipeline);
 		DestroyPipeline(logical_device, compute_pipeline);
 
 		vkDestroyDescriptorPool(logical_device, descriptor_pool, nullptr);
-		vkDestroyDescriptorSetLayout(logical_device, descriptor_set_layout, nullptr);
+		vkDestroyDescriptorSetLayout(logical_device, descriptor_layout, nullptr);
 
 		for (auto framebuffer : framebuffers) {
 			vkDestroyFramebuffer(logical_device, framebuffer, nullptr);
@@ -423,9 +283,9 @@ namespace renderer {
 		vkWaitForFences(logical_device, 1, &compute_in_flight_fences[current_frame], VK_TRUE, UINT64_MAX);
 
 		// Get Camera position
-		detail::UniformBufferObject current_ubo_data = GetNextUBO(extent, CameraPosition);
+		detail::UBOData current_ubo_data = GetNextUBO(extent, CameraPosition);
 
-		memcpy(uniform_buffers[current_frame].buffer_mapped, &current_ubo_data, sizeof(detail::UniformBufferObject));
+		memcpy(uniform_buffers[current_frame].buffer_mapped, &current_ubo_data, sizeof(detail::UBOData));
 
 		vkResetFences(logical_device, 1, &compute_in_flight_fences[current_frame]);
 
@@ -472,14 +332,14 @@ namespace renderer {
 
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 
-		vkResetCommandBuffer(command_buffers[current_frame], 0);
+		vkResetCommandBuffer(graphics_command_buffers[current_frame], 0);
 		
 		/// DRAW
 		detail::CommandRecordingContext command_context{};
 		command_context.framebuffers = framebuffers;
 		command_context.render_pass = render_pass;
 		command_context.graphics_pipeline = graphics_pipeline;
-		command_context.command_buffer = command_buffers[current_frame];
+		command_context.command_buffer = graphics_command_buffers[current_frame];
 		command_context.current_descriptor_set = descriptor_sets[current_frame];
 		command_context.image_write_index = image_index;
 		command_context.swapchain_extent = extent;
@@ -502,7 +362,7 @@ namespace renderer {
 		submit_info.pWaitDstStageMask = wait_stages;
 
 		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &command_buffers[current_frame];
+		submit_info.pCommandBuffers = &graphics_command_buffers[current_frame];
 
 		VkSemaphore signal_semaphores[] = { render_finished_semaphores[image_index] }; // These will be flagged once command complete.
 		submit_info.signalSemaphoreCount = 1;
@@ -569,7 +429,7 @@ namespace renderer {
 		context_buffercreation.logical_device = logical_device;
 		context_buffercreation.physical_device = physical_device;
 		context_buffercreation.graphics_queue = graphics_queue;
-		context_buffercreation.command_pool = command_pool;
+		context_buffercreation.graphics_command_pool = graphics_command_pool;
 
 		vertex_buffer = detail::CreateLocalBuffer<detail::Vertex>(context_buffercreation, vertices_to_render, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 		index_buffer = detail::CreateLocalBuffer<uint32_t>(context_buffercreation, indices, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);

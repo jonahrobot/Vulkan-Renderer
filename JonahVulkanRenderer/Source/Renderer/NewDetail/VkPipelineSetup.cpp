@@ -47,7 +47,7 @@ namespace {
 
 namespace renderer::pipeline {
 
-	VkRenderPass CreateRenderPass(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkFormat SwapchainFormat, VkSurfaceFormatKHR DepthBufferFormat) {
+	VkRenderPass CreateRenderPass(VkDevice LogicalDevice, VkPhysicalDevice PhysicalDevice, VkFormat SwapchainFormat, VkFormat DepthBufferFormat) {
 		VkRenderPass render_pass;
 
 		VkAttachmentDescription color_attachment{};
@@ -65,7 +65,7 @@ namespace renderer::pipeline {
 		color_attachment_reference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		VkAttachmentDescription depth_attachment{};
-		depth_attachment.format = DepthBufferFormat.format;
+		depth_attachment.format = DepthBufferFormat;
 		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;

@@ -138,7 +138,7 @@ namespace renderer::swapchain {
 		return swapchain_images;
 	}
 
-	std::vector<VkImageView> CreateSwapchainViews(VkDevice LogicalDevice, VkFormat ImageFormat, const std::vector<VkImage>& Images) {
+	std::vector<VkImageView> CreateSwapchainViews(VkDevice LogicalDevice, VkFormat SwapchainFormat, const std::vector<VkImage>& Images) {
 
 		std::vector<VkImageView> swapchain_image_views{};
 
@@ -151,7 +151,7 @@ namespace renderer::swapchain {
 			create_info.image = Images[i];
 
 			create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			create_info.format = ImageFormat;
+			create_info.format = SwapchainFormat;
 
 			create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
 			create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
