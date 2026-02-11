@@ -5,10 +5,9 @@
 #include <array>
 #include <string>
 
-#include "Detail/RendererDetail.h"
-#include "NewDetail/VkCommon.h"
-#include "NewDetail/VkDrawSetup.h"
-#include "NewDetail/VkDataSetup.h"
+#include "VkUtil/VkCommon.h"
+#include "VkUtil/VkDrawSetup.h"
+#include "VkUtil/VkDataSetup.h"
 
 #ifdef NDEBUG
 const bool UseValidationLayers = false;

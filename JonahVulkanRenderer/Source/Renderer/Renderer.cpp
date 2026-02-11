@@ -4,13 +4,13 @@
 #include <iostream>
 
 #include "Renderer.h"
-#include "NewDetail/VkCommon.h"
-#include "NewDetail/VkDeviceSetup.h"
-#include "NewDetail/VkSwapchainSetup.h"
-#include "NewDetail/VkPipelineSetup.h"
-#include "NewDetail/VkDataSetup.h"
-#include "NewDetail/VkDrawSetup.h"
-#include "NewDetail/VkSceneProcesser.h"
+#include "VkUtil/VkCommon.h"
+#include "VkUtil/VkDeviceSetup.h"
+#include "VkUtil/VkSwapchainSetup.h"
+#include "VkUtil/VkPipelineSetup.h"
+#include "VkUtil/VkDataSetup.h"
+#include "VkUtil/VkDrawSetup.h"
+#include "VkUtil/VkSceneProcesser.h"
 
 namespace renderer {
 

@@ -24,61 +24,28 @@
     <ClCompile Include="Source\Renderer\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\Instance.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\Pipelines.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\CommandBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\SyncPrimatives.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\FrameBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\DataBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\DescriptorSet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\RendererDetail_Common.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Game\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\MP Loader\MP_Parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\NewDetail\VkDataSetup.cpp">
+    <ClCompile Include="Source\Renderer\VkUtil\VkDataSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\NewDetail\VkDeviceSetup.cpp">
+    <ClCompile Include="Source\Renderer\VkUtil\VkDeviceSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\NewDetail\VkPipelineSetup.cpp">
+    <ClCompile Include="Source\Renderer\VkUtil\VkPipelineSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\NewDetail\VkSwapchainSetup.cpp">
+    <ClCompile Include="Source\Renderer\VkUtil\VkSwapchainSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\NewDetail\VkDrawSetup.cpp">
+    <ClCompile Include="Source\Renderer\VkUtil\VkDrawSetup.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\NewDetail\VkSceneProcesser.cpp">
+    <ClCompile Include="Source\Renderer\VkUtil\VkSceneProcesser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,37 +56,31 @@
     <ClInclude Include="Source\Renderer\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\Detail\RendererDetail.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Detail\RendererDetail_Common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Game\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\MP Loader\MP_Parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\NewDetail\VkDeviceSetup.h">
+    <ClInclude Include="Source\Renderer\VkUtil\VkDeviceSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\NewDetail\VkSwapchainSetup.h">
+    <ClInclude Include="Source\Renderer\VkUtil\VkSwapchainSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\NewDetail\VkPipelineSetup.h">
+    <ClInclude Include="Source\Renderer\VkUtil\VkPipelineSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\NewDetail\VkDataSetup.h">
+    <ClInclude Include="Source\Renderer\VkUtil\VkDataSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\NewDetail\VkCommon.h">
+    <ClInclude Include="Source\Renderer\VkUtil\VkCommon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\NewDetail\VkDrawSetup.h">
+    <ClInclude Include="Source\Renderer\VkUtil\VkDrawSetup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\NewDetail\VkSceneProcesser.h">
+    <ClInclude Include="Source\Renderer\VkUtil\VkSceneProcesser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
