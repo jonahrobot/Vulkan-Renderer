@@ -215,7 +215,7 @@ namespace renderer::pipeline {
 	}
 #pragma endregion
 
-#pragma Pipeline Setup
+#pragma region Pipeline Setup
 
 	VkPipelineLayout CreatePipelineLayout(VkDevice LogicalDevice, VkDescriptorSetLayout DescriptorLayout) {
 		VkPipelineLayoutCreateInfo create_info{};
@@ -227,6 +227,7 @@ namespace renderer::pipeline {
 		if (vkCreatePipelineLayout(LogicalDevice, &create_info, nullptr, &pipeline_layout) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create a pipeline layout.");
 		}
+		return pipeline_layout;
 	}
 
 	VkPipeline CreateGraphicsPipeline(VkDevice LogicalDevice, VkPipelineLayout Layout, VkRenderPass RenderPass, const char* VertexShaderPath, const char* FragmentShaderPath) {

@@ -59,7 +59,7 @@ namespace {
 
 		std::vector<renderer::MeshInstances> local_model_data;
 
-		for (int i = start; i < end; i++) {
+		for (int i = static_cast<int>(start); i < static_cast<int>(end); i++) {
 
 			// Get Object start byte
 			uint32_t object_pointer = ObjectPointers[i];

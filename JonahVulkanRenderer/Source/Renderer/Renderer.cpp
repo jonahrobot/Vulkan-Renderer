@@ -71,7 +71,7 @@ namespace renderer {
 		uint32_t number_of_extentions = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&number_of_extentions);
 
-		for (int i = 0; i < number_of_extentions; i++) {
+		for (int i = 0; i < static_cast<int>(number_of_extentions); i++) {
 			InstanceExtensionsToSupport.push_back(glfwExtensions[i]);
 		}
 		

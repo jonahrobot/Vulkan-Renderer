@@ -48,11 +48,11 @@ namespace renderer::scene {
 
 			m += model.instance_count;
 
-			float length = mesh.vertices.size();
+			float length = static_cast<float>(mesh.vertices.size());
 			glm::vec4 mesh_center_point = glm::vec4(sum.x / length, sum.y / length, sum.z / length, 1);
 
 			// Find model center and instance data
-			for (int i = 0; i < model.instance_count; i++){
+			for (int i = 0; i < static_cast<int>(model.instance_count); i++){
 				
 				const glm::mat4& instance_model_matrix = model.instance_model_matrices[i];
 

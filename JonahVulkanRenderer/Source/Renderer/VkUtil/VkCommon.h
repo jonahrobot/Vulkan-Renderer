@@ -3,6 +3,10 @@
 #include <vulkan/vulkan.hpp>
 #include <optional>
 
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -11,7 +15,7 @@
 
 namespace renderer {
 
-	#define MAX_FRAMES_IN_FLIGHT 2
+#define MAX_FRAMES_IN_FLIGHT 2
 
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphics_compute_family;
@@ -27,17 +31,6 @@ namespace renderer {
 		alignas(16) glm::mat4 view;
 		alignas(16) glm::mat4 proj;
 		alignas(16) glm::vec4 frustum_planes[6];
-	};
-
-	struct Mesh {
-		std::vector<Vertex> vertices;
-		std::vector<uint32_t> indices;
-	};
-
-	struct MeshInstances {
-		Mesh mesh;
-		uint32_t instance_count = 0;
-		std::vector<glm::mat4> instance_model_matrices;
 	};
 
 	struct Vertex {
@@ -75,7 +68,18 @@ namespace renderer {
 		}
 	};
 
-	VkCommandBuffer BeginSingleTimeCommand(VkCommandPool CommandPool, VkDevice LogicalDevice) {
+	struct Mesh {
+		std::vector<Vertex> vertices;
+		std::vector<uint32_t> indices;
+	};
+
+	struct MeshInstances {
+		Mesh mesh;
+		uint32_t instance_count = 0;
+		std::vector<glm::mat4> instance_model_matrices;
+	};
+
+	static VkCommandBuffer BeginSingleTimeCommand(VkCommandPool CommandPool, VkDevice LogicalDevice) {
 		VkCommandBufferAllocateInfo alloc_info{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -94,7 +98,7 @@ namespace renderer {
 		return command_buffer;
 	}
 
-	void EndSingleTimeCommand(VkCommandBuffer CommandBuffer, VkCommandPool CommandPool, VkDevice LogicalDevice, VkQueue GraphicsQueue) {
+	static void EndSingleTimeCommand(VkCommandBuffer CommandBuffer, VkCommandPool CommandPool, VkDevice LogicalDevice, VkQueue GraphicsQueue) {
 		vkEndCommandBuffer(CommandBuffer);
 
 		VkSubmitInfo submit_info{};
