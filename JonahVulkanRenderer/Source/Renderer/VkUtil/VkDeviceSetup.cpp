@@ -196,21 +196,23 @@ namespace renderer::device {
 		VkPhysicalDeviceFeatures device_features{};
 		device_features.samplerAnisotropy = VK_TRUE;
 
+		std::vector<VkDeviceQueueCreateInfo> queues;
 		float queue_priority = 1.0f;
 
-		VkDeviceQueueCreateInfo graphics_compute_queue{};
-		graphics_compute_queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		graphics_compute_queue.queueFamilyIndex = Context.SupportedQueues.graphics_compute_family.value();
-		graphics_compute_queue.queueCount = 1;
-		graphics_compute_queue.pQueuePriorities = &queue_priority;
+		uint32_t graphics_index = Context.SupportedQueues.graphics_compute_family.value();
+		uint32_t present_index = Context.SupportedQueues.present_family.value();
+		std::set<uint32_t> supported_queues = { graphics_index, present_index };
 
-		VkDeviceQueueCreateInfo present_queue{};
-		present_queue.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		present_queue.queueFamilyIndex = Context.SupportedQueues.present_family.value();
-		present_queue.queueCount = 1;
-		present_queue.pQueuePriorities = &queue_priority;
+		for (uint32_t queue : supported_queues) {
 
-		std::array<VkDeviceQueueCreateInfo, 2> queues{ graphics_compute_queue, present_queue};
+			VkDeviceQueueCreateInfo create_info{};
+			create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			create_info.queueFamilyIndex = queue;
+			create_info.queueCount = 1;
+			create_info.pQueuePriorities = &queue_priority;
+
+			queues.push_back(create_info);
+		}
 
 		VkDeviceCreateInfo create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

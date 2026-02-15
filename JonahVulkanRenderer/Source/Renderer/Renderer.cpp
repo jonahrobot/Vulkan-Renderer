@@ -78,8 +78,8 @@ namespace renderer {
 		// Device setup
 		vulkan_instance = device::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport, InstanceExtensionsToSupport);
 		vulkan_surface = device::CreateVulkanSurface(vulkan_instance, window);
-		queues_supported = device::FindSupportedQueues(physical_device, vulkan_surface);
 		physical_device = device::PickPhysicalDevice(vulkan_instance, vulkan_surface, DeviceExtensionsToSupport);
+		queues_supported = device::FindSupportedQueues(physical_device, vulkan_surface);
 
 		device::LogicalDeviceContext context_logical = {};
 		context_logical.PhysicalDevice = physical_device;
@@ -421,6 +421,8 @@ namespace renderer {
 		// Get new data
 		scene::SceneParser parser = scene::SceneParser(NewModelSet);
 
+		mesh_count = parser.GetMeshCount();
+
 		std::vector<Vertex> vertex_buffer_data = parser.GetSceneVertices();
 		std::vector<uint32_t> index_buffer_data = parser.GetSceneIndices();
 		std::vector<InstanceData> instance_data = parser.GetInstanceData();
@@ -428,7 +430,6 @@ namespace renderer {
 		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = parser.GetDrawCommands();
 		std::vector<uint32_t> should_draw_flags(mesh_count, 0);
 
-		mesh_count = parser.GetMeshCount();
 		unique_mesh_count = indirect_commands.size();
 
 		// Load new data to GPU
@@ -444,14 +445,14 @@ namespace renderer {
 		VkBufferUsageFlags vertex_bit = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		VkBufferUsageFlags index_bit = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-		vertex_buffer = data::CreateBuffer(vertex_buffer_data.data(), vertex_buffer_data.size(), transfer_bit | vertex_bit, ctx);
-		index_buffer = data::CreateBuffer(index_buffer_data.data(), index_buffer_data.size(), transfer_bit | index_bit, ctx);
-		instance_data_buffer = data::CreateBuffer(instance_data.data(), instance_data.size(), storage_bit | transfer_bit, ctx);
-		mesh_centers_buffer = data::CreateBuffer(model_centers_data.data(), model_centers_data.size(), storage_bit | transfer_bit, ctx);
+		vertex_buffer = data::CreateBuffer(vertex_buffer_data.data(), sizeof(Vertex) * vertex_buffer_data.size(), transfer_bit | vertex_bit, ctx);
+		index_buffer = data::CreateBuffer(index_buffer_data.data(), sizeof(uint32_t) * index_buffer_data.size(), transfer_bit | index_bit, ctx);
+		instance_data_buffer = data::CreateBuffer(instance_data.data(), sizeof(InstanceData) * instance_data.size(), storage_bit | transfer_bit, ctx);
+		mesh_centers_buffer = data::CreateBuffer(model_centers_data.data(), sizeof(glm::vec4) * model_centers_data.size(), storage_bit | transfer_bit, ctx);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			indirect_command_buffers[i] = data::CreateBuffer(indirect_commands.data(), indirect_commands.size(), indirect_bit | storage_bit | transfer_bit, ctx);
-			should_draw_buffers[i] = data::CreateBuffer(should_draw_flags.data(), should_draw_flags.size(), storage_bit | transfer_bit, ctx);
+			indirect_command_buffers[i] = data::CreateBuffer(indirect_commands.data(), sizeof(VkDrawIndexedIndirectCommand) * indirect_commands.size(), indirect_bit | storage_bit | transfer_bit, ctx);
+			should_draw_buffers[i] = data::CreateBuffer(should_draw_flags.data(), sizeof(uint32_t) * should_draw_flags.size(), storage_bit | transfer_bit, ctx);
 		}
 
 		data::UpdateDescriptorSets(descriptor_sets, logical_device, instance_data_buffer, mesh_centers_buffer, uniform_buffers, should_draw_buffers, indirect_command_buffers);
