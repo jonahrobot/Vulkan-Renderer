@@ -8,9 +8,9 @@ namespace game {
 Application::Application() {
 	last_frame_time = static_cast<float>(glfwGetTime());;
 
-	renderer = new renderer::Renderer();
+	renderer = new renderer::Renderer(500,400);
 
-	std::vector<renderer::detail::MeshInstances> model_set = MP::ParseMP("ExternalTools/dev.mp", false);
+	std::vector<renderer::MeshInstances> model_set = MP::ParseMP("ExternalTools/dev.mp", false);
 
 	renderer->UpdateModelSet(model_set,true);
 

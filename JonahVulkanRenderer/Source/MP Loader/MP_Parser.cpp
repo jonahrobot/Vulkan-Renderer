@@ -44,7 +44,7 @@ namespace {
 		return ReadArray<uint16_t>(ByteData, Offset, BufferSize, OutputArraySize);
 	}
 
-	void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::detail::MeshInstances>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize, uint32_t ModelCount) {
+	void ReadModelData(const std::vector<std::uint8_t>& Buffer, const std::vector<uint32_t>& ObjectPointers, std::vector<renderer::MeshInstances>& OutputData, uint32_t ChunkSize, uint32_t TID, uint32_t BufferSize, uint32_t ModelCount) {
 
 		uint32_t start = ChunkSize * TID;
 		uint32_t end = std::min(start + ChunkSize, ModelCount);
@@ -57,9 +57,9 @@ namespace {
 		std::vector<float> normals(0);
 		std::vector<float> matrices(0);
 
-		std::vector<renderer::detail::MeshInstances> local_model_data;
+		std::vector<renderer::MeshInstances> local_model_data;
 
-		for (int i = start; i < end; i++) {
+		for (int i = static_cast<int>(start); i < static_cast<int>(end); i++) {
 
 			// Get Object start byte
 			uint32_t object_pointer = ObjectPointers[i];
@@ -93,21 +93,21 @@ namespace {
 			matrices = ReadFloatArray(Buffer, byte_offset, BufferSize, instance_count * 16);
 
 			// Create model object
-			renderer::detail::MeshInstances new_model;
+			renderer::MeshInstances new_model;
 			new_model.instance_count = instance_count;
 
 			glm::vec3 mesh_color = { dist(rng), dist(rng), dist(rng) };
 
 			for (int j = 0; j < vertices.size(); j += 3) {
-				renderer::detail::Vertex v;
+				renderer::Vertex v;
 				v.color = mesh_color;
 				v.position = { vertices[j], vertices[j + 1],vertices[j + 2] };
 
-				new_model.model_data.vertices.push_back(v);
+				new_model.mesh.vertices.push_back(v);
 			}
 
 			for (int j = 0; j < indices.size(); j += 1) {
-				new_model.model_data.indices.push_back(indices[j]);
+				new_model.mesh.indices.push_back(indices[j]);
 			}
 
 			for (int j = 0; j < matrices.size(); j += 16) {
@@ -147,7 +147,7 @@ namespace {
 		return remaining_bytes;
 	}
 
-	std::vector<renderer::detail::MeshInstances> Run_ParseMP(std::string MP_FilePath) {
+	std::vector<renderer::MeshInstances> Run_ParseMP(std::string MP_FilePath) {
 		std::ifstream file(MP_FilePath, std::ios::binary);
 
 		if (!file) {
@@ -176,7 +176,7 @@ namespace {
 		std::vector<std::thread> threads;
 		threads.reserve(thread_count);
 
-		std::vector<std::vector<renderer::detail::MeshInstances>> output_data(thread_count);
+		std::vector<std::vector<renderer::MeshInstances>> output_data(thread_count);
 
 		std::cout << "Launched: " << static_cast<int>(thread_count) << " threads with a chunk size of " << chunk_size << "." << std::endl;
 
@@ -192,7 +192,7 @@ namespace {
 		}
 
 		// Threads complete merge workload
-		std::vector<renderer::detail::MeshInstances> merged_object_data;
+		std::vector<renderer::MeshInstances> merged_object_data;
 		for (auto& vector : output_data) {
 			merged_object_data.insert(merged_object_data.end(),
 				std::make_move_iterator(vector.begin()),
@@ -205,7 +205,7 @@ namespace {
 
 namespace MP {
 
-	std::vector<renderer::detail::MeshInstances> ParseMP(std::string MP_FilePath, bool BenchmarkMode){
+	std::vector<renderer::MeshInstances> ParseMP(std::string MP_FilePath, bool BenchmarkMode){
 		
 		if (BenchmarkMode == false) {
 			return Run_ParseMP(MP_FilePath);

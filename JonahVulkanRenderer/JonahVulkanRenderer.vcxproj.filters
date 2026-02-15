@@ -24,46 +24,28 @@
     <ClCompile Include="Source\Renderer\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\Instance.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\PhysicalDevice.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\LogicalDevice.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\Swapchain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\Pipelines.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\CommandBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\SyncPrimatives.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\FrameBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\DataBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\DescriptorSet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Renderer\Detail\RendererDetail_Common.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Game\Camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\USD Loader\USDParser.cpp">
+    <ClCompile Include="Source\MP Loader\MP_Parser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\MP Loader\MP_Parser.cpp">
+    <ClCompile Include="Source\Renderer\VkUtil\VkDataSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\VkUtil\VkDeviceSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\VkUtil\VkPipelineSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\VkUtil\VkSwapchainSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\VkUtil\VkDrawSetup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Renderer\VkUtil\VkSceneProcesser.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -74,19 +56,31 @@
     <ClInclude Include="Source\Renderer\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Renderer\Detail\RendererDetail.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Renderer\Detail\RendererDetail_Common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Game\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\USD Loader\USDParser.h">
+    <ClInclude Include="Source\MP Loader\MP_Parser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\MP Loader\MP_Parser.h">
+    <ClInclude Include="Source\Renderer\VkUtil\VkDeviceSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\VkUtil\VkSwapchainSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\VkUtil\VkPipelineSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\VkUtil\VkDataSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\VkUtil\VkCommon.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\VkUtil\VkDrawSetup.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Renderer\VkUtil\VkSceneProcesser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
