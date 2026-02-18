@@ -131,8 +131,7 @@ namespace renderer::data {
 		Buffer InstanceData,
 		Buffer BoundingBoxData,
 		std::array<data::UBO, MAX_FRAMES_IN_FLIGHT> UniformBuffers,
-		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> ShouldDrawFlagBuffers,
-		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT>  IndirectDrawBuffers){
+		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> ShouldDrawFlagBuffers){
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 
@@ -166,22 +165,7 @@ namespace renderer::data {
 			instance_data.descriptorCount = 1;
 			instance_data.pBufferInfo = &instance_data_info;
 
-			// [2] Update Indirect Draw Command SSBO
-			VkDescriptorBufferInfo draw_command_info{};
-			draw_command_info.buffer = IndirectDrawBuffers[i].Buffer;
-			draw_command_info.offset = 0;
-			draw_command_info.range = IndirectDrawBuffers[i].ByteSize;
-
-			VkWriteDescriptorSet draw_commands = {};
-			draw_commands.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			draw_commands.dstSet = DescriptorSet[i];
-			draw_commands.dstBinding = 2;
-			draw_commands.dstArrayElement = 0;
-			draw_commands.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			draw_commands.descriptorCount = 1;
-			draw_commands.pBufferInfo = &draw_command_info;
-
-			// [3] Update Mesh Centers SSBO
+			// [2] Update Mesh Centers SSBO
 			VkDescriptorBufferInfo bounding_box_info{};
 			bounding_box_info.buffer = BoundingBoxData.Buffer;
 			bounding_box_info.offset = 0;
@@ -190,13 +174,13 @@ namespace renderer::data {
 			VkWriteDescriptorSet bouding_box_array = {};
 			bouding_box_array.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			bouding_box_array.dstSet = DescriptorSet[i];
-			bouding_box_array.dstBinding = 3;
+			bouding_box_array.dstBinding = 2;
 			bouding_box_array.dstArrayElement = 0;
 			bouding_box_array.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			bouding_box_array.descriptorCount = 1;
 			bouding_box_array.pBufferInfo = &bounding_box_info;
 
-			// [4] Update Should Draw Flags SSBO
+			// [3] Update Should Draw Flags SSBO
 			VkDescriptorBufferInfo should_draw_flags_info{};
 			should_draw_flags_info.buffer = ShouldDrawFlagBuffers[i].Buffer;
 			should_draw_flags_info.offset = 0;
@@ -205,13 +189,13 @@ namespace renderer::data {
 			VkWriteDescriptorSet should_draw_flags = {};
 			should_draw_flags.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			should_draw_flags.dstSet = DescriptorSet[i];
-			should_draw_flags.dstBinding = 4;
+			should_draw_flags.dstBinding = 3;
 			should_draw_flags.dstArrayElement = 0;
 			should_draw_flags.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 			should_draw_flags.descriptorCount = 1;
 			should_draw_flags.pBufferInfo = &should_draw_flags_info;
 
-			std::array<VkWriteDescriptorSet, 5> descriptor_writes = {ubo, instance_data, draw_commands, bouding_box_array, should_draw_flags};
+			std::array<VkWriteDescriptorSet, 4> descriptor_writes = {ubo, instance_data, bouding_box_array, should_draw_flags};
 
 			vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
 		}

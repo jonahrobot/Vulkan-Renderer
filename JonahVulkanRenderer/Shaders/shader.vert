@@ -15,7 +15,7 @@ layout(std140, binding = 1) readonly buffer InstanceData {
     Instance instance_data[ ];
 };
 
-layout(std430, binding = 4) readonly buffer ShouldDraw {
+layout(std430, binding = 3) readonly buffer ShouldDraw {
     uint should_draw[ ];
 };
 

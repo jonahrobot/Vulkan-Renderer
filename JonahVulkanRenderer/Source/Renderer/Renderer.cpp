@@ -456,7 +456,7 @@ namespace renderer {
 			should_draw_buffers[i] = data::CreateBuffer(should_draw_flags.data(), sizeof(uint32_t) * should_draw_flags.size(), storage_bit | transfer_bit, ctx);
 		}
 
-		data::UpdateDescriptorSets(descriptor_sets, logical_device, instance_data_buffer, bounding_box_buffer, uniform_buffers, should_draw_buffers, indirect_command_buffers);
+		data::UpdateDescriptorSets(descriptor_sets, logical_device, instance_data_buffer, bounding_box_buffer, uniform_buffers, should_draw_buffers);
 	}
 
 	GLFWwindow* Renderer::Get_Window() {

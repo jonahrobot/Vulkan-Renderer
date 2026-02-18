@@ -1,13 +1,5 @@
 #version 450
 
-struct IndexedIndirectCommand 
-{
-	uint indexCount;
-	uint instanceCount;
-	uint firstIndex;
-	uint vertexOffset;
-	uint firstInstance;
-};
 
 struct BoundingData
 {
@@ -21,17 +13,12 @@ layout(binding = 0) uniform UniformBufferObject{
 	vec4 frustumPlanes[6];
 } ubo;
 
-layout(std430, binding = 3) readonly buffer BoundingSphereArray {
+layout(std430, binding = 2) readonly buffer BoundingSphereArray {
     BoundingData bounding_sphere_array[ ];
 };
 
-layout(std430, binding = 4) writeonly buffer ShouldDraw {
+layout(std430, binding = 3) writeonly buffer ShouldDraw {
     uint should_draw[ ];
-};
-
-layout (binding = 2, std430) writeonly buffer IndirectDraws
-{
-	IndexedIndirectCommand indirectDraws[ ];
 };
 
 layout (local_size_x = 64) in;

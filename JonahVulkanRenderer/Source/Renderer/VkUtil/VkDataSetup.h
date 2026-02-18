@@ -32,6 +32,5 @@ namespace renderer::data {
 		Buffer InstanceData, 
 		Buffer BoundingBoxData,
 		std::array<data::UBO, MAX_FRAMES_IN_FLIGHT> UniformBuffers,
-		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> ShouldDrawFlagBuffers,
-		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT>  IndirectDrawBuffers);
+		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> ShouldDrawFlagBuffers);
 }
