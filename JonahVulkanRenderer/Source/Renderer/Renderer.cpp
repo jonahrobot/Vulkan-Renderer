@@ -177,7 +177,7 @@ namespace renderer {
 		// Cleanup render data
 		data::DestroyBuffer(logical_device, vertex_buffer);
 		data::DestroyBuffer(logical_device, index_buffer);
-		data::DestroyBuffer(logical_device, mesh_centers_buffer);
+		data::DestroyBuffer(logical_device, bounding_box_buffer);
 		data::DestroyBuffer(logical_device, instance_data_buffer);
 
 		// Cleanup draw framework
@@ -411,7 +411,7 @@ namespace renderer {
 		// Clear old data
 		data::DestroyBuffer(logical_device, vertex_buffer);
 		data::DestroyBuffer(logical_device, index_buffer);
-		data::DestroyBuffer(logical_device, mesh_centers_buffer);
+		data::DestroyBuffer(logical_device, bounding_box_buffer);
 		data::DestroyBuffer(logical_device, instance_data_buffer);
 	
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -427,7 +427,7 @@ namespace renderer {
 		std::vector<Vertex> vertex_buffer_data = parser.GetSceneVertices();
 		std::vector<uint32_t> index_buffer_data = parser.GetSceneIndices();
 		std::vector<InstanceData> instance_data = parser.GetInstanceData();
-		std::vector<glm::vec4> model_centers_data = parser.GetModelCenters();
+		std::vector<BoundingBoxData> bounding_box_data = parser.GetBoundingData();
 		std::vector<VkDrawIndexedIndirectCommand> indirect_commands = parser.GetDrawCommands();
 		std::vector<uint32_t> should_draw_flags(mesh_count, 0);
 
@@ -449,14 +449,14 @@ namespace renderer {
 		vertex_buffer = data::CreateBuffer(vertex_buffer_data.data(), sizeof(Vertex) * vertex_buffer_data.size(), transfer_bit | vertex_bit, ctx);
 		index_buffer = data::CreateBuffer(index_buffer_data.data(), sizeof(uint32_t) * index_buffer_data.size(), transfer_bit | index_bit, ctx);
 		instance_data_buffer = data::CreateBuffer(instance_data.data(), sizeof(InstanceData) * instance_data.size(), storage_bit | transfer_bit, ctx);
-		mesh_centers_buffer = data::CreateBuffer(model_centers_data.data(), sizeof(glm::vec4) * model_centers_data.size(), storage_bit | transfer_bit, ctx);
+		bounding_box_buffer = data::CreateBuffer(bounding_box_data.data(), sizeof(BoundingBoxData) * bounding_box_data.size(), storage_bit | transfer_bit, ctx);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			indirect_command_buffers[i] = data::CreateBuffer(indirect_commands.data(), sizeof(VkDrawIndexedIndirectCommand) * indirect_commands.size(), indirect_bit | storage_bit | transfer_bit, ctx);
 			should_draw_buffers[i] = data::CreateBuffer(should_draw_flags.data(), sizeof(uint32_t) * should_draw_flags.size(), storage_bit | transfer_bit, ctx);
 		}
 
-		data::UpdateDescriptorSets(descriptor_sets, logical_device, instance_data_buffer, mesh_centers_buffer, uniform_buffers, should_draw_buffers, indirect_command_buffers);
+		data::UpdateDescriptorSets(descriptor_sets, logical_device, instance_data_buffer, bounding_box_buffer, uniform_buffers, should_draw_buffers, indirect_command_buffers);
 	}
 
 	GLFWwindow* Renderer::Get_Window() {

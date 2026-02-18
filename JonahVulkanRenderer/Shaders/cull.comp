@@ -9,14 +9,20 @@ struct IndexedIndirectCommand
 	uint firstInstance;
 };
 
+struct BoundingData
+{
+	vec4 centerPoint;
+	vec4 radius;
+};
+
 layout(binding = 0) uniform UniformBufferObject{
     mat4 view;
     mat4 proj;
 	vec4 frustumPlanes[6];
 } ubo;
 
-layout(std430, binding = 3) readonly buffer InstanceData {
-    vec4 center_point[ ];
+layout(std430, binding = 3) readonly buffer BoundingSphereArray {
+    BoundingData bounding_sphere_array[ ];
 };
 
 layout(std430, binding = 4) writeonly buffer ShouldDraw {
@@ -30,7 +36,6 @@ layout (binding = 2, std430) writeonly buffer IndirectDraws
 
 layout (local_size_x = 64) in;
 
-// Frustum cull logic partially from Sacha Willems Vulkan ComputeCull example.
 bool frustum_check(vec4 pos, float radius){
 
 	for (int i = 0; i < 6; i++) 
@@ -47,9 +52,9 @@ void main(){
 
 	uint index = gl_GlobalInvocationID.x; 
 
-	vec4 pos = center_point[index];
+	vec4 pos = bounding_sphere_array[index].centerPoint;
 
-	if(frustum_check(pos, 1.0)){ 
+	if(frustum_check(pos, bounding_sphere_array[index].radius.x)){ 
 		should_draw[index] = 1;
 	}else{
 		should_draw[index] = 0;

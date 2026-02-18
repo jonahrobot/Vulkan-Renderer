@@ -129,7 +129,7 @@ namespace renderer::data {
 		std::vector<VkDescriptorSet>& DescriptorSet,
 		VkDevice LogicalDevice,
 		Buffer InstanceData,
-		Buffer MeshCenters,
+		Buffer BoundingBoxData,
 		std::array<data::UBO, MAX_FRAMES_IN_FLIGHT> UniformBuffers,
 		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> ShouldDrawFlagBuffers,
 		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT>  IndirectDrawBuffers){
@@ -182,19 +182,19 @@ namespace renderer::data {
 			draw_commands.pBufferInfo = &draw_command_info;
 
 			// [3] Update Mesh Centers SSBO
-			VkDescriptorBufferInfo mesh_centers_info{};
-			mesh_centers_info.buffer = MeshCenters.Buffer;
-			mesh_centers_info.offset = 0;
-			mesh_centers_info.range = MeshCenters.ByteSize;
+			VkDescriptorBufferInfo bounding_box_info{};
+			bounding_box_info.buffer = BoundingBoxData.Buffer;
+			bounding_box_info.offset = 0;
+			bounding_box_info.range = BoundingBoxData.ByteSize;
 
-			VkWriteDescriptorSet mesh_centers = {};
-			mesh_centers.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			mesh_centers.dstSet = DescriptorSet[i];
-			mesh_centers.dstBinding = 3;
-			mesh_centers.dstArrayElement = 0;
-			mesh_centers.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			mesh_centers.descriptorCount = 1;
-			mesh_centers.pBufferInfo = &mesh_centers_info;
+			VkWriteDescriptorSet bouding_box_array = {};
+			bouding_box_array.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			bouding_box_array.dstSet = DescriptorSet[i];
+			bouding_box_array.dstBinding = 3;
+			bouding_box_array.dstArrayElement = 0;
+			bouding_box_array.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			bouding_box_array.descriptorCount = 1;
+			bouding_box_array.pBufferInfo = &bounding_box_info;
 
 			// [4] Update Should Draw Flags SSBO
 			VkDescriptorBufferInfo should_draw_flags_info{};
@@ -211,7 +211,7 @@ namespace renderer::data {
 			should_draw_flags.descriptorCount = 1;
 			should_draw_flags.pBufferInfo = &should_draw_flags_info;
 
-			std::array<VkWriteDescriptorSet, 5> descriptor_writes = {ubo, instance_data, draw_commands, mesh_centers, should_draw_flags};
+			std::array<VkWriteDescriptorSet, 5> descriptor_writes = {ubo, instance_data, draw_commands, bouding_box_array, should_draw_flags};
 
 			vkUpdateDescriptorSets(LogicalDevice, static_cast<uint32_t>(descriptor_writes.size()), descriptor_writes.data(), 0, nullptr);
 		}

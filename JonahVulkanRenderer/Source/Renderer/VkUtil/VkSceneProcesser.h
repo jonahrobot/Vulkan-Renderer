@@ -10,7 +10,7 @@ namespace renderer::scene {
 	public:
 		SceneParser(const std::vector<MeshInstances>& NewModelSet);
 		std::vector<InstanceData> GetInstanceData();
-		std::vector<glm::vec4>	GetModelCenters(); 
+		std::vector<BoundingBoxData> GetBoundingData();
 		std::vector<VkDrawIndexedIndirectCommand> GetDrawCommands();
 		std::vector<Vertex> GetSceneVertices();
 		std::vector<uint32_t> GetSceneIndices();
@@ -20,7 +20,7 @@ namespace renderer::scene {
 		std::vector<MeshInstances> model_set;
 
 		std::vector<InstanceData> instance_data;
-		std::vector<glm::vec4> model_centers;
+		std::vector<BoundingBoxData> bounding_data;
 		std::vector<VkDrawIndexedIndirectCommand> draw_commands;
 		std::vector<Vertex> scene_vertices;
 		std::vector<uint32_t> scene_indices;

@@ -11,7 +11,7 @@ namespace renderer::scene {
 		scene_vertices = {};
 		scene_indices = {};
 		draw_commands = {};
-		model_centers = {};
+		bounding_data = {};
 		instance_data = {};
 
 		for (MeshInstances model : model_set) {
@@ -26,9 +26,17 @@ namespace renderer::scene {
 			// Move vertex data
 			uint32_t offset = static_cast<uint32_t>(scene_vertices.size());
 			glm::vec3 sum = glm::vec3(0);
+			float max_distance_from_center = -1;
+
 			for (const Vertex& v : mesh.vertices) {
 				scene_vertices.push_back(v);
 				sum += v.position;
+
+				float distance_from_center = glm::distance(v.position, glm::vec3(0, 0, 0));
+
+				if (distance_from_center > max_distance_from_center) {
+					max_distance_from_center = distance_from_center;
+				}
 			}
 
 			// Move index data
@@ -49,16 +57,21 @@ namespace renderer::scene {
 			m += model.instance_count;
 
 			float length = static_cast<float>(mesh.vertices.size());
-			glm::vec4 mesh_center_point = glm::vec4(sum.x / length, sum.y / length, sum.z / length, 1);
+			glm::vec4 mesh_local_center_point = glm::vec4(sum.x / length, sum.y / length, sum.z / length, 1);
 
 			// Find model center and instance data
 			for (int i = 0; i < static_cast<int>(model.instance_count); i++){
 				
 				const glm::mat4& instance_model_matrix = model.instance_model_matrices[i];
 
-				glm::vec4 center_with_offset = instance_model_matrix[3] + mesh_center_point;
-				center_with_offset.w = 1;
-				model_centers.push_back(center_with_offset);
+				glm::vec4 mesh_world_center_point = instance_model_matrix[3] + mesh_local_center_point;
+				mesh_world_center_point.w = 1;
+
+				BoundingBoxData mesh_bounding_box;
+				mesh_bounding_box.center_point = mesh_world_center_point;
+				mesh_bounding_box.radius = glm::vec4(max_distance_from_center,0,0,0);
+				bounding_data.push_back(mesh_bounding_box);
+
 				instance_data.push_back({ instance_model_matrix , glm::vec4(0)});
 			}
 		}
@@ -68,8 +81,8 @@ namespace renderer::scene {
 		return instance_data;
 	}
 
-	std::vector<glm::vec4> SceneParser::GetModelCenters(){
-		return model_centers;
+	std::vector<BoundingBoxData> SceneParser::GetBoundingData(){
+		return bounding_data;
 	}
 
 	std::vector<VkDrawIndexedIndirectCommand> SceneParser::GetDrawCommands() {

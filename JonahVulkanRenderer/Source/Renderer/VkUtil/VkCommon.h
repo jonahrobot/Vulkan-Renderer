@@ -27,6 +27,11 @@ namespace renderer {
 		alignas(16) glm::vec4 array_index;
 	};
 
+	struct BoundingBoxData {
+		alignas(16) glm::vec4 center_point;
+		alignas(16) glm::vec4 radius; // Only x value is used (crucial for std430 alignment)
+	};
+
 	struct UBOData {
 		alignas(16) glm::mat4 view;
 		alignas(16) glm::mat4 proj;

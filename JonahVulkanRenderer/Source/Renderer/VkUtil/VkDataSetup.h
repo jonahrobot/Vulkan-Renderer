@@ -30,7 +30,7 @@ namespace renderer::data {
 		std::vector<VkDescriptorSet>& DescriptorSet,
 		VkDevice LogicalDevice, 
 		Buffer InstanceData, 
-		Buffer MeshCenters, 
+		Buffer BoundingBoxData,
 		std::array<data::UBO, MAX_FRAMES_IN_FLIGHT> UniformBuffers,
 		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT> ShouldDrawFlagBuffers,
 		std::array<data::Buffer, MAX_FRAMES_IN_FLIGHT>  IndirectDrawBuffers);

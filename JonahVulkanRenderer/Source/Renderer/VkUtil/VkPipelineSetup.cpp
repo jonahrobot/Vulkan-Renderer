@@ -141,12 +141,12 @@ namespace renderer::pipeline {
 		indirect_draw_commands.pImmutableSamplers = nullptr;
 		indirect_draw_commands.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
-		VkDescriptorSetLayoutBinding mesh_centers{};
-		mesh_centers.binding = 3;
-		mesh_centers.descriptorCount = 1;
-		mesh_centers.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		mesh_centers.pImmutableSamplers = nullptr;
-		mesh_centers.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+		VkDescriptorSetLayoutBinding bounding_box_data{};
+		bounding_box_data.binding = 3;
+		bounding_box_data.descriptorCount = 1;
+		bounding_box_data.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		bounding_box_data.pImmutableSamplers = nullptr;
+		bounding_box_data.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
 
 		VkDescriptorSetLayoutBinding should_draw_flags{};
 		should_draw_flags.binding = 4;
@@ -155,7 +155,7 @@ namespace renderer::pipeline {
 		should_draw_flags.pImmutableSamplers = nullptr;
 		should_draw_flags.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 5> bindings = { ubo, instance_data, indirect_draw_commands, mesh_centers, should_draw_flags };
+		std::array<VkDescriptorSetLayoutBinding, 5> bindings = { ubo, instance_data, indirect_draw_commands, bounding_box_data, should_draw_flags };
 
 		VkDescriptorSetLayoutCreateInfo create_info{};
 		create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
