@@ -1,18 +1,18 @@
 #version 450
 
-
-struct BoundingData
-{
-	vec4 centerPoint;
-	vec4 radius;
-};
+// -- Data --
 
 layout(binding = 0) uniform UniformBufferObject{
     mat4 view;
     mat4 proj;
-	vec4 frustumPlanes[6];
+	vec4 frustum_planes[6];
 } ubo;
 
+struct BoundingData
+{
+	vec4 center_point;
+	vec4 radius;
+};
 layout(std430, binding = 2) readonly buffer BoundingSphereArray {
     BoundingData bounding_sphere_array[ ];
 };
@@ -23,11 +23,13 @@ layout(std430, binding = 3) writeonly buffer ShouldDraw {
 
 layout (local_size_x = 64) in;
 
+// -- Helper functions --
+
 bool frustum_check(vec4 pos, float radius){
 
 	for (int i = 0; i < 6; i++) 
 	{
-		if (dot(pos, ubo.frustumPlanes[i]) + radius < 0.0)
+		if (dot(pos, ubo.frustum_planes[i]) + radius < 0.0)
 		{
 			return false;
 		}
@@ -35,11 +37,13 @@ bool frustum_check(vec4 pos, float radius){
 	return true;
 }
 
+// -- Main --
+
 void main(){
 
 	uint index = gl_GlobalInvocationID.x; 
 
-	vec4 pos = bounding_sphere_array[index].centerPoint;
+	vec4 pos = bounding_sphere_array[index].center_point;
 
 	if(frustum_check(pos, bounding_sphere_array[index].radius.x)){ 
 		should_draw[index] = 1;
