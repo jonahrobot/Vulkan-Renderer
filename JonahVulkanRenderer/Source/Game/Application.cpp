@@ -10,7 +10,12 @@ Application::Application() {
 
 	renderer = new renderer::Renderer(500,400);
 
-	std::vector<renderer::MeshInstances> model_set = MP::ParseMP("ExternalTools/dev.mp", false);
+	/*std::string mp_file_name;
+	std::cout << "Type the name of the .mp you would like to render. Scene file must be in the Assets folder." << std::endl;
+	std::cout << "File name: ";
+	std::cin >> mp_file_name;*/
+
+	std::vector<renderer::MeshInstances> model_set = MP::ParseMP("Assets/dev.mp", false);
 
 	renderer->UpdateModelSet(model_set,true);
 

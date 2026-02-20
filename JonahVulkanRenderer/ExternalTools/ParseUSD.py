@@ -22,34 +22,11 @@ def find_binding_matching_mesh(bindings, mesh):
 
 def parse_scene(filepath):
 
-    """
-    {
-        models: [
-           ModelNAME: {
-                vertices: [xxxxxx]
-                indices: [xxxxxx]
-                uv: [xxxxxx]
-                instance_count = 3
-                instances:{
-                    Transformation Matrix (Rotation, Translation, Scale),
-                    Transformation Matrix (Rotation, Translation, Scale),
-                    Transformation Matrix (Rotation, Translation, Scale)
-                }
-            },
-            {
-            }
-        ]
-    }
-    """
     scene_data = {"models": {}}
     total_models = 0
 
     # Open the USD stage from the specified file
     stage: Usd.Stage = Usd.Stage.Open(filepath)
-
-    #population_mask = Usd.StagePopulationMask()
-    #population_mask.Add(Sdf.Path("/world/hotel_01/geo"))
-    #stage.SetPopulationMask(population_mask)
 
     scale_constant = 100
 
@@ -184,6 +161,9 @@ def parse_scene(filepath):
     # Pack data into buffer
 
     with open("dev.mp", "wb") as f:
+
+        # Add Verification bytes (0x4D50) (MP in Hex)
+        f.write(struct.pack('<h', 0x4D50))
 
         # Add object count
         f.write(struct.pack('<I', total_models))

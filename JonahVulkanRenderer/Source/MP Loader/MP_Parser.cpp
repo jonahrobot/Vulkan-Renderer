@@ -151,12 +151,19 @@ namespace {
 		std::ifstream file(MP_FilePath, std::ios::binary);
 
 		if (!file) {
-			throw std::invalid_argument("File could not open.");
+			throw std::invalid_argument("MP file could not open.");
 		}
 
 		uint64_t total_unique_objects = 0;
 
-		// Get header data
+		// Get header data 
+		uint16_t mp_identifier; // All .mp files start with 4D 50 (MP in Hex) to quick screen invalid files.
+		file.read(reinterpret_cast<char*>(&mp_identifier), sizeof(uint16_t));
+
+		if (mp_identifier != 0x4D50) {
+			throw std::invalid_argument("Tried to parse a invalid MP file.");
+		}
+
 		uint32_t model_count;
 		file.read(reinterpret_cast<char*>(&model_count), sizeof(uint32_t));
 
@@ -230,6 +237,20 @@ namespace MP {
 		std::cout << average_time / 60000000 << "m " << (average_time / 1000000) % 60 << "s " << (average_time / 1000) % 1000 << "ms " << average_time % 1000 << "us" << std::endl;
 	
 		return Run_ParseMP(MP_FilePath);
+	}
+
+	// All .mp files start with 4D 50 (MP in Hex) to quick screen invalid files.
+	bool CheckValidMP(std::string json_file_path) {
+		std::ifstream file(json_file_path, std::ios::binary);
+
+		if (!file) {
+			throw std::invalid_argument("MP file could not open.");
+		}
+
+		uint16_t mp_identifier; 
+		file.read(reinterpret_cast<char*>(&mp_identifier), sizeof(uint16_t));
+
+		return mp_identifier == 0x4D50;
 	}
 
 } // namespace MP

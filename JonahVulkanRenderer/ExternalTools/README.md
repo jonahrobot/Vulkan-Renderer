@@ -26,8 +26,9 @@ The Vulkan renderer takes these .mp files and displays them in 3D space.
 (dev.mp) Binary Format
 ```
 Header
-0x00  uint32    # of Objects
-0x04  uint32[]  object pointers
+0x00  uint16    Verification bytes (0x4D50) (MP in Hex)
+0x02  uint32    # of Objects
+0x06  uint32[]  object pointers
 ...   Object[]  object data
 
 Object

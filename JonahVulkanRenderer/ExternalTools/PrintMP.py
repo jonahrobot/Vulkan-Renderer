@@ -4,8 +4,9 @@ import struct,argparse
 (dev.mp) Binary Format
 
 Header
-0x00  uint32    # of Objects
-0x04  uint32[]  object pointers
+0x00  uint16    Verification bytes (0x4D50) (MP in Hex)
+0x02  uint32    # of Objects
+0x06  uint32[]  object pointers
 ...   Object[]  object data
 
 Object
@@ -32,8 +33,15 @@ def main():
     opts = parser.parse_args()
 
     with open("dev.mp", "rb") as f:
+        verification_bytes = struct.unpack("<h", f.read(2))[0]
         object_count = struct.unpack("<I", f.read(4))[0]
         pointers = struct.unpack(f"<{object_count}I", f.read(object_count * 4))
+
+        print(f"Verification bytes: {hex(verification_bytes)}")
+
+        if verification_bytes != 0x4D50:
+            print("Verification failed, first 4 bytes of .mp should be 0x4D50.")
+            return
 
         print(f"Object count: {object_count}")
         print(f"Pointers: {pointers}")
