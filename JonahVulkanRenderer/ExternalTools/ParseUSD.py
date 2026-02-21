@@ -21,7 +21,7 @@ def find_binding_matching_mesh(bindings, mesh):
                 return b, True
     return None, False
 
-def parse_scene(filepath):
+def parse_scene(filepath, scale):
 
     scene_data = {"models": {}}
     total_models = 0
@@ -29,7 +29,7 @@ def parse_scene(filepath):
     # Open the USD stage from the specified file
     stage: Usd.Stage = Usd.Stage.Open(filepath)
 
-    scale_constant = 100
+    scale_constant = scale
 
     total_prims = 0
     print("Finding prim count...")
@@ -95,8 +95,8 @@ def parse_scene(filepath):
                 world_transform[0][0], world_transform[0][1], world_transform[0][2], world_transform[0][3],
                 world_transform[1][0], world_transform[1][1], world_transform[1][2], world_transform[1][3],
                 world_transform[2][0], world_transform[2][1], world_transform[2][2], world_transform[2][3],
-                world_transform[3][0] / scale_constant, world_transform[3][1] / scale_constant,
-                world_transform[3][2] / scale_constant, world_transform[3][3]
+                world_transform[3][0] * scale_constant, world_transform[3][1] * scale_constant,
+                world_transform[3][2] * scale_constant, world_transform[3][3]
             ]
             if model_hash in scene_data["models"]:
                 scene_data["models"][model_hash]["instance_count"] += 1
@@ -114,9 +114,9 @@ def parse_scene(filepath):
                 normals_count = 0
 
                 for x in points:
-                    points_float.append(x[0] / scale_constant)
-                    points_float.append(x[1] / scale_constant)
-                    points_float.append(x[2] / scale_constant)
+                    points_float.append(x[0] * scale_constant)
+                    points_float.append(x[1] * scale_constant)
+                    points_float.append(x[2] * scale_constant)
                     points_count += 1
 
                 for x in normals:
@@ -223,8 +223,16 @@ def main():
         type=str,
         help="The path to the target .usd file that needs converting.",
     )
+    parser.add_argument(
+        "--s",
+        "--scale",
+        required=True,
+        dest="scale",
+        type=float,
+        help="The scale all meshes will be increased by.",
+    )
     opts = parser.parse_args()
-    result = parse_scene(opts.filepath)
+    result = parse_scene(opts.filepath, opts.scale)
 
 
 if __name__ == "__main__":
