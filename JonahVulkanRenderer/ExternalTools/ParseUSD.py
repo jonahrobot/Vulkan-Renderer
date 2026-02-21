@@ -3,6 +3,7 @@
 from pxr import Usd, UsdGeom, Sdf, Gf, UsdSkel
 import argparse, struct
 from tqdm import tqdm
+from pathlib import Path
 
 def find_parent_with_skeleton(mesh):
     p = mesh
@@ -159,8 +160,9 @@ def parse_scene(filepath):
             pbar.set_postfix_str(f"current model: {current_index}")
 
     # Pack data into buffer
+    name = Path(filepath).stem
 
-    with open("dev.mp", "wb") as f:
+    with open(f"{name}.mp", "wb") as f:
 
         # Add Verification bytes (0x4D50) (MP in Hex)
         f.write(struct.pack('<h', 0x4D50))
