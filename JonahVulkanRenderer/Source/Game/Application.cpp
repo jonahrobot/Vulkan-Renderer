@@ -10,12 +10,18 @@ Application::Application() {
 
 	renderer = new renderer::Renderer(500,400);
 
-	/*std::string mp_file_name;
+	std::string mp_file_name;
 	std::cout << "Type the name of the .mp you would like to render. Scene file must be in the Assets folder." << std::endl;
 	std::cout << "File name: ";
-	std::cin >> mp_file_name;*/
+	std::cin >> mp_file_name;
 
-	std::vector<renderer::MeshInstances> model_set = MP::ParseMP("Assets/dev.mp", false);
+	while (MP::CheckValidMP("Assets/" + mp_file_name) == false) {
+		std::cout << "Warning: File missing from Assets folder or not valid .mp file." << std::endl;
+		std::cout << "Try again, file name: ";
+		std::cin >> mp_file_name;
+	};
+
+	std::vector<renderer::MeshInstances> model_set = MP::ParseMP("Assets/" + mp_file_name, false);
 
 	renderer->UpdateModelSet(model_set,true);
 

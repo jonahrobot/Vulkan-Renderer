@@ -244,7 +244,7 @@ namespace MP {
 		std::ifstream file(json_file_path, std::ios::binary);
 
 		if (!file) {
-			throw std::invalid_argument("MP file could not open.");
+			return false;
 		}
 
 		uint16_t mp_identifier; 
