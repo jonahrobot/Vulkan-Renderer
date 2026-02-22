@@ -240,7 +240,8 @@ namespace renderer {
 		vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout, 0, 1, &descriptor_sets[CurrentFrame], 0, 0);
 
 		if (FrustumCull) {
-			vkCmdDispatch(command_buffer, mesh_count / 64, 1, 1);
+			int dispatches = std::max(mesh_count / 64, 1u);
+			vkCmdDispatch(command_buffer, dispatches, 1, 1);
 		}
 		else {
 			vkCmdDispatch(command_buffer, 0, 1, 1); // Do not run compute commands.
