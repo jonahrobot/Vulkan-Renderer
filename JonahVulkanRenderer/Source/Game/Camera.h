@@ -19,6 +19,8 @@ namespace game {
 
 		void MoveCamera(GLFWwindow* window, float delta_time);
 
+		void SetPosition(glm::vec3 taget_position);
+
 		glm::mat4 GetViewMatrix();
 
 	private:

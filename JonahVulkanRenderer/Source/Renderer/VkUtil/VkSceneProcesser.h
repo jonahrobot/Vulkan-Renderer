@@ -1,5 +1,8 @@
 #pragma once
 
+#define GLM_FORCE_RADIANS
+#define GLM_ENABLE_EXPERIMENTAL 
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.hpp>
 #include "VkCommon.h"
 
@@ -15,6 +18,7 @@ namespace renderer::scene {
 		std::vector<Vertex> GetSceneVertices();
 		std::vector<uint32_t> GetSceneIndices();
 		uint32_t GetMeshCount();
+		glm::vec3 GetSceneRoot();
 
 	private:
 		std::vector<MeshInstances> model_set;
@@ -25,5 +29,6 @@ namespace renderer::scene {
 		std::vector<Vertex> scene_vertices;
 		std::vector<uint32_t> scene_indices;
 		uint32_t mesh_count;
+		glm::vec3 scene_root;
 	};
 }

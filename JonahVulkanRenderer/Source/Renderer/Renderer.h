@@ -25,6 +25,7 @@ public:
 
 	void Draw(glm::mat4 CameraPosition, bool FrustumCull);
 	void UpdateModelSet(std::vector<MeshInstances> NewModelSet, bool UseWhiteTexture);
+	glm::vec3 GetSceneRoot();
 	GLFWwindow* Get_Window();
 
 	bool framebuffer_resized = false;
@@ -106,5 +107,6 @@ private:
 	PFN_vkCmdEndDebugUtilsLabelEXT cmd_end_debug = nullptr;
 	
 	uint32_t current_frame = 0;
+	glm::vec3 scene_root = glm::vec3(0, 0, 0);
 };
 } // namespace renderer

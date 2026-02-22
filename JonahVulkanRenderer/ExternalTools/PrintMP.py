@@ -29,10 +29,18 @@ def main():
         action="store_true",
         help="Enable verbose output"
     )
+    parser.add_argument(
+        "--f",
+        "--filepath",
+        required=True,
+        dest="filepath",
+        type=str,
+        help="The path to the target .mp file.",
+    )
 
     opts = parser.parse_args()
 
-    with open("dev.mp", "rb") as f:
+    with open(opts.filepath, "rb") as f:
         verification_bytes = struct.unpack("<h", f.read(2))[0]
         object_count = struct.unpack("<I", f.read(4))[0]
         pointers = struct.unpack(f"<{object_count}I", f.read(object_count * 4))

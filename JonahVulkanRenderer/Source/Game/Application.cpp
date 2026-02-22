@@ -28,6 +28,10 @@ Application::Application() {
 	std::cout << "Model set updated." << std::endl;
 	window = renderer->Get_Window();
 	camera = new Camera(window);
+
+	glm::vec3 scene_root = renderer->GetSceneRoot();
+	camera->SetPosition(scene_root);
+	std::cout << "Scene Root is: " << scene_root.x << "," << scene_root.y << "," << scene_root.z << std::endl;
 }
 
 Application::~Application() {

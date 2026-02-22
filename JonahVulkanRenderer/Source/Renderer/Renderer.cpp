@@ -217,6 +217,10 @@ namespace renderer {
 		glfwTerminate();
 	}
 
+	glm::vec3 Renderer::GetSceneRoot() {
+		return scene_root;
+	}
+
 	void Renderer::RecordComputeCommands(uint32_t CurrentFrame, bool FrustumCull) {
 
 		VkCommandBuffer command_buffer = compute_command_buffers[CurrentFrame];
@@ -432,6 +436,7 @@ namespace renderer {
 		std::vector<uint32_t> should_draw_flags(mesh_count, 0);
 
 		unique_mesh_count = indirect_commands.size();
+		scene_root = parser.GetSceneRoot();
 
 		// Load new data to GPU
 		data::BaseBufferContext ctx = {};

@@ -8,6 +8,7 @@ namespace renderer::scene {
 
 		uint32_t m = 0;
 		mesh_count = 0;
+		scene_root = glm::vec3(0, 0, 0);
 		scene_vertices = {};
 		scene_indices = {};
 		draw_commands = {};
@@ -60,19 +61,23 @@ namespace renderer::scene {
 			glm::vec4 mesh_local_center_point = glm::vec4(sum.x / length, sum.y / length, sum.z / length, 1);
 
 			// Find model center and instance data
-			for (int i = 0; i < static_cast<int>(model.instance_count); i++){
-				
+			for (int i = 0; i < static_cast<int>(model.instance_count); i++) {
+
 				const glm::mat4& instance_model_matrix = model.instance_model_matrices[i];
 
 				glm::vec4 mesh_world_center_point = instance_model_matrix[3] + mesh_local_center_point;
 				mesh_world_center_point.w = 1;
 
+				if (scene_root == glm::vec3(0, 0, 0)) {
+					scene_root = mesh_world_center_point;
+				}
+
 				BoundingBoxData mesh_bounding_box;
 				mesh_bounding_box.center_point = mesh_world_center_point;
-				mesh_bounding_box.radius = glm::vec4(max_distance_from_center,0,0,0);
+				mesh_bounding_box.radius = glm::vec4(max_distance_from_center, 0, 0, 0);
 				bounding_data.push_back(mesh_bounding_box);
 
-				instance_data.push_back({ instance_model_matrix , glm::vec4(0)});
+				instance_data.push_back({ instance_model_matrix , glm::vec4(0) });
 			}
 		}
 	}
@@ -81,7 +86,7 @@ namespace renderer::scene {
 		return instance_data;
 	}
 
-	std::vector<BoundingBoxData> SceneParser::GetBoundingData(){
+	std::vector<BoundingBoxData> SceneParser::GetBoundingData() {
 		return bounding_data;
 	}
 
@@ -99,5 +104,9 @@ namespace renderer::scene {
 
 	uint32_t SceneParser::GetMeshCount() {
 		return mesh_count;
+	}
+
+	glm::vec3 SceneParser::GetSceneRoot() {
+		return scene_root;
 	}
 }
