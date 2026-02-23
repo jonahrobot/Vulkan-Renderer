@@ -77,8 +77,8 @@ namespace {
 
 			// Parse object data
 			vertices.resize(vertex_count * 3);
-			indices.resize(index_count * 3);
-			normals.resize(normal_count);
+			indices.resize(index_count);
+			normals.resize(normal_count * 3);
 			matrices.resize(instance_count * 16);
 
 			vertices = ReadFloatArray(Buffer, byte_offset, BufferSize, vertex_count * 3);

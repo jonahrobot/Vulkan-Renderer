@@ -69,7 +69,7 @@ namespace renderer::scene {
 				mesh_world_center_point.w = 1;
 
 				if (scene_root == glm::vec3(0, 0, 0)) {
-					scene_root = mesh_world_center_point;
+					scene_root = mesh_world_center_point + glm::vec4(max_distance_from_center, 0, 0, 0);
 				}
 
 				BoundingBoxData mesh_bounding_box;
