@@ -5,6 +5,31 @@ import argparse, struct
 from tqdm import tqdm
 from pathlib import Path
 
+
+def create_vertex_normals(indices, temp_normals, temp_normal_indices):
+    normals_per_vertex = {}
+
+    # Index all normals by their connected vertex
+    for i in range(0, len(temp_normal_indices)):
+        normal = temp_normals[temp_normal_indices[i]]
+        index = indices[i]
+
+        if index in normals_per_vertex:
+            normals_per_vertex[index][0] += normal
+            normals_per_vertex[index][1] += 1
+        else:
+            new_normal = []
+            new_normal.append(normal)
+            new_normal.append(1)
+            normals_per_vertex[index] = new_normal
+
+    # Take average of each vertices normals, getting 1 vertex per normal
+    final_normals = []
+    for x in range(0, len(normals_per_vertex)):
+        final_normals.append(normals_per_vertex[x][0] / normals_per_vertex[x][1])
+
+    return final_normals
+
 def find_parent_with_skeleton(mesh):
     p = mesh
     while p and p.IsValid():
@@ -80,12 +105,19 @@ def parse_scene(filepath, scale):
 
             points = UsdGeom.Mesh(prim).GetPointsAttr().Get()
             indices = UsdGeom.Mesh(prim).GetFaceVertexIndicesAttr().Get()
-            attr = prim.GetAttribute("primvars:normals")
+
             normals = []
-            normal_indices = []
-            if attr and attr.IsValid():
-                normals = UsdGeom.Primvar(attr).Get(time)
-                normal_indices = UsdGeom.Primvar(attr).GetIndicesAttr().Get(time)
+
+            attrib_normal_primvar = prim.GetAttribute("primvars:normals")
+            if attrib_normal_primvar and attrib_normal_primvar.IsValid():
+                temp_normals = UsdGeom.Primvar(attrib_normal_primvar).Get(time)
+                temp_normal_indices = UsdGeom.Primvar(attrib_normal_primvar).GetIndicesAttr().Get(time)
+                normals = create_vertex_normals(indices, temp_normals, temp_normal_indices)
+
+            if len(normals) == 0:
+                attrib_normal = prim.GetAttribute("normals")
+                if attrib_normal and attrib_normal.IsValid():
+                    normals = UsdGeom.Primvar(attrib_normal).Get(time)
 
             model_hash = prim.GetName() + "_" + str(len(points)) + "_" + str(len(indices))
             xform = UsdGeom.Xformable(prim)
@@ -108,7 +140,6 @@ def parse_scene(filepath, scale):
                 points_float = []
                 indices_float = []
                 normal_float = []
-                normal_indices_float = []
                 points_count = 0
                 indices_count = 0
                 normals_count = 0
@@ -119,14 +150,12 @@ def parse_scene(filepath, scale):
                     points_float.append(x[2] * scale_constant)
                     points_count += 1
 
-                for x in normals:
-                    normal_float.append(x[0])
-                    normal_float.append(x[1])
-                    normal_float.append(x[2])
-                    normals_count += 1
-
-                for x in normal_indices:
-                    normal_indices_float.append(x)
+                if normals:
+                    for x in normals:
+                        normal_float.append(x[0])
+                        normal_float.append(x[1])
+                        normal_float.append(x[2])
+                        normals_count += 1
 
                 # OpenUSD models support non-tri mesh faces
                 # So to render them we must triangulate them
@@ -148,7 +177,6 @@ def parse_scene(filepath, scale):
                     "indices_count": indices_count,
                     "normals": normal_float,
                     "normals_count": normals_count,
-                    "normal_indices": normal_indices_float,
                     "instance_count": 1,
                     "instances": [transform_write]
                 }

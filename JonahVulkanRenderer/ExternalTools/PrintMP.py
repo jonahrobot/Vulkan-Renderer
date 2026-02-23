@@ -16,7 +16,7 @@ Object
 0x0C  uint32      # of Instances ( 1 Mat4 per instance )
 ...   float[]     Vertices [x,y,z,x,y,z,...]
 ...   uint16[]    Indices  [0,1,2,3,...]
-...   float[]     Normals  [x,y,z,x,y,z,...]
+...   float[]     Normals  [x,y,z,x,y,z,...] // 1 normal per vertex
 ...   mat4[]      Instance Matrices (row-major order) (mat4 = float x 16)
 
 (Little Endian)
