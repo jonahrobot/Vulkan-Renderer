@@ -41,6 +41,7 @@ namespace renderer {
 	struct Vertex {
 		glm::vec3 position;
 		glm::vec3 color;
+		glm::vec3 normal;
 
 		static VkVertexInputBindingDescription GetBindingDescription() {
 			VkVertexInputBindingDescription binding_description{};
@@ -50,8 +51,8 @@ namespace renderer {
 			return binding_description;
 		}
 
-		static std::array<VkVertexInputAttributeDescription, 2> GetAttributeDescription() {
-			std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions = {};
+		static std::array<VkVertexInputAttributeDescription, 3> GetAttributeDescription() {
+			std::array<VkVertexInputAttributeDescription, 3> attribute_descriptions = {};
 
 			// Position
 			attribute_descriptions[0].binding = 0;
@@ -65,11 +66,17 @@ namespace renderer {
 			attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
 			attribute_descriptions[1].offset = offsetof(Vertex, color);
 
+			// Normal
+			attribute_descriptions[2].binding = 0;
+			attribute_descriptions[2].location = 2;
+			attribute_descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT; // Vec3
+			attribute_descriptions[2].offset = offsetof(Vertex, normal);
+
 			return attribute_descriptions;
 		}
 
 		bool operator==(const Vertex& other) const {
-			return position == other.position && color == other.color;
+			return position == other.position && color == other.color && normal == other.normal;
 		}
 	};
 

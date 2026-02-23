@@ -117,7 +117,9 @@ def parse_scene(filepath, scale):
             if len(normals) == 0:
                 attrib_normal = prim.GetAttribute("normals")
                 if attrib_normal and attrib_normal.IsValid():
-                    normals = UsdGeom.Primvar(attrib_normal).Get(time)
+                    temp_normals = UsdGeom.Primvar(attrib_normal).Get(time)
+
+
 
             model_hash = prim.GetName() + "_" + str(len(points)) + "_" + str(len(indices))
             xform = UsdGeom.Xformable(prim)

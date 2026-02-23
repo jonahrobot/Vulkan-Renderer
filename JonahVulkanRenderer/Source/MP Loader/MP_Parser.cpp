@@ -103,6 +103,13 @@ namespace {
 				v.color = mesh_color;
 				v.position = { vertices[j], vertices[j + 1],vertices[j + 2] };
 
+				if (j >= normals.size()) {
+					v.normal = {0, 0, 0};
+				}
+				else {
+					v.normal = { normals[j], normals[j + 1], normals[j + 2] };
+				}
+
 				new_model.mesh.vertices.push_back(v);
 			}
 
