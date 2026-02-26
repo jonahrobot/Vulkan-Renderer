@@ -5,6 +5,29 @@ import argparse, struct
 from tqdm import tqdm
 from pathlib import Path
 
+def create_normals_no_indices(indices, temp_normals):
+    normals_per_vertex = {}
+
+    # Index all normals by their connected vertex
+    for i in range(0, len(indices)):
+        index = indices[i]
+        normal = temp_normals[i]
+
+        if index in normals_per_vertex:
+            normals_per_vertex[index][0] += normal
+            normals_per_vertex[index][1] += 1
+        else:
+            new_normal = []
+            new_normal.append(normal)
+            new_normal.append(1)
+            normals_per_vertex[index] = new_normal
+
+    # Take average of each vertices normals, getting 1 vertex per normal
+    final_normals = []
+    for x in range(0, len(normals_per_vertex)):
+        final_normals.append(normals_per_vertex[x][0] / normals_per_vertex[x][1])
+
+    return final_normals
 
 def create_vertex_normals(indices, temp_normals, temp_normal_indices):
     normals_per_vertex = {}
@@ -118,8 +141,7 @@ def parse_scene(filepath, scale):
                 attrib_normal = prim.GetAttribute("normals")
                 if attrib_normal and attrib_normal.IsValid():
                     temp_normals = UsdGeom.Primvar(attrib_normal).Get(time)
-
-
+                    normals = create_normals_no_indices(indices, temp_normals)
 
             model_hash = prim.GetName() + "_" + str(len(points)) + "_" + str(len(indices))
             xform = UsdGeom.Xformable(prim)

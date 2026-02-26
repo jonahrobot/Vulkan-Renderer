@@ -24,24 +24,29 @@ layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec3 in_color;
 layout(location = 2) in vec3 in_normal;
 
-layout(location = 0) out vec3 out_color;
-layout(location = 1) out vec3 out_position;
+layout(location = 0) out vec4 out_position;
+layout(location = 1) out vec3 out_color;
 layout(location = 2) out vec3 out_normal;
+layout(location = 3) out vec3 out_camera_pos;
 
 // -- Main --
 
 void main() {
 
-    mat4 model = instance_data[gl_InstanceIndex].model;
+    // Culling 
 
-    vec4 vert_pos_model = ubo.view * model * vec4(in_position, 1.0);
+    mat4 instance_model_matrix = instance_data[gl_InstanceIndex].model;
 
     if(should_draw[gl_InstanceIndex] == 0){
         gl_Position = vec4(0,0,0,0);
     }else{
-        gl_Position = ubo.proj * vert_pos_model;
+        vec4 position = ubo.proj * ubo.view * instance_model_matrix * vec4(in_position, 1.0);
+        gl_Position = position;
     }
 
-    out_position = vec3(vert_pos_model) / vert_pos_model.w;
+    // Setup fragment shader
+    out_position = ubo.view * instance_model_matrix * vec4(in_position, 1.0);
+    out_color = in_color;
     out_normal = in_normal;
+    out_camera_pos = inverse(ubo.view)[3].xyz;
 }
