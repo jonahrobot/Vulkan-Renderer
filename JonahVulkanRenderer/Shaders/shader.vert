@@ -47,6 +47,6 @@ void main() {
     // Setup fragment shader
     out_position = ubo.view * instance_model_matrix * vec4(in_position, 1.0);
     out_color = in_color;
-    out_normal = in_normal;
+    out_normal = mat3(instance_model_matrix) * in_normal;
     out_camera_pos = inverse(ubo.view)[3].xyz;
 }

@@ -141,7 +141,8 @@ def parse_scene(filepath, scale):
                 attrib_normal = prim.GetAttribute("normals")
                 if attrib_normal and attrib_normal.IsValid():
                     temp_normals = UsdGeom.Primvar(attrib_normal).Get(time)
-                    normals = create_normals_no_indices(indices, temp_normals)
+                    if temp_normals and indices:
+                        normals = create_normals_no_indices(indices, temp_normals)
 
             model_hash = prim.GetName() + "_" + str(len(points)) + "_" + str(len(indices))
             xform = UsdGeom.Xformable(prim)
@@ -174,16 +175,15 @@ def parse_scene(filepath, scale):
                     points_float.append(x[2] * scale_constant)
                     points_count += 1
 
-                if normals:
-                    for x in normals:
-                        normal_float.append(x[0])
-                        normal_float.append(x[1])
-                        normal_float.append(x[2])
-                        normals_count += 1
+                brute_force_normals = False
+                if len(normals) == 0:
+                    brute_force_normals = True
 
                 # OpenUSD models support non-tri mesh faces
                 # So to render them we must triangulate them
                 # Below is a convenient way to do so for any N-Gon! (In Counter-Clockwise Rotation)
+                normals_per_vertex = {}
+
                 counter = 0
                 for x in face_counts:
                     for i in range(x-2):
@@ -192,7 +192,41 @@ def parse_scene(filepath, scale):
                         indices_float.append(indices[counter + i + 2])
                         indices_count += 3
 
+                        if brute_force_normals:
+                            added_indices = [indices[counter], indices[counter + i + 1], indices[counter + i + 2]]
+
+                            # Calculate normal
+                            a = points[added_indices[0]]
+                            b = points[added_indices[1]]
+                            c = points[added_indices[2]]
+
+                            ab = b-a
+                            ac = c-a
+
+                            normal = Gf.Cross(ab, ac).GetNormalized()
+
+                            for index in added_indices:
+                                if index in normals_per_vertex:
+                                    normals_per_vertex[index][0] += normal
+                                    normals_per_vertex[index][1] += 1
+                                else:
+                                    new_normal = []
+                                    new_normal.append(normal)
+                                    new_normal.append(1)
+                                    normals_per_vertex[index] = new_normal
+
                     counter += x
+
+                if brute_force_normals:
+                    for x in range(0, len(normals_per_vertex)):
+                        normals.append(normals_per_vertex[x][0] / normals_per_vertex[x][1])
+
+                if normals:
+                    for x in normals:
+                        normal_float.append(x[0])
+                        normal_float.append(x[1])
+                        normal_float.append(x[2])
+                        normals_count += 1
 
                 scene_data["models"][model_hash] = {
                     "vertices": points_float,
