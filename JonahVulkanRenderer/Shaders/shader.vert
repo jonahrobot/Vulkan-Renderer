@@ -26,7 +26,7 @@ layout(location = 2) in vec3 in_normal;
 
 layout(location = 0) out vec4 out_position;
 layout(location = 1) out vec3 out_color;
-layout(location = 2) out vec3 out_normal;
+layout(location = 2) out flat vec3 out_normal;
 layout(location = 3) out vec3 out_camera_pos;
 
 // -- Main --
