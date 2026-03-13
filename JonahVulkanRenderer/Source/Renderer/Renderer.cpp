@@ -3,6 +3,10 @@
 #include <unordered_map>
 #include <iostream>
 
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_impl_glfw.h>
+#include <ImGui/imgui_impl_vulkan.h>
+
 #include "Renderer.h"
 #include "VkUtil/VkCommon.h"
 #include "VkUtil/VkDeviceSetup.h"
@@ -47,6 +51,15 @@ namespace renderer {
 			return ubo;
 		}
 
+		static void VKCheckResult(VkResult err)
+		{
+			if (err == 0)
+				return;
+			fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+			if (err < 0)
+				abort();
+		}
+
 	} // namespace util
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -74,7 +87,7 @@ namespace renderer {
 		for (int i = 0; i < static_cast<int>(number_of_extentions); i++) {
 			InstanceExtensionsToSupport.push_back(glfwExtensions[i]);
 		}
-		
+
 		// Device setup
 		vulkan_instance = device::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport, InstanceExtensionsToSupport);
 		vulkan_surface = device::CreateVulkanSurface(vulkan_instance, window);
@@ -149,6 +162,35 @@ namespace renderer {
 		// Debug setup
 		cmd_begin_debug = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
 		cmd_end_debug = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
+	
+		// ImGui setup
+		ImGui::CreateContext();
+
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+		io.DisplaySize.x = (float)ScreenWidth;
+		io.DisplaySize.y = (float)ScreenHeight;
+
+		ImGui::GetStyle().FontScaleMain = 1.5f;
+		ImGui_ImplGlfw_InitForVulkan(window, true);
+
+		ImGui_ImplVulkan_InitInfo create_info = {};
+		create_info.ApiVersion = VK_API_VERSION_1_1;
+		create_info.Instance = vulkan_instance;
+		create_info.PhysicalDevice = physical_device;
+		create_info.Device = logical_device;
+		create_info.QueueFamily = queues_supported.graphics_compute_family.value();
+		create_info.Queue = graphics_queue;
+		create_info.DescriptorPool = descriptor_pool;
+		create_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
+		create_info.ImageCount = MAX_FRAMES_IN_FLIGHT;
+		create_info.PipelineCache = NULL;
+		create_info.PipelineInfoMain.RenderPass = render_pass;
+		create_info.PipelineInfoMain.Subpass = 0;
+		create_info.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		create_info.CheckVkResultFn = VKCheckResult;
+		ImGui_ImplVulkan_Init(&create_info);
 	}
 
 	Renderer::~Renderer() {
