@@ -163,6 +163,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Dependencies\Include\ImGui\imgui.cpp" />
+    <ClCompile Include="Dependencies\Include\ImGui\imgui_demo.cpp" />
+    <ClCompile Include="Dependencies\Include\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="Dependencies\Include\ImGui\imgui_impl_glfw.cpp" />
+    <ClCompile Include="Dependencies\Include\ImGui\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="Dependencies\Include\ImGui\imgui_tables.cpp" />
+    <ClCompile Include="Dependencies\Include\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="main.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
@@ -181,6 +188,14 @@
     <ClCompile Include="Source\Renderer\Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Dependencies\Include\ImGui\imconfig.h" />
+    <ClInclude Include="Dependencies\Include\ImGui\imgui.h" />
+    <ClInclude Include="Dependencies\Include\ImGui\imgui_impl_glfw.h" />
+    <ClInclude Include="Dependencies\Include\ImGui\imgui_impl_vulkan.h" />
+    <ClInclude Include="Dependencies\Include\ImGui\imgui_internal.h" />
+    <ClInclude Include="Dependencies\Include\ImGui\imstb_rectpack.h" />
+    <ClInclude Include="Dependencies\Include\ImGui\imstb_textedit.h" />
+    <ClInclude Include="Dependencies\Include\ImGui\imstb_truetype.h" />
     <ClInclude Include="Source\Game\Application.h" />
     <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\MP Loader\MP_Parser.h" />

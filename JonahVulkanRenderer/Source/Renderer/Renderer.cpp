@@ -182,7 +182,6 @@ namespace renderer {
 		create_info.Device = logical_device;
 		create_info.QueueFamily = queues_supported.graphics_compute_family.value();
 		create_info.Queue = graphics_queue;
-		create_info.DescriptorPool = descriptor_pool;
 		create_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
 		create_info.ImageCount = MAX_FRAMES_IN_FLIGHT;
 		create_info.PipelineCache = NULL;
@@ -190,6 +189,8 @@ namespace renderer {
 		create_info.PipelineInfoMain.Subpass = 0;
 		create_info.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 		create_info.CheckVkResultFn = VKCheckResult;
+		create_info.DescriptorPool = VK_NULL_HANDLE;
+		create_info.DescriptorPoolSize = IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE;
 		ImGui_ImplVulkan_Init(&create_info);
 	}
 
@@ -247,6 +248,11 @@ namespace renderer {
 		}
 		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
 		
+		// Cleanup ImGui
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+
 		// Cleanup device
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
@@ -358,6 +364,10 @@ namespace renderer {
 			}
 		}
 
+		// Render UI
+		ImDrawData* draw_data = ImGui::GetDrawData();
+		ImGui_ImplVulkan_RenderDrawData(draw_data, command_buffer);
+
 		vkCmdEndRenderPass(command_buffer);
 
 		draw::DEBUG_EndLabelCommand(cmd_end_debug, command_buffer);
@@ -406,7 +416,16 @@ namespace renderer {
 
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 		vkResetCommandBuffer(graphics_command_buffers[current_frame], 0);
-		
+
+		// Prepare UI
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::ShowDemoWindow();
+
+		ImGui::Render();
+
 		// Graphics Draw
 		RecordGraphicsCommands(current_frame, image_index);
 

@@ -2,6 +2,8 @@
 #include <fstream>
 #include <iostream>
 
+#include <ImGui/imgui_impl_vulkan.h>
+
 #include "VkPipelineSetup.h"
 #include "VkCommon.h"
 
