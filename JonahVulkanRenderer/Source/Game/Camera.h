@@ -9,19 +9,23 @@
 
 #include <GLFW/glfw3.h>
 
+#include "../Observer.h"
+
 namespace game {
 
-	class Camera{
+	class Camera : public IObserver{
 
 	public:
 
 		Camera(GLFWwindow* window);
 
-		void MoveCamera(GLFWwindow* window, float delta_time);
+		void MoveCamera(GLFWwindow* window, float delta_time, bool use_keyboard, bool use_mouse);
 
 		void SetPosition(glm::vec3 taget_position);
 
 		glm::mat4 GetViewMatrix();
+
+		void ObserverUpdate(float a, float b) override;
 
 	private:
 

@@ -269,6 +269,10 @@ namespace renderer {
 		return scene_root;
 	}
 
+	void Renderer::AddObserver(IObserver *Observer){
+		window_resize_callbacks.push_back(Observer);
+	}
+
 	void Renderer::RecordComputeCommands(uint32_t CurrentFrame, bool FrustumCull) {
 
 		VkCommandBuffer command_buffer = compute_command_buffers[CurrentFrame];
@@ -418,12 +422,6 @@ namespace renderer {
 		vkResetCommandBuffer(graphics_command_buffers[current_frame], 0);
 
 		// Prepare UI
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-
-		ImGui::ShowDemoWindow();
-
 		ImGui::Render();
 
 		// Graphics Draw
@@ -537,6 +535,11 @@ namespace renderer {
 		while (width == 0 || height == 0) {
 			glfwGetFramebufferSize(window, &width, &height);
 			glfwWaitEvents();
+		}
+
+		// Notify callbacks
+		for (auto func : window_resize_callbacks) {
+			func->ObserverUpdate(width,height);
 		}
 
 		vkDeviceWaitIdle(logical_device);

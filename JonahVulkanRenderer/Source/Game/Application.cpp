@@ -1,7 +1,12 @@
 #include "Application.h"
 #include "../MP Loader/MP_Parser.h"
+#include "Camera.h"
 
 #include <iostream>
+
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_impl_glfw.h>
+#include <ImGui/imgui_impl_vulkan.h>
 
 namespace game {
 
@@ -28,6 +33,7 @@ Application::Application() {
 	std::cout << "Model set updated." << std::endl;
 	window = renderer->Get_Window();
 	camera = new Camera(window);
+	renderer->AddObserver(camera);
 
 	glm::vec3 scene_root = renderer->GetSceneRoot();
 	camera->SetPosition(scene_root);
@@ -60,9 +66,22 @@ void Application::Update() {
 	float delta_time = frame_time  - last_frame_time;
 	last_frame_time = frame_time;
 
-	camera->MoveCamera(window, delta_time);
-	renderer->Draw(camera->GetViewMatrix(), frustum_cull);
+	// Start new frame
+	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
 
+	// Check if UI using input
+	ImGuiIO& io = ImGui::GetIO();
+
+	// Prepare UI
+	ImGui::ShowDemoWindow();
+
+	// Move objects
+	camera->MoveCamera(window, delta_time, !io.WantCaptureMouse, !io.WantCaptureKeyboard);
+
+	// Draw scene
+	renderer->Draw(camera->GetViewMatrix(), frustum_cull);
 }
 
 } // namespace game

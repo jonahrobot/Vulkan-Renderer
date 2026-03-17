@@ -199,6 +199,7 @@
     <ClInclude Include="Source\Game\Application.h" />
     <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\MP Loader\MP_Parser.h" />
+    <ClInclude Include="Source\Observer.h" />
     <ClInclude Include="Source\Renderer\VkUtil\VkDataSetup.h" />
     <ClInclude Include="Source\Renderer\VkUtil\VkCommon.h" />
     <ClInclude Include="Source\Renderer\VkUtil\VkDeviceSetup.h" />
