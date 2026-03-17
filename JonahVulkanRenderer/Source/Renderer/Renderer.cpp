@@ -169,6 +169,7 @@ namespace renderer {
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 		io.DisplaySize.x = (float)ScreenWidth;
 		io.DisplaySize.y = (float)ScreenHeight;
 

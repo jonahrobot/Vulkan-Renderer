@@ -74,6 +74,7 @@ namespace game {
 				glfwSetCursorPos(window, (render_width / 2), (render_height / 2));
 			}
 			else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+
 				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 				first_click_flag = true;
 			}

@@ -78,7 +78,7 @@ void Application::Update() {
 	ImGui::ShowDemoWindow();
 
 	// Move objects
-	camera->MoveCamera(window, delta_time, !io.WantCaptureMouse, !io.WantCaptureKeyboard);
+	camera->MoveCamera(window, delta_time, !io.WantCaptureKeyboard, !io.WantCaptureMouse);
 
 	// Draw scene
 	renderer->Draw(camera->GetViewMatrix(), frustum_cull);
