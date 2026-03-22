@@ -13,7 +13,7 @@ namespace game {
 Application::Application() {
 	last_frame_time = static_cast<float>(glfwGetTime());;
 
-	renderer = new renderer::Renderer(500,400);
+	renderer = new renderer::Renderer(960,540);
 
 	std::string mp_file_name;
 	std::cout << "Type the name of the .mp you would like to render. Scene file must be in the Assets folder." << std::endl;
@@ -75,7 +75,38 @@ void Application::Update() {
 	ImGuiIO& io = ImGui::GetIO();
 
 	// Prepare UI
-	ImGui::ShowDemoWindow();
+	static float f = 0.0f;
+	static int counter = 0;
+	static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+
+	if (first_frame_complete == false) {
+		ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
+		ImGui::SetNextWindowSize(ImVec2(400, 500));
+		first_frame_complete = true;
+	}
+
+	ImGui::Begin("Vulkan Renderer", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize);
+
+	ImGui::Text("Vulkan Renderer 1.0.0");
+
+	ImGui::SeparatorText("Lighting");
+
+	
+	ImGui::SeparatorText("Camera");
+
+	//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
+	//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
+
+	//if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
+	//	counter++;
+	//ImGui::SameLine();
+	//ImVec2 size = ImGui::GetWindowSize();
+	//float width = size.x;
+	//float height = size.y;
+	//ImGui::Text("Screen size is = %f by %f", width, height);
+
+	//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+	ImGui::End();
 
 	// Move objects
 	camera->MoveCamera(window, delta_time, !io.WantCaptureKeyboard, !io.WantCaptureMouse);

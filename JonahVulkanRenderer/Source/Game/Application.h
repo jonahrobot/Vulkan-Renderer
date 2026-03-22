@@ -22,7 +22,9 @@ private:
 	float last_frame_time;
 	bool held_space = false;
 
+	bool show_another_window = false;
 	bool frustum_cull = true;
+	bool first_frame_complete = false;
 };
 
 } // namespace game

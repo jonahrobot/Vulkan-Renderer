@@ -173,7 +173,10 @@ namespace renderer {
 		io.DisplaySize.x = (float)ScreenWidth;
 		io.DisplaySize.y = (float)ScreenHeight;
 
-		ImGui::GetStyle().FontScaleMain = 1.5f;
+		ImGuiStyle& style = ImGui::GetStyle();
+		style.FontScaleMain = 1.5f;
+		style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
 		ImGui_ImplVulkan_InitInfo create_info = {};
