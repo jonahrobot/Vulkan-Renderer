@@ -5,6 +5,12 @@ layout(location = 1) in vec3 in_color;
 layout(location = 2) in flat vec3 in_normal;
 layout(location = 3) in vec3 in_camera_position;
 
+layout(push_constant) uniform LightData{
+    vec4 light_color;
+    vec4 light_position;
+    vec4 light_mode;
+} light_data;
+
 layout(location = 0) out vec4 out_color;
 
 void main() {
@@ -16,8 +22,8 @@ void main() {
     
     // Diffuse
     vec3 normal = normalize(in_normal);
-    vec3 light_color = vec3(1.0, 1.0, 1.0);
-    vec3 light_position = vec3(1.0, 1.0, 1.0);
+    vec3 light_color = light_data.light_color.xyz;
+    vec3 light_position = light_data.light_position.xyz;
     float diffuse_strength = max(0.0, dot(light_position, normal));
     vec3 diffuse = diffuse_strength * light_color;
 

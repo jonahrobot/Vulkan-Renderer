@@ -76,6 +76,10 @@ namespace renderer {
 		const char* fragment_shader_path = "shaders/frag.spv";
 		const char* compute_shader_path = "shaders/cull.spv";
 
+		push_constants.light_color = glm::vec4(1.0, 1.0, 1.0, 0.0);
+		push_constants.light_position = glm::vec4(1.0, 1.0, 1.0, 0.0);
+		push_constants.mode = glm::vec4(DRAWMODE::SOFT, 0, 0, 0);
+
 		// GLFW setup
 		window = device::CreateVulkanWindow("OpenUSD Renderer", ScreenWidth, ScreenHeight);
 		glfwSetWindowUserPointer(window, this);
@@ -174,8 +178,11 @@ namespace renderer {
 		io.DisplaySize.y = (float)ScreenHeight;
 
 		ImGuiStyle& style = ImGui::GetStyle();
-		style.FontScaleMain = 1.5f;
+		style.FontScaleMain = 1.5f; 
+		style.WindowBorderSize = 2.0f;
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0, 0, 0, 0.94f);
 		style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+		style.Colors[ImGuiCol_Border] = ImVec4(0.208f, 0.565f, 0.953f, 1);
 
 		ImGui_ImplGlfw_InitForVulkan(window, true);
 
@@ -364,6 +371,7 @@ namespace renderer {
 			vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 			vkCmdBindIndexBuffer(command_buffer, index_buffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets[current_frame], 0, nullptr);
+			vkCmdPushConstants(command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstants), &push_constants);
 
 			uint32_t size_of_command = sizeof(VkDrawIndexedIndirectCommand);
 
@@ -526,6 +534,30 @@ namespace renderer {
 		}
 
 		data::UpdateDescriptorSets(descriptor_sets, logical_device, instance_data_buffer, bounding_box_buffer, uniform_buffers, should_draw_buffers);
+	}
+
+	void Renderer::UpdateLightPosition(glm::vec3 LightPosition) {
+		push_constants.light_position = glm::vec4(LightPosition.x, LightPosition.y, LightPosition.z, 1);
+	}
+
+	void Renderer::UpdateLightColor(glm::vec3 LightColor) {
+		push_constants.light_color = glm::vec4(LightColor.x, LightColor.y, LightColor.z, 1);
+	}
+
+	void Renderer::UpdateDrawMode(DRAWMODE DrawMode) {
+		push_constants.mode = glm::vec4(DrawMode, 0, 0, 0);
+	}
+
+	Renderer::DrawInfo Renderer::GetLightData() {
+
+		DrawInfo return_data;
+
+		return_data.DrawMode = static_cast<DRAWMODE>(push_constants.mode.x);
+		return_data.LightColor = push_constants.light_color;
+		return_data.LightPosition = push_constants.light_position;
+
+		return return_data;
+
 	}
 
 	GLFWwindow* Renderer::Get_Window() {

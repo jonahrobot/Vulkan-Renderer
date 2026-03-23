@@ -31,6 +31,18 @@ public:
 	GLFWwindow* Get_Window();
 	void AddObserver(IObserver* Observer);
 
+	void UpdateLightPosition(glm::vec3 LightPosition);
+	void UpdateLightColor(glm::vec3 LightColor);
+	void UpdateDrawMode(DRAWMODE DrawMode);
+
+	struct DrawInfo {
+		glm::vec3 LightPosition;
+		glm::vec3 LightColor;
+		DRAWMODE DrawMode;
+	};
+
+	DrawInfo GetLightData();
+
 	bool framebuffer_resized = false;
 
 private:
@@ -113,5 +125,6 @@ private:
 	
 	uint32_t current_frame = 0;
 	glm::vec3 scene_root = glm::vec3(0, 0, 0);
+	PushConstants push_constants;
 };
 } // namespace renderer

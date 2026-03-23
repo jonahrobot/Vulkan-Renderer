@@ -22,6 +22,7 @@ namespace game {
 		void MoveCamera(GLFWwindow* window, float delta_time, bool use_keyboard, bool use_mouse);
 
 		void SetPosition(glm::vec3 taget_position);
+		glm::vec3 GetPosition();
 
 		glm::mat4 GetViewMatrix();
 

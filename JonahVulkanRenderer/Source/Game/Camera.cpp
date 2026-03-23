@@ -85,4 +85,8 @@ namespace game {
 		return glm::lookAt(position, position + front, up);
 	}
 
+	glm::vec3 Camera::GetPosition() {
+		return position;
+	}
+
 }
