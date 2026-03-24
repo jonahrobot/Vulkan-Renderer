@@ -3,6 +3,10 @@
 #include <unordered_map>
 #include <iostream>
 
+#include <ImGui/imgui.h>
+#include <ImGui/imgui_impl_glfw.h>
+#include <ImGui/imgui_impl_vulkan.h>
+
 #include "Renderer.h"
 #include "VkUtil/VkCommon.h"
 #include "VkUtil/VkDeviceSetup.h"
@@ -47,6 +51,15 @@ namespace renderer {
 			return ubo;
 		}
 
+		static void VKCheckResult(VkResult err)
+		{
+			if (err == 0)
+				return;
+			fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+			if (err < 0)
+				abort();
+		}
+
 	} // namespace util
 
 	static void FramebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -63,6 +76,10 @@ namespace renderer {
 		const char* fragment_shader_path = "shaders/frag.spv";
 		const char* compute_shader_path = "shaders/cull.spv";
 
+		push_constants.light_color = glm::vec4(1.0, 1.0, 1.0, 0.0);
+		push_constants.light_position = glm::vec4(1.0, 1.0, 1.0, 0.0);
+		push_constants.mode = glm::vec4(DRAWMODE::SOFT, 0, 0, 0);
+
 		// GLFW setup
 		window = device::CreateVulkanWindow("OpenUSD Renderer", ScreenWidth, ScreenHeight);
 		glfwSetWindowUserPointer(window, this);
@@ -74,7 +91,7 @@ namespace renderer {
 		for (int i = 0; i < static_cast<int>(number_of_extentions); i++) {
 			InstanceExtensionsToSupport.push_back(glfwExtensions[i]);
 		}
-		
+
 		// Device setup
 		vulkan_instance = device::CreateVulkanInstance(UseValidationLayers, ValidationLayersToSupport, InstanceExtensionsToSupport);
 		vulkan_surface = device::CreateVulkanSurface(vulkan_instance, window);
@@ -149,6 +166,43 @@ namespace renderer {
 		// Debug setup
 		cmd_begin_debug = reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdBeginDebugUtilsLabelEXT"));
 		cmd_end_debug = reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(vkGetInstanceProcAddr(vulkan_instance, "vkCmdEndDebugUtilsLabelEXT"));
+	
+		// ImGui setup
+		ImGui::CreateContext();
+
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+		io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
+		io.DisplaySize.x = (float)ScreenWidth;
+		io.DisplaySize.y = (float)ScreenHeight;
+
+		ImGuiStyle& style = ImGui::GetStyle();
+		style.FontScaleMain = 1.5f; 
+		style.WindowBorderSize = 2.0f;
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0, 0, 0, 0.94f);
+		style.Colors[ImGuiCol_Text] = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+		style.Colors[ImGuiCol_Border] = ImVec4(0.208f, 0.565f, 0.953f, 1);
+
+		ImGui_ImplGlfw_InitForVulkan(window, true);
+
+		ImGui_ImplVulkan_InitInfo create_info = {};
+		create_info.ApiVersion = VK_API_VERSION_1_1;
+		create_info.Instance = vulkan_instance;
+		create_info.PhysicalDevice = physical_device;
+		create_info.Device = logical_device;
+		create_info.QueueFamily = queues_supported.graphics_compute_family.value();
+		create_info.Queue = graphics_queue;
+		create_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
+		create_info.ImageCount = MAX_FRAMES_IN_FLIGHT;
+		create_info.PipelineCache = NULL;
+		create_info.PipelineInfoMain.RenderPass = render_pass;
+		create_info.PipelineInfoMain.Subpass = 0;
+		create_info.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		create_info.CheckVkResultFn = VKCheckResult;
+		create_info.DescriptorPool = VK_NULL_HANDLE;
+		create_info.DescriptorPoolSize = IMGUI_IMPL_VULKAN_MINIMUM_IMAGE_SAMPLER_POOL_SIZE;
+		ImGui_ImplVulkan_Init(&create_info);
 	}
 
 	Renderer::~Renderer() {
@@ -205,6 +259,11 @@ namespace renderer {
 		}
 		vkDestroySwapchainKHR(logical_device, swapchain, nullptr);
 		
+		// Cleanup ImGui
+		ImGui_ImplVulkan_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+
 		// Cleanup device
 		vkDestroyDevice(logical_device, nullptr);
 		vkDestroySurfaceKHR(vulkan_instance, vulkan_surface, nullptr);
@@ -219,6 +278,10 @@ namespace renderer {
 
 	glm::vec3 Renderer::GetSceneRoot() {
 		return scene_root;
+	}
+
+	void Renderer::AddObserver(IObserver *Observer){
+		window_resize_callbacks.push_back(Observer);
 	}
 
 	void Renderer::RecordComputeCommands(uint32_t CurrentFrame, bool FrustumCull) {
@@ -308,6 +371,7 @@ namespace renderer {
 			vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 			vkCmdBindIndexBuffer(command_buffer, index_buffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1, &descriptor_sets[current_frame], 0, nullptr);
+			vkCmdPushConstants(command_buffer, pipeline_layout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstants), &push_constants);
 
 			uint32_t size_of_command = sizeof(VkDrawIndexedIndirectCommand);
 
@@ -315,6 +379,10 @@ namespace renderer {
 				vkCmdDrawIndexedIndirect(command_buffer, indirect_command_buffers[current_frame].Buffer, x * size_of_command, 1, size_of_command);
 			}
 		}
+
+		// Render UI
+		ImDrawData* draw_data = ImGui::GetDrawData();
+		ImGui_ImplVulkan_RenderDrawData(draw_data, command_buffer);
 
 		vkCmdEndRenderPass(command_buffer);
 
@@ -364,7 +432,10 @@ namespace renderer {
 
 		vkResetFences(logical_device, 1, &in_flight_fences[current_frame]);
 		vkResetCommandBuffer(graphics_command_buffers[current_frame], 0);
-		
+
+		// Prepare UI
+		ImGui::Render();
+
 		// Graphics Draw
 		RecordGraphicsCommands(current_frame, image_index);
 
@@ -465,6 +536,30 @@ namespace renderer {
 		data::UpdateDescriptorSets(descriptor_sets, logical_device, instance_data_buffer, bounding_box_buffer, uniform_buffers, should_draw_buffers);
 	}
 
+	void Renderer::UpdateLightPosition(glm::vec3 LightPosition) {
+		push_constants.light_position = glm::vec4(LightPosition.x, LightPosition.y, LightPosition.z, 1);
+	}
+
+	void Renderer::UpdateLightColor(glm::vec3 LightColor) {
+		push_constants.light_color = glm::vec4(LightColor.x, LightColor.y, LightColor.z, 1);
+	}
+
+	void Renderer::UpdateDrawMode(DRAWMODE DrawMode) {
+		push_constants.mode = glm::vec4(DrawMode, 0, 0, 0);
+	}
+
+	Renderer::DrawInfo Renderer::GetLightData() {
+
+		DrawInfo return_data;
+
+		return_data.DrawMode = static_cast<DRAWMODE>(push_constants.mode.x);
+		return_data.LightColor = push_constants.light_color;
+		return_data.LightPosition = push_constants.light_position;
+
+		return return_data;
+
+	}
+
 	GLFWwindow* Renderer::Get_Window() {
 		return window;
 	}
@@ -476,6 +571,11 @@ namespace renderer {
 		while (width == 0 || height == 0) {
 			glfwGetFramebufferSize(window, &width, &height);
 			glfwWaitEvents();
+		}
+
+		// Notify callbacks
+		for (auto func : window_resize_callbacks) {
+			func->ObserverUpdate(width,height);
 		}
 
 		vkDeviceWaitIdle(logical_device);

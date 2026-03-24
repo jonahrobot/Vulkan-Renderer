@@ -4,10 +4,12 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <functional>
 
 #include "VkUtil/VkCommon.h"
 #include "VkUtil/VkDrawSetup.h"
 #include "VkUtil/VkDataSetup.h"
+#include "../Observer.h"
 
 #ifdef NDEBUG
 const bool UseValidationLayers = false;
@@ -27,6 +29,19 @@ public:
 	void UpdateModelSet(std::vector<MeshInstances> NewModelSet, bool UseWhiteTexture);
 	glm::vec3 GetSceneRoot();
 	GLFWwindow* Get_Window();
+	void AddObserver(IObserver* Observer);
+
+	void UpdateLightPosition(glm::vec3 LightPosition);
+	void UpdateLightColor(glm::vec3 LightColor);
+	void UpdateDrawMode(DRAWMODE DrawMode);
+
+	struct DrawInfo {
+		glm::vec3 LightPosition;
+		glm::vec3 LightColor;
+		DRAWMODE DrawMode;
+	};
+
+	DrawInfo GetLightData();
 
 	bool framebuffer_resized = false;
 
@@ -47,6 +62,8 @@ private:
 	const std::vector<const char*> DeviceExtensionsToSupport = {
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
+
+	std::vector<IObserver*> window_resize_callbacks;
 
 	GLFWwindow* window;
 
@@ -108,5 +125,6 @@ private:
 	
 	uint32_t current_frame = 0;
 	glm::vec3 scene_root = glm::vec3(0, 0, 0);
+	PushConstants push_constants;
 };
 } // namespace renderer
