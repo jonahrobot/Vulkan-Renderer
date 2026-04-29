@@ -42,5 +42,16 @@ void main() {
 
     // Rendering
     vec3 model_color = in_color;
-    out_color = vec4(lighting, 1.0);
+
+    switch( int(light_data.light_mode.x) ){
+        case 0: // Normals
+            out_color = vec4(normalize(normal) * 0.5 + 0.5, 1.0);
+            break;
+        case 1: // Soft shading
+            out_color = vec4(lighting, 1.0);
+            break;
+        default: // Error texture
+            out_color = vec4(1,0.753,0.796,1.0);
+            break;
+    }
 }

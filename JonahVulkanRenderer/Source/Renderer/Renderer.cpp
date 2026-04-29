@@ -78,7 +78,7 @@ namespace renderer {
 
 		push_constants.light_color = glm::vec4(1.0, 1.0, 1.0, 0.0);
 		push_constants.light_position = glm::vec4(1.0, 1.0, 1.0, 0.0);
-		push_constants.mode = glm::vec4(DRAWMODE::SOFT, 0, 0, 0);
+		push_constants.mode = glm::vec4(DRAWMODE::NORMALS, 0, 0, 0);
 
 		// GLFW setup
 		window = device::CreateVulkanWindow("OpenUSD Renderer", ScreenWidth, ScreenHeight);

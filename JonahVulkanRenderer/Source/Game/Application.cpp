@@ -78,6 +78,8 @@ void Application::Update() {
 	// Prepare UI
 	static float f = 0.0f;
 	static int counter = 0;
+	static int draw_mode = 0;
+	const char* draw_mode_options[] = { "Normals", "Soft Shading"};
 	static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	if (first_frame_complete == false) {
@@ -99,6 +101,11 @@ void Application::Update() {
 	if (ImGui::InputFloat3("Light Position", light_position)) {
 		renderer->UpdateLightPosition(glm::vec3(light_position[0], light_position[1], light_position[2]));
 	}
+
+	if (ImGui::Combo("Lighting Mode", &draw_mode, draw_mode_options, IM_ARRAYSIZE(draw_mode_options))) {
+		std::cout << "Set light mode to: " << draw_mode << std::endl;
+		renderer->UpdateDrawMode((renderer::DRAWMODE) draw_mode);
+	}
 	
 	ImGui::SeparatorText("Camera");
 
@@ -107,6 +114,8 @@ void Application::Update() {
 		camera->SetPosition(glm::vec3(current_position[0], current_position[1], current_position[2]));
 	}
 	ImGui::Checkbox("Pause Frustum Culling", &freeze_frustum_cull);
+
+
 
 	//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 	//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color

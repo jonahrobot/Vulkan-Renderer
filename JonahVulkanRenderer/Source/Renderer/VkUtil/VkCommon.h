@@ -38,12 +38,12 @@ namespace renderer {
 		alignas(16) glm::vec4 frustum_planes[6];
 	};
 
-	enum DRAWMODE { NORMALS, SOFT, HARD };
+	enum DRAWMODE { NORMALS, SOFT };
 
 	struct PushConstants {
 		alignas(16) glm::vec4 light_color;
 		alignas(16) glm::vec4 light_position;
-		alignas(16) glm::vec4 mode; // (Only x is used) 0 = Normals, 1 = Soft Shading, 2 = Hard Shading
+		alignas(16) glm::vec4 mode; // (Only x is used) 0 = Normals, 1 = Soft Shading
 	};
 
 	struct Vertex {
