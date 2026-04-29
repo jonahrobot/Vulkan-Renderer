@@ -18,14 +18,14 @@ void main() {
     // Phong shading
 
     // Ambient
-    vec3 ambient = vec3(0.859,0.506,0.2);
+    vec3 ambient = vec3(1,1,1);
     
     // Diffuse
     vec3 normal = normalize(in_normal);
     vec3 light_color = light_data.light_color.xyz;
-    vec3 light_direction = normalize(light_data.light_position.xyz - in_position.xyz);
+    vec3 light_direction = normalize(light_data.light_position.xyz);
     float diffuse_strength = max(0.0, dot(normal, light_direction));
-    vec3 diffuse = diffuse_strength * vec3(0.596,0.325,0.722);
+    vec3 diffuse = diffuse_strength * light_color;
 
     // Specular
     vec3 specular = vec3(0.0,0.0,0.0);
@@ -38,9 +38,9 @@ void main() {
     }
 
     // Lighting sum 
-    vec3 lighting = ambient * 0 + diffuse * 1 + specular * 1;
+    vec3 lighting = ambient * 0.01 + diffuse * 1 + specular * 1;
 
     // Rendering
     vec3 model_color = in_color;
-    out_color = vec4(model_color * lighting, 1.0);
+    out_color = vec4(lighting, 1.0);
 }
