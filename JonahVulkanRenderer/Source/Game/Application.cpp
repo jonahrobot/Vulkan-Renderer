@@ -136,6 +136,17 @@ void Application::Update() {
 		FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
 	}
 
+	if (file_dialog_buffer && MP::CheckValidMP(file_dialog_buffer)) {
+		std::cout << "Warning: File not valid .mp file." << std::endl;
+		std::vector<renderer::MeshInstances> model_set = MP::ParseMP(file_dialog_buffer, false);
+		renderer->UpdateModelSet(model_set, true);
+		std::cout << "Model set updated." << std::endl;
+		file_dialog_buffer = nullptr;
+		path[0] = '\0';
+	}
+
+
+
 	//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 	//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 

@@ -336,7 +336,7 @@ namespace FileDialog {
 						strcpy_s(file_dialog_error, "Error: You must select a folder!");
 					}
 					else {
-						auto path = file_dialog_current_path + (file_dialog_current_path.back() == '\\' ? "" : "\\") + file_dialog_current_file;
+						auto path = file_dialog_current_path + (file_dialog_current_path.back() == '\\' ? "" : "\\") + file_dialog_current_folder;
 						strcpy_s(buffer, path.length() + 1, path.c_str());
 						strcpy_s(file_dialog_error, "");
 						reset_everything();
