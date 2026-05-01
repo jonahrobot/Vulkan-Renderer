@@ -7,6 +7,7 @@
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_impl_glfw.h>
 #include <ImGui/imgui_impl_vulkan.h>
+#include <ImGui/L2DFileDialog.h>
 
 namespace game {
 
@@ -50,6 +51,8 @@ Application::Application() {
 	light_position[2] = last_draw_info.LightPosition.z;
 
 	light_mode = last_draw_info.DrawMode;
+
+	FileDialog::file_dialog_open = false;
 }
 
 Application::~Application() {
@@ -75,12 +78,17 @@ void Application::Update() {
 	// Check if UI using input
 	ImGuiIO& io = ImGui::GetIO();
 
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.FontScaleMain = 1.5f;
+
 	// Prepare UI
 	static float f = 0.0f;
 	static int counter = 0;
 	static int draw_mode = 0;
 	const char* draw_mode_options[] = { "Normals", "Soft Shading"};
 	static ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+	static char* file_dialog_buffer = nullptr;
+	static char path[500] = "";
 
 	if (first_frame_complete == false) {
 		ImGui::SetNextWindowPos(ImVec2(32.0f, 32.0f));
@@ -115,7 +123,18 @@ void Application::Update() {
 	}
 	ImGui::Checkbox("Pause Frustum Culling", &freeze_frustum_cull);
 
+	ImGui::TextUnformatted("Path: ");
+	ImGui::InputText("##path", path, sizeof(path));
+	ImGui::SameLine();
+	if (ImGui::Button("Browse##path")) {
+		file_dialog_buffer = path;
+		FileDialog::file_dialog_open = true;
+		FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+	}
 
+	if (FileDialog::file_dialog_open) {
+		FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
+	}
 
 	//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
 	//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color

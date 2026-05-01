@@ -196,6 +196,7 @@
     <ClInclude Include="Dependencies\Include\ImGui\imstb_rectpack.h" />
     <ClInclude Include="Dependencies\Include\ImGui\imstb_textedit.h" />
     <ClInclude Include="Dependencies\Include\ImGui\imstb_truetype.h" />
+    <ClInclude Include="Dependencies\Include\ImGui\L2DFileDialog.h" />
     <ClInclude Include="Source\Game\Application.h" />
     <ClInclude Include="Source\Game\Camera.h" />
     <ClInclude Include="Source\MP Loader\MP_Parser.h" />

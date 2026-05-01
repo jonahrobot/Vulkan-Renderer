@@ -131,6 +131,9 @@
     <ClInclude Include="Source\Observer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Dependencies\Include\ImGui\L2DFileDialog.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\shader.vert" />
