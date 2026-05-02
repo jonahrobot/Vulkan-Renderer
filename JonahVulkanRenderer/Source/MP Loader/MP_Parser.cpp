@@ -4,6 +4,7 @@
 #include <random>
 #include <chrono>
 #include <thread>
+#include <filesystem>
 
 namespace {
 
@@ -192,7 +193,7 @@ namespace {
 
 		std::vector<std::vector<renderer::MeshInstances>> output_data(thread_count);
 
-		std::cout << "Launched: " << static_cast<int>(thread_count) << " threads with a chunk size of " << chunk_size << "." << std::endl;
+		std::cout << "Parsing MP file with " << static_cast<int>(thread_count) << " threads with a chunk size of " << chunk_size << "." << std::endl;
 
 		for (int i = 0; i < thread_count; i++) {
 			threads.emplace_back(ReadModelData, std::cref(remaining_bytes), std::cref(model_pointers), std::ref(output_data[i]), chunk_size, i, data_size, model_count);
@@ -258,6 +259,11 @@ namespace MP {
 		file.read(reinterpret_cast<char*>(&mp_identifier), sizeof(uint16_t));
 
 		return mp_identifier == 0x4D50;
+	}
+
+	std::string GetNameMP(std::string json_file_path) {
+		std::filesystem::path file_path = json_file_path;
+		return file_path.filename().string();
 	}
 
 } // namespace MP

@@ -30,6 +30,10 @@ private:
 	float light_color[3];
 	float light_position[3];
 	int light_mode;
+
+	std::string current_file_name;
+
+	void UpdateRenderTarget(std::string json_file_path);
 };
 
 } // namespace game

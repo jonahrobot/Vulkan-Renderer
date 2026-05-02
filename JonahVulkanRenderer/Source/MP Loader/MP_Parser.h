@@ -8,4 +8,6 @@ namespace MP {
 
 	bool CheckValidMP(std::string json_file_path);
 
+	std::string GetNameMP(std::string json_file_path);
+
 } // namespace MP

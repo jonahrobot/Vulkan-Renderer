@@ -15,31 +15,15 @@ Application::Application() {
 	last_frame_time = static_cast<float>(glfwGetTime());;
 
 	renderer = new renderer::Renderer(960,540);
-
-	std::string mp_file_name;
-	std::cout << "Type the name of the .mp you would like to render. Scene file must be in the Assets folder." << std::endl;
-	std::cout << "File name: ";
-	std::cin >> mp_file_name;
-
-	while (MP::CheckValidMP("Assets/" + mp_file_name) == false) {
-		std::cout << "Warning: File missing from Assets folder or not valid .mp file." << std::endl;
-		std::cout << "Try again, file name: ";
-		std::cin >> mp_file_name;
-	};
-
-	std::vector<renderer::MeshInstances> model_set = MP::ParseMP("Assets/" + mp_file_name, false);
-
-	renderer->UpdateModelSet(model_set,true);
-
-	std::cout << "Model set updated." << std::endl;
 	window = renderer->Get_Window();
 	camera = new Camera(window);
 	renderer->AddObserver(camera);
 
-	glm::vec3 scene_root = renderer->GetSceneRoot();
-	camera->SetPosition(scene_root);
-	camera_position = scene_root;
-	std::cout << "Scene Root is: " << scene_root.x << "," << scene_root.y << "," << scene_root.z << std::endl;
+	std::string mp_file_name = "cube.mp"; // Default with cube
+
+	if(MP::CheckValidMP("Assets/" + mp_file_name)) {
+		UpdateRenderTarget("Assets/" + mp_file_name);
+	};
 
 	renderer::Renderer::DrawInfo last_draw_info = renderer->GetLightData();
 	light_color[0] = last_draw_info.LightColor.x;
@@ -99,8 +83,18 @@ void Application::Update() {
 	ImGui::Begin("Vulkan Renderer", nullptr, ImGuiWindowFlags_NoTitleBar);
 
 	ImGui::Text("Vulkan Renderer 1.0.0");
+	ImGui::SameLine(0.0,40.0f);
+	if (ImGui::Button("Load MP##path")) {
+		file_dialog_buffer = path;
+		FileDialog::file_dialog_open = true;
+		FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
+	}
 
-	ImGui::SeparatorText("Lighting");
+	ImGui::Dummy(ImVec2(0, 20.0f)); ImGui::SeparatorText("General");
+
+	ImGui::Text("Rendering: %s", current_file_name.c_str());
+
+	ImGui::Dummy(ImVec2(0, 20.0f)); ImGui::SeparatorText("Lighting");
 
 	if (ImGui::ColorEdit3("Light Color", light_color)) {
 		renderer->UpdateLightColor(glm::vec3(light_color[0], light_color[1], light_color[2]));
@@ -111,11 +105,10 @@ void Application::Update() {
 	}
 
 	if (ImGui::Combo("Lighting Mode", &draw_mode, draw_mode_options, IM_ARRAYSIZE(draw_mode_options))) {
-		std::cout << "Set light mode to: " << draw_mode << std::endl;
 		renderer->UpdateDrawMode((renderer::DRAWMODE) draw_mode);
 	}
 	
-	ImGui::SeparatorText("Camera");
+	ImGui::Dummy(ImVec2(0, 20.0f)); ImGui::SeparatorText("Camera");
 
 	float current_position[3] = { camera_position.x, camera_position.y, camera_position.z };
 	if (ImGui::InputFloat3("Camera Position", current_position)) {
@@ -123,42 +116,17 @@ void Application::Update() {
 	}
 	ImGui::Checkbox("Pause Frustum Culling", &freeze_frustum_cull);
 
-	ImGui::TextUnformatted("Path: ");
-	ImGui::InputText("##path", path, sizeof(path));
-	ImGui::SameLine();
-	if (ImGui::Button("Browse##path")) {
-		file_dialog_buffer = path;
-		FileDialog::file_dialog_open = true;
-		FileDialog::file_dialog_open_type = FileDialog::FileDialogType::OpenFile;
-	}
-
 	if (FileDialog::file_dialog_open) {
 		FileDialog::ShowFileDialog(&FileDialog::file_dialog_open, file_dialog_buffer, sizeof(file_dialog_buffer), FileDialog::file_dialog_open_type);
 	}
 
 	if (file_dialog_buffer && MP::CheckValidMP(file_dialog_buffer)) {
-		std::cout << "Warning: File not valid .mp file." << std::endl;
-		std::vector<renderer::MeshInstances> model_set = MP::ParseMP(file_dialog_buffer, false);
-		renderer->UpdateModelSet(model_set, true);
-		std::cout << "Model set updated." << std::endl;
+		UpdateRenderTarget(file_dialog_buffer);
+
 		file_dialog_buffer = nullptr;
-		path[0] = '\0';
+		path[0] = '\0';	
 	}
 
-
-
-	//ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
-	//ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-	//if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
-	//	counter++;
-	//ImGui::SameLine();
-	//ImVec2 size = ImGui::GetWindowSize();
-	//float width = size.x;
-	//float height = size.y;
-	//ImGui::Text("Screen size is = %f by %f", width, height);
-
-	//ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 	ImGui::End();
 
 	// Move objects
@@ -167,6 +135,21 @@ void Application::Update() {
 
 	// Draw scene
 	renderer->Draw(camera->GetViewMatrix(), !freeze_frustum_cull);
+}
+
+void Application::UpdateRenderTarget(std::string json_file_path) {
+
+	// Load scene data
+	std::vector<renderer::MeshInstances> model_set = MP::ParseMP(json_file_path, false);
+	renderer->UpdateModelSet(model_set, true);
+
+	// Set camera root
+	glm::vec3 scene_root = renderer->GetSceneRoot();
+	camera->SetPosition(scene_root);
+
+	// Update app state
+	camera_position = scene_root;
+	current_file_name = MP::GetNameMP(json_file_path);
 }
 
 } // namespace game
